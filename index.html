@@ -4,8 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/png" href="/favicon.png">
+
   <title>RINet — Residue Interaction Network Inference Toolkit</title>
   <meta name="description" content="RINet is a structure-first toolkit for interpretable allostery inference from protein structures. Desktop app + CLI with deterministic graph dynamics, exports, and audit-friendly reporting." />
+
   <!-- Link preview (Open Graph) -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://rinetlab.com/">
@@ -14,15 +16,15 @@
   <meta property="og:image" content="https://rinetlab.com/logo_.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  
+
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="RINet — Residue Interaction Network Inference Toolkit">
   <meta name="twitter:description" content="Deterministic, interpretable allostery inference from protein structure. Desktop app + CLI with exportable reports.">
   <meta name="twitter:image" content="https://rinetlab.com/logo_.png">
+
   <style>
     :root{
-      /* Professional biotech / enterprise palette */
       --paper:#fbfbfc;
       --paper2:#f3f5f8;
       --ink:#0e1626;
@@ -31,10 +33,10 @@
       --line: rgba(14,22,38,.12);
       --line2: rgba(14,22,38,.08);
 
-      --brand:#2a66f5;      /* restrained blue */
+      --brand:#2a66f5;
       --brand2:#0f4dd7;
-      --accent:#0b7a6b;     /* calm teal for secondary accents */
-      --gold:#b08a2e;       /* optional “premium” accent for tiny details */
+      --accent:#0b7a6b;
+      --gold:#b08a2e;
       --danger:#b42318;
 
       --shadow: 0 22px 60px rgba(14,22,38,.10);
@@ -44,7 +46,6 @@
       --r2: 18px;
       --max: 1160px;
 
-      /* Typography: less “code”, more “institutional editorial” */
       --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
               "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
       --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
@@ -79,7 +80,6 @@
       padding: 0 22px;
     }
 
-    /* Topbar */
     .topbar{
       position: sticky;
       top: 0;
@@ -192,14 +192,10 @@
       white-space:nowrap;
     }
 
-    /* Pages */
     .page{display:none}
     .page.active{display:block}
 
-    /* Hero */
-    .hero{
-      padding: 52px 0 20px;
-    }
+    .hero{padding: 52px 0 20px}
     .hero-grid{
       display:grid;
       grid-template-columns: 1.05fr .95fr;
@@ -313,11 +309,9 @@
       font-size: 14.5px;
     }
 
-    /* Download feature */
     .download-box{
       border: 1px solid rgba(42,102,245,.22);
-      background:
-        linear-gradient(180deg, rgba(42,102,245,.10), rgba(255,255,255,.76));
+      background: linear-gradient(180deg, rgba(42,102,245,.10), rgba(255,255,255,.76));
       border-radius: var(--r2);
       padding: 20px 20px;
     }
@@ -390,10 +384,7 @@
       color: rgba(14,22,38,.80);
     }
 
-    /* Sections */
-    .section{
-      padding: 26px 0 44px;
-    }
+    .section{padding: 26px 0 44px}
     .section h2{
       font-family: var(--serif);
       font-size: 26px;
@@ -454,7 +445,6 @@
       color: rgba(14,22,38,.80);
     }
 
-    /* Docs layout (still “page-like”, but not techy) */
     .doc-layout{
       display:grid;
       grid-template-columns: 330px 1fr;
@@ -562,6 +552,7 @@
 
         <div class="actions">
           <a class="btn" href="#docs" data-route="docs">Open documentation</a>
+          <a class="btn" href="#docs#install" data-route="docs">Install (pip)</a>
           <a class="btn download" href="https://github.com/AkulK08/rinetlab/releases/download/v1.0.0/RINet-Desktop-macOS-v1.0.dmg" download>
             Download for macOS
           </a>
@@ -572,7 +563,7 @@
 
   <!-- PAGE: HOME -->
   <main class="page active" data-page="home">
-    <section class="hero">
+    <section class="hero" id="home">
       <div class="container">
         <div class="hero-grid">
 
@@ -598,7 +589,7 @@
                   <h3>Designed for review</h3>
                   <p>
                     RINet emphasizes outputs that survive scrutiny: explicit graph assumptions, explicit operators, deterministic runs, and exports that preserve the
-                    context required to reproduce results. The goal is not a one-off plot, but a durable artifact your team can cite and revisit.
+                    context required to interpret and reproduce results. The goal is not a one-off plot, but a durable artifact your team can cite and revisit.
                   </p>
                 </div>
                 <div class="mini">
@@ -609,36 +600,47 @@
                   </p>
                 </div>
               </div>
+
+              <div class="note" style="margin-top:16px">
+                <p>
+                  RINet is an interpretable, structure-first coupling profiler. It does not attempt to reproduce full atomistic dynamics.
+                  Instead, it provides deterministic approximations that are fast enough for iteration and explicit enough to be compared across variants.
+                </p>
+              </div>
             </div>
           </div>
 
           <div class="panel">
             <div class="panel-inner">
+
+              <!-- DMG -->
               <div class="download-box" id="download">
-                <h2>RINet Desktop — macOS installer</h2>
+                <h2>RINet Desktop — macOS installer (DMG)</h2>
                 <p>
-                  Download the signed desktop installer to run interactive analysis, generate plots and tables, and export report folders.
+                  Download the desktop app for an interactive workflow: load a structure, construct a contact graph, run inference modes, inspect residue profiles,
+                  and export a report folder containing CSVs, plots, and run metadata.
                 </p>
 
                 <div class="download-row">
                   <a class="btn download" href="https://github.com/AkulK08/rinetlab/releases/download/v1.0.0/RINet-Desktop-macOS-v1.0.dmg" download>
                     Download RINet-Desktop-macOS-v1.0.dmg
                   </a>
-                  <a class="subbtn" href="#docs">Installation & setup</a>
+                  <a class="subbtn" href="#docs#install">Installation</a>
+                  <a class="subbtn" href="#docs#quickstart">Quickstart</a>
                 </div>
 
                 <div class="kvgrid" aria-label="Release details">
                   <div class="kv">
-                    <div class="k">Installer file</div>
-                    <div class="v"><code>RINet-Desktop-macOS-v1.0.dmg</code></div>
+                    <div class="k">Platform</div>
+                    <div class="v">macOS</div>
                   </div>
                   <div class="kv">
-                    <div class="k">Expected location</div>
-                    <div class="v"><code>downloads/</code> next to <code>index.html</code></div>
+                    <div class="k">App</div>
+                    <div class="v"><code>RINet.app</code></div>
                   </div>
                   <div class="kv">
-                    <div class="k">Integrity check</div>
-                    <div class="v">Optional SHA-256 verification</div>
+                    <div class="k">First launch</div>
+                    <div class="v">Open the app normally; follow macOS prompts if shown</div>
                   </div>
                   <div class="kv">
                     <div class="k">Offline posture</div>
@@ -646,20 +648,51 @@
                   </div>
                 </div>
 
-                <div class="note" style="margin-top:14px">
+                <pre><code># Optional integrity check (macOS / Linux)
+# If a checksum is published for this release, compare it here.
+shasum -a 256 RINet-Desktop-macOS-v1.0.dmg</code></pre>
+              </div>
+
+              <!-- pip -->
+              <div class="download-box" style="margin-top:14px" id="pip">
+                <h2>RINet CLI + Python API — pip installation</h2>
+                <p>
+                  For batch runs, parameter sweeps, and integration into pipelines, install the RINet command line interface and Python API with pip.
+                  This path works on macOS, Linux, and Windows. After installation, the CLI is available as <code class="inline">rinet</code>.
+                  If your installation includes the GUI launcher, it can be started with <code class="inline">rinet-gui</code>.
+                </p>
+
+                <pre><code># macOS / Linux
+python3 -m venv rinet-env
+source rinet-env/bin/activate
+
+python -m pip install -U pip
+python -m pip install rinet
+
+rinet --help</code></pre>
+
+                <pre><code># Windows (PowerShell)
+py -m venv rinet-env
+.\rinet-env\Scripts\Activate.ps1
+
+python -m pip install -U pip
+python -m pip install rinet
+
+rinet --help</code></pre>
+
+                <div class="note">
                   <p>
-                    If the browser reports the file is missing, the site is not serving the DMG at
-                    <code class="inline">downloads/RINet-Desktop-macOS-v1.0.dmg</code>. Put the DMG in that folder and serve the directory with a local web server
-                    rather than opening the HTML directly from disk.
+                    If you are in an offline or restricted environment, install from a wheel file instead of PyPI. Download a <code class="inline">.whl</code> release
+                    and install it with <code class="inline">python -m pip install rinet-*.whl</code>. The commands are the same after installation.
                   </p>
                 </div>
 
-                <pre><code># Verify the installer (macOS / Linux)
-shasum -a 256 downloads/RINet-Desktop-macOS-v1.0.dmg
-
-# Optional: compare against a published checksum file
-cat downloads/RINet-Desktop-macOS-v1.0.dmg.sha256</code></pre>
+                <div class="download-row">
+                  <a class="subbtn" href="#docs#install">Install details</a>
+                  <a class="subbtn" href="#docs#cli">CLI usage</a>
+                </div>
               </div>
+
             </div>
           </div>
 
@@ -678,8 +711,8 @@ cat downloads/RINet-Desktop-macOS-v1.0.dmg.sha256</code></pre>
         </p>
         <p>
           The desktop application organizes these modes into a single workflow: ingest a structure, configure graph construction parameters, run inference, inspect the
-          resulting residue profiles in plots and tables, and export a report folder. The report folder is designed to capture the assumptions and parameters required to
-          reproduce the result, rather than leaving analysis trapped in an interactive session.
+          resulting residue profiles in plots and tables, and export a report folder. The report folder is designed to preserve the context needed to interpret and
+          reproduce results without relying on screenshots or informal notes.
         </p>
       </div>
     </section>
@@ -689,13 +722,12 @@ cat downloads/RINet-Desktop-macOS-v1.0.dmg.sha256</code></pre>
         <h2>Data handling and deployment posture</h2>
         <p>
           RINet is designed so core inference can be performed locally without transmitting structure files to external services. This is important for teams working with
-          unpublished structures or proprietary variants. The intended deployment model is straightforward: distribute the desktop installer internally, keep structures on
-          controlled storage, and use the CLI for batch runs on managed compute where appropriate.
+          unpublished structures or proprietary variants. The intended deployment model is straightforward: install the desktop application for interactive work, install
+          the CLI for pipeline integration, and store structure files and exported reports in controlled storage.
         </p>
         <p>
-          If you later add collaboration features, cloud storage, or telemetry, those should be explicit and opt-in. In enterprise contexts, the default expectation is
-          that scientific software is transparent about where data goes. RINet’s product philosophy aligns with that expectation by treating local execution and explicit
-          exports as the baseline.
+          If collaboration or cloud-backed features are added, they should be explicit and opt-in. RINet’s default posture is local execution and export artifacts that
+          remain meaningful outside an interactive session.
         </p>
       </div>
     </section>
@@ -708,7 +740,7 @@ cat downloads/RINet-Desktop-macOS-v1.0.dmg.sha256</code></pre>
   </main>
 
   <!-- PAGE: DOCS -->
-  <main class="page" data-page="docs">
+  <main class="page" data-page="docs" id="docs">
     <div class="container">
       <div class="doc-layout">
 
@@ -725,9 +757,13 @@ cat downloads/RINet-Desktop-macOS-v1.0.dmg.sha256</code></pre>
                 Overview
                 <small>What RINet produces and how to interpret it</small>
               </a>
-              <a href="#docs#install" data-tags="install dmg macos gatekeeper setup verify checksum" class="doclink">
+              <a href="#docs#install" data-tags="install pip python dmg macos windows linux" class="doclink">
                 Installation
-                <small>Desktop setup, verification, and first run</small>
+                <small>Desktop installer and pip install (CLI + API)</small>
+              </a>
+              <a href="#docs#cli" data-tags="cli command line rinet forward scan inverse outputs csv examples" class="doclink">
+                Command line usage
+                <small>Reproducible runs, sweeps, and exported artifacts</small>
               </a>
               <a href="#docs#quickstart" data-tags="quickstart workflow load pdb build graph run export report" class="doclink">
                 Quickstart workflow
@@ -747,15 +783,15 @@ cat downloads/RINet-Desktop-macOS-v1.0.dmg.sha256</code></pre>
               </a>
               <a href="#docs#reports" data-tags="outputs report export csv png json metadata audit" class="doclink">
                 Reports and outputs
-                <small>What gets exported and why it matters</small>
+                <small>What gets exported and what is inside a report folder</small>
               </a>
               <a href="#docs#data" data-tags="data handling local execution privacy offline deployment" class="doclink">
                 Data handling
                 <small>Local execution posture and deployment notes</small>
               </a>
-              <a href="#docs#troubleshooting" data-tags="troubleshooting missing file blank plots gatekeeper performance" class="doclink">
+              <a href="#docs#troubleshooting" data-tags="troubleshooting missing file blank plots gatekeeper performance pip" class="doclink">
                 Troubleshooting
-                <small>Precise fixes for common problems</small>
+                <small>Common install + runtime issues and exact fixes</small>
               </a>
             </div>
           </div>
@@ -766,39 +802,93 @@ cat downloads/RINet-Desktop-macOS-v1.0.dmg.sha256</code></pre>
             <div class="kicker">Documentation</div>
             <h1 style="margin-bottom:10px">RINet Documentation</h1>
             <p class="lede" style="max-width: 96ch">
-              This documentation is written for a professional workflow: explicit assumptions, reproducible runs, and export artifacts that support review. RINet’s
-              outputs are residue-indexed profiles that are intentionally easy to compare across variants and easy to attach to internal reports with the context required
-              to reproduce the exact result.
+              RINet is designed for structure-first coupling analysis with deterministic execution and export artifacts that support review.
+              This documentation focuses on installation, practical usage, and the meaning of the exported outputs.
             </p>
 
             <section id="overview">
               <h2>Overview</h2>
               <p>
-                RINet models long-range coupling by representing a protein as a residue interaction network. Each residue is a node. Structural contacts become edges under
-                an explicit contact rule. A perturbation is represented as an initial residue-indexed state. The state evolves under a deterministic operator derived from
-                the graph, producing a coupling profile that can be plotted, compared, and exported.
+                RINet represents a protein structure as a residue interaction network. Each residue is a node. Structural contacts become edges under an explicit contact
+                rule. A perturbation is represented as an initial residue-indexed state. The state evolves under a deterministic operator derived from the graph,
+                producing a coupling profile that can be plotted, compared, and exported.
               </p>
               <p>
-                The value proposition is speed with interpretability. RINet is not a substitute for molecular dynamics. It is a structured approximation that lets teams
-                ask exploratory questions quickly, preserve assumptions, and iterate toward experiments or deeper simulation.
+                RINet is not a substitute for molecular dynamics. It is a structured approximation that provides fast, interpretable signals suitable for comparative
+                profiling across variants and for prioritizing downstream experiments or deeper simulation.
               </p>
             </section>
 
             <section id="install">
               <h2>Installation</h2>
               <p>
-                The macOS desktop app is distributed as a DMG. The download button on the product page points to
-                <code class="inline">downloads/RINet-Desktop-macOS-v1.0.dmg</code>. Ensure the DMG is present at that path within your hosted site. For local testing,
-                serve the folder with a web server; do not rely on opening the HTML file directly from disk.
+                RINet is available as a macOS desktop installer for interactive workflows and as a Python package for the command line interface and Python API.
+                Many teams use both: the desktop app for exploration and report export, and the CLI for batch runs and reproducible sweeps.
               </p>
-              <pre><code># Local hosting for correct download behavior
-cd /path/to/site
-python3 -m http.server 8000
-# open http://localhost:8000</code></pre>
+
+              <h3 style="margin-top:16px; font-size: 16px; font-weight: 900; letter-spacing: -.2px; color: rgba(14,22,38,.90);">macOS Desktop (DMG)</h3>
               <p>
-                If macOS blocks the app, Gatekeeper behavior depends on signing state. For internal distribution you should sign and notarize releases. During development,
-                right-click → Open can be used for first launch on some systems.
+                Download the DMG from the product page. Open it and drag <code class="inline">RINet.app</code> into Applications. On first launch, macOS may show a
+                security prompt depending on system settings.
               </p>
+
+              <h3 style="margin-top:16px; font-size: 16px; font-weight: 900; letter-spacing: -.2px; color: rgba(14,22,38,.90);">Python package (CLI + API)</h3>
+              <p>
+                The pip install pathway is recommended for batch workflows, compute environments, and cross-platform installs. After installation, the CLI is available
+                as <code class="inline">rinet</code>. If your distribution includes the GUI launcher, it can be started with <code class="inline">rinet-gui</code>.
+              </p>
+
+              <pre><code># macOS / Linux
+python3 -m venv rinet-env
+source rinet-env/bin/activate
+
+python -m pip install -U pip
+python -m pip install rinet
+
+rinet --help</code></pre>
+
+              <pre><code># Windows (PowerShell)
+py -m venv rinet-env
+.\rinet-env\Scripts\Activate.ps1
+
+python -m pip install -U pip
+python -m pip install rinet
+
+rinet --help</code></pre>
+
+              <p>
+                If you are installing from a wheel file (offline installs or internal distribution), install it directly and then run the same commands:
+              </p>
+
+              <pre><code># Install from a downloaded wheel file
+python -m pip install rinet-0.1.0-py3-none-any.whl
+
+rinet --help</code></pre>
+            </section>
+
+            <section id="cli">
+              <h2>Command line usage</h2>
+              <p>
+                The CLI is designed for reproducible runs and batch processing. It emits explicit CSV outputs that can be versioned, diffed, and incorporated into
+                downstream pipelines. A typical workflow is: build a contact graph under an explicit rule, run an inference mode, and export a residue-indexed result
+                vector alongside the parameters used to generate it.
+              </p>
+
+              <pre><code># Forward propagation (seed a residue; produce coupling profile)
+rinet forward --pdb path/to/structure.pdb --seed 45 --cutoff 8.0 --out rinet_forward.csv
+
+# Scan inference (seed each residue; produce global influence score)
+rinet scan --pdb path/to/structure.pdb --cutoff 8.0 --out rinet_scan.csv
+
+# Inverse inference (propose likely upstream sources)
+rinet inverse --pdb path/to/structure.pdb --cutoff 8.0 --out rinet_inverse.csv</code></pre>
+
+              <div class="note">
+                <p>
+                  Tip: when comparing variants, keep graph construction parameters (contact mode, cutoff, chain selection, weight rule) fixed across runs so results are
+                  comparable. Changes to these parameters change the underlying graph and can dominate the profile.
+                </p>
+              </div>
             </section>
 
             <section id="quickstart">
@@ -807,28 +897,22 @@ python3 -m http.server 8000
                 A standard analysis run consists of four steps. First, load a structure file and confirm residues are parsed with stable identifiers. Second, configure
                 graph construction: contact mode, distance cutoff, chain selection, and weight mode. Third, run an inference mode, typically forward propagation from a
                 seed residue or region, then optionally scan, inverse attribution, or mediator discovery depending on the question. Fourth, export a report folder that
-                contains the result vector, plot image, and metadata capturing the settings used to generate the result.
+                contains the result vector, plot image, and run metadata capturing the settings used to generate the result.
               </p>
               <p>
-                The report folder is the primary artifact: it is what you attach to internal notes, share with collaborators, or use to reproduce results months later.
-                A plot without metadata is difficult to defend; a plot with explicit graph settings and operator parameters is reviewable.
+                The exported folder is meant to be shareable: it contains the values and the context needed to interpret them without relying on screenshots or informal
+                notes.
               </p>
             </section>
 
             <section id="graph">
               <h2>Graph construction</h2>
               <p>
-                Graph construction is the central scientific assumption. In Cα mode, residues are connected when Cα distance is below a cutoff. In heavy-atom mode, a
+                Graph construction is the central modeling assumption. In Cα mode, residues are connected when Cα distance is below a cutoff. In heavy-atom mode, a
                 contact can be defined by the existence of any heavy atom pair across residues within the cutoff. Heavy-atom graphs tend to be denser and emphasize
-                packing; Cα graphs tend to be simpler and often better for coarse comparative workflows. Weighting can be binary or distance-based, but any weight rule
-                must be recorded because it changes propagation behavior.
+                packing; Cα graphs tend to be simpler and often better for coarse comparative workflows. Weighting can be binary or distance-based; any weight rule used
+                should be kept fixed when comparing runs.
               </p>
-              <div class="note">
-                <p>
-                  When comparing variants, treat graph construction parameters as experimental conditions. If cutoff or contact mode changes between runs, you may be
-                  comparing two different graphs rather than two different proteins.
-                </p>
-              </div>
             </section>
 
             <section id="models">
@@ -836,8 +920,8 @@ python3 -m http.server 8000
               <p>
                 The default operator is diffusion-like dynamics on a graph Laplacian. Let <code class="inline">x</code> be a residue-indexed state and let
                 <code class="inline">L</code> be the Laplacian derived from the adjacency. A common update is
-                <code class="inline">x_{t+1} = x_t + dt · (−L x_t)</code>. The step size and number of steps determine whether the profile remains localized or becomes
-                overly smooth. Because graphs differ in density across proteins, parameter sweeps under controlled conditions are recommended when generating conclusions.
+                <code class="inline">x_{t+1} = x_t + dt · (−L x_t)</code>. The step size and number of steps affect localization and smoothing. Because graph density
+                varies across proteins, parameter sweeps under controlled conditions are recommended when drawing conclusions.
               </p>
             </section>
 
@@ -846,39 +930,39 @@ python3 -m http.server 8000
               <p>
                 Forward propagation produces a coupling profile for a specified seed residue or region. Scan inference runs forward propagation across candidate seeds and
                 aggregates influence-as-seed into a global score. Inverse attribution proposes plausible upstream sources for a downstream effect under an explicit inverse
-                model. Mediator discovery highlights residues that behave like bridges in influence routes, even when they are not maximal endpoints.
+                model. Mediator discovery highlights residues that behave like bridge-like conduits in influence routes.
               </p>
             </section>
 
             <section id="reports">
               <h2>Reports and outputs</h2>
               <p>
-                RINet exports residue-indexed vectors to CSV and renders the same values as a profile plot for rapid review. A professional export should also include a
-                metadata JSON capturing structure identifiers, graph construction parameters, and operator settings. If you support serialized graph bundles, include them
-                in the export so exact adjacency can be reloaded without reconstruction.
+                RINet exports residue-indexed vectors to CSV and can render the same values as a profile plot for rapid review. A complete export includes metadata that
+                records structure identifiers and run parameters. This is what makes results portable: a collaborator can interpret what was run and compare outputs across
+                variants under a consistent construction.
               </p>
             </section>
 
             <section id="data">
               <h2>Data handling</h2>
               <p>
-                RINet is designed so core inference can run locally without uploading structures to external services. This posture supports teams working with proprietary
-                structures or unpublished variants. In enterprise environments, the default expectation is that scientific tools are explicit about data flows. If you add
-                collaboration or cloud features later, those should be opt-in and documented as explicit transmission and storage pathways.
+                RINet is designed so core inference can run locally without uploading structures to external services. This supports teams working with proprietary or
+                unpublished structures. If collaboration or cloud-backed features are added, they should be explicit and opt-in, with documented data transmission paths.
               </p>
             </section>
 
             <section id="troubleshooting">
               <h2>Troubleshooting</h2>
               <p>
-                If the download reports missing file, confirm the DMG exists at <code class="inline">downloads/RINet-Desktop-macOS-v1.0.dmg</code> relative to the site
-                root and confirm you are serving the folder. If the GUI shows blank plots, confirm a graph has been created or imported and that residues exist for the
-                selected contact mode.
+                If the macOS app will not open, check your macOS security prompt and ensure the DMG was fully downloaded. If the CLI command is not found after pip
+                installation, confirm the environment is activated and run <code class="inline">python -m pip -V</code> to verify pip is pointing to the expected
+                environment. If a run produces a flat profile, confirm your graph construction settings generate a nontrivial contact graph and that the seed residue
+                index is valid for the structure.
               </p>
             </section>
 
             <div class="footer">
-              © RINet — Documentation. Return to Overview to download the macOS installer.
+              © RINet — Documentation. Return to Overview for downloads and installation.
             </div>
           </div>
         </article>
