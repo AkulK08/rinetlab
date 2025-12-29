@@ -1,0 +1,961 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RINet — Residue Interaction Network Inference Toolkit</title>
+  <meta name="description" content="RINet is a structure-first toolkit for interpretable allostery inference from protein structures. Desktop app + CLI with deterministic graph dynamics, exports, and audit-friendly reporting." />
+
+  <style>
+    :root{
+      /* Professional biotech / enterprise palette */
+      --paper:#fbfbfc;
+      --paper2:#f3f5f8;
+      --ink:#0e1626;
+      --ink2:#22314a;
+      --muted:#54657f;
+      --line: rgba(14,22,38,.12);
+      --line2: rgba(14,22,38,.08);
+
+      --brand:#2a66f5;      /* restrained blue */
+      --brand2:#0f4dd7;
+      --accent:#0b7a6b;     /* calm teal for secondary accents */
+      --gold:#b08a2e;       /* optional “premium” accent for tiny details */
+      --danger:#b42318;
+
+      --shadow: 0 22px 60px rgba(14,22,38,.10);
+      --shadow2: 0 12px 30px rgba(14,22,38,.08);
+
+      --r1: 12px;
+      --r2: 18px;
+      --max: 1160px;
+
+      /* Typography: less “code”, more “institutional editorial” */
+      --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+              "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+      --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+      --h1: clamp(34px, 3.2vw, 52px);
+      --h2: 20px;
+      --h3: 15.5px;
+      --p: 16px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(900px 500px at 18% -10%, rgba(42,102,245,.10), transparent 58%),
+        radial-gradient(900px 500px at 88% -10%, rgba(11,122,107,.08), transparent 58%),
+        linear-gradient(180deg, var(--paper), var(--paper2));
+      letter-spacing: .10px;
+    }
+
+    a{color:inherit; text-decoration:none}
+    a:hover{color: var(--brand2)}
+    section[id]{scroll-margin-top: 110px}
+
+    .container{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 22px;
+    }
+
+    /* Topbar */
+    .topbar{
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(251,251,252,.78);
+      border-bottom: 1px solid var(--line2);
+      backdrop-filter: blur(14px);
+    }
+    .topbar-inner{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 14px;
+      padding: 14px 0;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      min-width: 260px;
+    }
+    .mark{
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(42,102,245,.12), rgba(11,122,107,.10));
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+    }
+    .mark img{width:100%;height:100%;object-fit:cover;display:block}
+    .brand-title{
+      display:flex;
+      flex-direction:column;
+      line-height: 1.1;
+    }
+    .brand-title strong{
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing:.2px;
+      color: var(--ink);
+    }
+    .brand-title span{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .nav{
+      display:flex;
+      align-items:center;
+      gap: 6px;
+      flex-wrap:wrap;
+    }
+    .nav a{
+      font-size: 13px;
+      color: rgba(14,22,38,.80);
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+    }
+    .nav a:hover{
+      background: rgba(14,22,38,.04);
+      border-color: rgba(14,22,38,.06);
+    }
+    .nav a.active{
+      background: rgba(42,102,245,.08);
+      border-color: rgba(42,102,245,.16);
+      color: var(--ink);
+    }
+
+    .actions{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.66);
+      color: var(--ink);
+      font-weight: 700;
+      font-size: 13px;
+      box-shadow: none;
+    }
+    .btn:hover{
+      border-color: rgba(42,102,245,.26);
+      background: rgba(42,102,245,.06);
+      color: var(--ink);
+    }
+    .btn.primary{
+      border-color: rgba(42,102,245,.40);
+      background: linear-gradient(180deg, rgba(42,102,245,.14), rgba(42,102,245,.08));
+    }
+    .btn.download{
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-weight: 800;
+      border-color: rgba(42,102,245,.42);
+      background: linear-gradient(180deg, rgba(42,102,245,.18), rgba(42,102,245,.10));
+      box-shadow: var(--shadow2);
+      white-space:nowrap;
+    }
+
+    /* Pages */
+    .page{display:none}
+    .page.active{display:block}
+
+    /* Hero */
+    .hero{
+      padding: 52px 0 20px;
+    }
+    .hero-grid{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    @media (max-width: 980px){
+      .hero-grid{grid-template-columns: 1fr}
+      .nav{display:none}
+      .brand{min-width:auto}
+    }
+
+    .panel{
+      border: 1px solid var(--line2);
+      background: rgba(255,255,255,.72);
+      border-radius: var(--r2);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .panel-inner{padding: 26px 26px}
+
+    .kicker{
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .38px;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .kicker:before{
+      content:"";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--brand);
+      box-shadow: 0 0 0 6px rgba(42,102,245,.10);
+    }
+
+    h1{
+      font-family: var(--serif);
+      font-weight: 700;
+      font-size: var(--h1);
+      line-height: 1.05;
+      margin: 0 0 12px;
+      letter-spacing: -0.6px;
+      color: var(--ink);
+    }
+    .lede{
+      font-size: 16.5px;
+      line-height: 1.95;
+      color: rgba(14,22,38,.82);
+      margin: 0 0 18px;
+      max-width: 92ch;
+    }
+
+    .tagrow{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(14,22,38,.10);
+      background: rgba(255,255,255,.55);
+      color: rgba(14,22,38,.78);
+      font-size: 12px;
+      font-weight: 700;
+      white-space:nowrap;
+    }
+    .tag i{
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(11,122,107,.85);
+      display:inline-block;
+    }
+
+    .split{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    @media (max-width: 680px){ .split{grid-template-columns:1fr} }
+
+    .mini{
+      border: 1px solid rgba(14,22,38,.10);
+      background: rgba(247,248,250,.80);
+      border-radius: var(--r1);
+      padding: 14px 14px;
+      box-shadow: var(--shadow2);
+    }
+    .mini h3{
+      margin: 0 0 8px;
+      font-size: var(--h3);
+      color: var(--ink);
+      font-weight: 800;
+      letter-spacing: -.1px;
+    }
+    .mini p{
+      margin: 0;
+      color: rgba(14,22,38,.70);
+      line-height: 1.85;
+      font-size: 14.5px;
+    }
+
+    /* Download feature */
+    .download-box{
+      border: 1px solid rgba(42,102,245,.22);
+      background:
+        linear-gradient(180deg, rgba(42,102,245,.10), rgba(255,255,255,.76));
+      border-radius: var(--r2);
+      padding: 20px 20px;
+    }
+    .download-box h2{
+      margin: 0 0 10px;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: .2px;
+      color: var(--ink);
+    }
+    .download-box p{
+      margin: 0 0 14px;
+      color: rgba(14,22,38,.74);
+      line-height: 1.85;
+      font-size: 14.5px;
+    }
+    .download-row{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      flex-wrap:wrap;
+      margin-top: 10px;
+    }
+    .subbtn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding: 11px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.70);
+      color: rgba(14,22,38,.86);
+      font-weight: 750;
+      font-size: 13px;
+    }
+    .subbtn:hover{
+      border-color: rgba(14,22,38,.16);
+      background: rgba(14,22,38,.04);
+    }
+
+    .kvgrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      border-top: 1px solid rgba(14,22,38,.10);
+      padding-top: 12px;
+      margin-top: 14px;
+    }
+    @media (max-width: 520px){ .kvgrid{grid-template-columns:1fr} }
+
+    .kv .k{
+      font-size: 11px;
+      letter-spacing: .34px;
+      text-transform: uppercase;
+      color: rgba(14,22,38,.56);
+      margin-bottom: 4px;
+    }
+    .kv .v{
+      font-size: 13px;
+      font-weight: 900;
+      color: rgba(14,22,38,.86);
+    }
+    .kv code{
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(14,22,38,.12);
+      background: rgba(255,255,255,.70);
+      color: rgba(14,22,38,.80);
+    }
+
+    /* Sections */
+    .section{
+      padding: 26px 0 44px;
+    }
+    .section h2{
+      font-family: var(--serif);
+      font-size: 26px;
+      margin: 0 0 10px;
+      letter-spacing: -.2px;
+      color: var(--ink);
+      font-weight: 700;
+    }
+    .section p{
+      margin: 10px 0;
+      color: rgba(14,22,38,.82);
+      line-height: 2.02;
+      font-size: var(--p);
+      max-width: 98ch;
+    }
+
+    .note{
+      border-left: 3px solid rgba(42,102,245,.55);
+      background: rgba(255,255,255,.70);
+      border: 1px solid rgba(14,22,38,.10);
+      border-left-width: 3px;
+      border-radius: var(--r1);
+      padding: 14px 14px;
+      margin: 14px 0;
+      box-shadow: var(--shadow2);
+    }
+    .note p{
+      margin: 0;
+      color: rgba(14,22,38,.70);
+      line-height: 1.88;
+      font-size: 14.5px;
+    }
+
+    pre{
+      margin: 12px 0;
+      border-radius: var(--r1);
+      border: 1px solid rgba(14,22,38,.10);
+      background: rgba(255,255,255,.72);
+      padding: 14px;
+      overflow:auto;
+      box-shadow: var(--shadow2);
+    }
+    pre code{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(14,22,38,.86);
+      line-height: 1.65;
+      display:block;
+      white-space: pre;
+    }
+    code.inline{
+      font-family: var(--mono);
+      font-size: 12.5px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(14,22,38,.12);
+      background: rgba(255,255,255,.70);
+      color: rgba(14,22,38,.80);
+    }
+
+    /* Docs layout (still “page-like”, but not techy) */
+    .doc-layout{
+      display:grid;
+      grid-template-columns: 330px 1fr;
+      gap: 18px;
+      padding: 28px 0 62px;
+    }
+    @media (max-width: 980px){ .doc-layout{grid-template-columns:1fr} }
+
+    .doc-nav{
+      position: sticky;
+      top: 92px;
+      max-height: calc(100vh - 120px);
+      overflow:auto;
+      padding: 16px;
+    }
+    @media (max-width: 980px){
+      .doc-nav{position:relative; top:auto; max-height:none}
+    }
+
+    .doc-nav h2{
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .28px;
+      text-transform: uppercase;
+      color: rgba(14,22,38,.70);
+    }
+    .search{
+      display:flex;
+      gap: 10px;
+      margin: 10px 0 12px;
+    }
+    .search input{
+      width:100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(14,22,38,.12);
+      background: rgba(255,255,255,.70);
+      color: rgba(14,22,38,.90);
+      outline:none;
+      font-size: 13px;
+    }
+    .search input:focus{
+      border-color: rgba(42,102,245,.34);
+      box-shadow: 0 0 0 4px rgba(42,102,245,.10);
+    }
+
+    .doc-links a{
+      display:block;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      color: rgba(14,22,38,.86);
+      font-size: 13px;
+      line-height: 1.25;
+    }
+    .doc-links a:hover{
+      background: rgba(14,22,38,.04);
+      border-color: rgba(14,22,38,.06);
+    }
+    .doc-links a.active{
+      background: rgba(42,102,245,.08);
+      border-color: rgba(42,102,245,.14);
+    }
+    .doc-links a small{
+      display:block;
+      color: rgba(14,22,38,.60);
+      margin-top: 3px;
+      font-size: 12px;
+      line-height:1.35;
+    }
+
+    .footer{
+      padding: 30px 0 46px;
+      border-top: 1px solid rgba(14,22,38,.10);
+      color: rgba(14,22,38,.62);
+      font-size: 12px;
+    }
+
+    .sr{position:absolute;left:-9999px}
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="container">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="mark" aria-hidden="true" title="RINet">
+            <img src="assets/logo.png" alt=""
+                 onerror="this.remove(); this.parentElement.textContent='R'; this.parentElement.style.fontWeight='900'; this.parentElement.style.color='#0e1626';" />
+          </div>
+          <div class="brand-title">
+            <strong>RINet</strong>
+            <span>Residue Interaction Network Inference Toolkit</span>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="Primary">
+          <a href="#home" data-route="home">Overview</a>
+          <a href="#home#capabilities" data-route="home">Capabilities</a>
+          <a href="#home#deployment" data-route="home">Data handling</a>
+          <a href="#docs" data-route="docs">Documentation</a>
+        </nav>
+
+        <div class="actions">
+          <a class="btn" href="#docs" data-route="docs">Open documentation</a>
+          <a class="btn download" href="downloads/RINet-Desktop-macOS-v1.0.dmg" download>
+            Download for macOS
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- PAGE: HOME -->
+  <main class="page active" data-page="home">
+    <section class="hero">
+      <div class="container">
+        <div class="hero-grid">
+
+          <div class="panel">
+            <div class="panel-inner">
+              <div class="kicker">Structure-first inference for protein teams</div>
+              <h1>Interpretable allostery signals from protein structure, delivered as reproducible analysis artifacts</h1>
+              <p class="lede">
+                RINet converts a protein structure into a residue interaction network and runs deterministic graph dynamics to generate residue-indexed coupling
+                profiles. It is designed for practical use in exploratory workflows where teams need fast, auditable signals that can be compared across variants
+                and exported in a report-friendly format.
+              </p>
+
+              <div class="tagrow" aria-label="Product pillars">
+                <span class="tag"><i></i> Desktop workflow with report export</span>
+                <span class="tag"><i></i> CLI for pipelines and sweeps</span>
+                <span class="tag"><i></i> Deterministic execution and metadata</span>
+                <span class="tag"><i></i> Forward, scan, inverse, mediators</span>
+              </div>
+
+              <div class="split" aria-label="Positioning">
+                <div class="mini">
+                  <h3>Designed for review</h3>
+                  <p>
+                    RINet emphasizes outputs that survive scrutiny: explicit graph assumptions, explicit operators, deterministic runs, and exports that preserve the
+                    context required to reproduce results. The goal is not a one-off plot, but a durable artifact your team can cite and revisit.
+                  </p>
+                </div>
+                <div class="mini">
+                  <h3>Fast enough to iterate</h3>
+                  <p>
+                    The model is intentionally lightweight compared to full simulation. That makes it suitable for parameter sensitivity analysis, comparative profiling
+                    across mutants, and early-stage hypothesis prioritization before expensive downstream work.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-inner">
+              <div class="download-box" id="download">
+                <h2>RINet Desktop — macOS installer</h2>
+                <p>
+                  Download the signed desktop installer to run interactive analysis, generate plots and tables, and export report folders. The download button resolves
+                  to the DMG path below; keep the installer in your hosted <code class="inline">downloads/</code> directory.
+                </p>
+
+                <div class="download-row">
+                  <a class="btn download" href="downloads/RINet-Desktop-macOS-v1.0.dmg" download>
+                    Download RINet-Desktop-macOS-v1.0.dmg
+                  </a>
+                  <a class="subbtn" href="#docs">Installation & setup</a>
+                </div>
+
+                <div class="kvgrid" aria-label="Release details">
+                  <div class="kv">
+                    <div class="k">Installer file</div>
+                    <div class="v"><code>RINet-Desktop-macOS-v1.0.dmg</code></div>
+                  </div>
+                  <div class="kv">
+                    <div class="k">Expected location</div>
+                    <div class="v"><code>downloads/</code> next to <code>index.html</code></div>
+                  </div>
+                  <div class="kv">
+                    <div class="k">Integrity check</div>
+                    <div class="v">Optional SHA-256 verification</div>
+                  </div>
+                  <div class="kv">
+                    <div class="k">Offline posture</div>
+                    <div class="v">Core analysis runs locally</div>
+                  </div>
+                </div>
+
+                <div class="note" style="margin-top:14px">
+                  <p>
+                    If the browser reports the file is missing, the site is not serving the DMG at
+                    <code class="inline">downloads/RINet-Desktop-macOS-v1.0.dmg</code>. Put the DMG in that folder and serve the directory with a local web server
+                    rather than opening the HTML directly from disk.
+                  </p>
+                </div>
+
+                <pre><code># Verify the installer (macOS / Linux)
+shasum -a 256 downloads/RINet-Desktop-macOS-v1.0.dmg
+
+# Optional: compare against a published checksum file
+cat downloads/RINet-Desktop-macOS-v1.0.dmg.sha256</code></pre>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="capabilities">
+      <div class="container">
+        <h2>Capabilities</h2>
+        <p>
+          RINet is built around residue-indexed outputs that are easy to compare across proteins and variants. The core capability is forward propagation: given a seed
+          residue or region, the tool produces a coupling profile indicating where influence concentrates under an explicit contact graph and operator. On top of that,
+          the toolkit includes scan inference to identify globally influential residues, inverse attribution to propose plausible upstream sources for a downstream effect,
+          and mediator discovery to highlight residues that behave as bridge-like conduits in influence routes.
+        </p>
+        <p>
+          The desktop application organizes these modes into a single workflow: ingest a structure, configure graph construction parameters, run inference, inspect the
+          resulting residue profiles in plots and tables, and export a report folder. The report folder is designed to capture the assumptions and parameters required to
+          reproduce the result, rather than leaving analysis trapped in an interactive session.
+        </p>
+      </div>
+    </section>
+
+    <section class="section" id="deployment">
+      <div class="container">
+        <h2>Data handling and deployment posture</h2>
+        <p>
+          RINet is designed so core inference can be performed locally without transmitting structure files to external services. This is important for teams working with
+          unpublished structures or proprietary variants. The intended deployment model is straightforward: distribute the desktop installer internally, keep structures on
+          controlled storage, and use the CLI for batch runs on managed compute where appropriate.
+        </p>
+        <p>
+          If you later add collaboration features, cloud storage, or telemetry, those should be explicit and opt-in. In enterprise contexts, the default expectation is
+          that scientific software is transparent about where data goes. RINet’s product philosophy aligns with that expectation by treating local execution and explicit
+          exports as the baseline.
+        </p>
+      </div>
+    </section>
+
+    <section class="footer">
+      <div class="container">
+        © RINet — Residue Interaction Network Inference Toolkit. Deterministic, interpretable protein coupling analysis.
+      </div>
+    </section>
+  </main>
+
+  <!-- PAGE: DOCS -->
+  <main class="page" data-page="docs">
+    <div class="container">
+      <div class="doc-layout">
+
+        <aside class="panel doc-nav" aria-label="Documentation navigation">
+          <div class="panel-inner" style="padding:16px">
+            <h2>Documentation</h2>
+            <div class="search">
+              <label class="sr" for="docSearch">Search documentation</label>
+              <input id="docSearch" type="text" placeholder="Search docs…" autocomplete="off" />
+            </div>
+
+            <div class="doc-links" id="docLinks">
+              <a href="#docs#overview" data-tags="overview what is rinet product scope deterministic" class="doclink">
+                Overview
+                <small>What RINet produces and how to interpret it</small>
+              </a>
+              <a href="#docs#install" data-tags="install dmg macos gatekeeper setup verify checksum" class="doclink">
+                Installation
+                <small>Desktop setup, verification, and first run</small>
+              </a>
+              <a href="#docs#quickstart" data-tags="quickstart workflow load pdb build graph run export report" class="doclink">
+                Quickstart workflow
+                <small>From structure to exported report in minutes</small>
+              </a>
+              <a href="#docs#graph" data-tags="graph construction adjacency cutoff ca heavy atom weights chain" class="doclink">
+                Graph construction
+                <small>Contact rules, weights, and reproducibility</small>
+              </a>
+              <a href="#docs#models" data-tags="models diffusion laplacian operator dt steps stability" class="doclink">
+                Propagation model
+                <small>Operators, parameters, and qualitative behavior</small>
+              </a>
+              <a href="#docs#inference" data-tags="forward scan inverse attribution mediators sweeps sensitivity" class="doclink">
+                Inference suite
+                <small>Forward, scan, inverse, mediators, sweeps</small>
+              </a>
+              <a href="#docs#reports" data-tags="outputs report export csv png json metadata audit" class="doclink">
+                Reports and outputs
+                <small>What gets exported and why it matters</small>
+              </a>
+              <a href="#docs#data" data-tags="data handling local execution privacy offline deployment" class="doclink">
+                Data handling
+                <small>Local execution posture and deployment notes</small>
+              </a>
+              <a href="#docs#troubleshooting" data-tags="troubleshooting missing file blank plots gatekeeper performance" class="doclink">
+                Troubleshooting
+                <small>Precise fixes for common problems</small>
+              </a>
+            </div>
+          </div>
+        </aside>
+
+        <article class="panel">
+          <div class="panel-inner" id="docContent">
+            <div class="kicker">Documentation</div>
+            <h1 style="margin-bottom:10px">RINet Documentation</h1>
+            <p class="lede" style="max-width: 96ch">
+              This documentation is written for a professional workflow: explicit assumptions, reproducible runs, and export artifacts that support review. RINet’s
+              outputs are residue-indexed profiles that are intentionally easy to compare across variants and easy to attach to internal reports with the context required
+              to reproduce the exact result.
+            </p>
+
+            <section id="overview">
+              <h2>Overview</h2>
+              <p>
+                RINet models long-range coupling by representing a protein as a residue interaction network. Each residue is a node. Structural contacts become edges under
+                an explicit contact rule. A perturbation is represented as an initial residue-indexed state. The state evolves under a deterministic operator derived from
+                the graph, producing a coupling profile that can be plotted, compared, and exported.
+              </p>
+              <p>
+                The value proposition is speed with interpretability. RINet is not a substitute for molecular dynamics. It is a structured approximation that lets teams
+                ask exploratory questions quickly, preserve assumptions, and iterate toward experiments or deeper simulation.
+              </p>
+            </section>
+
+            <section id="install">
+              <h2>Installation</h2>
+              <p>
+                The macOS desktop app is distributed as a DMG. The download button on the product page points to
+                <code class="inline">downloads/RINet-Desktop-macOS-v1.0.dmg</code>. Ensure the DMG is present at that path within your hosted site. For local testing,
+                serve the folder with a web server; do not rely on opening the HTML file directly from disk.
+              </p>
+              <pre><code># Local hosting for correct download behavior
+cd /path/to/site
+python3 -m http.server 8000
+# open http://localhost:8000</code></pre>
+              <p>
+                If macOS blocks the app, Gatekeeper behavior depends on signing state. For internal distribution you should sign and notarize releases. During development,
+                right-click → Open can be used for first launch on some systems.
+              </p>
+            </section>
+
+            <section id="quickstart">
+              <h2>Quickstart workflow</h2>
+              <p>
+                A standard analysis run consists of four steps. First, load a structure file and confirm residues are parsed with stable identifiers. Second, configure
+                graph construction: contact mode, distance cutoff, chain selection, and weight mode. Third, run an inference mode, typically forward propagation from a
+                seed residue or region, then optionally scan, inverse attribution, or mediator discovery depending on the question. Fourth, export a report folder that
+                contains the result vector, plot image, and metadata capturing the settings used to generate the result.
+              </p>
+              <p>
+                The report folder is the primary artifact: it is what you attach to internal notes, share with collaborators, or use to reproduce results months later.
+                A plot without metadata is difficult to defend; a plot with explicit graph settings and operator parameters is reviewable.
+              </p>
+            </section>
+
+            <section id="graph">
+              <h2>Graph construction</h2>
+              <p>
+                Graph construction is the central scientific assumption. In Cα mode, residues are connected when Cα distance is below a cutoff. In heavy-atom mode, a
+                contact can be defined by the existence of any heavy atom pair across residues within the cutoff. Heavy-atom graphs tend to be denser and emphasize
+                packing; Cα graphs tend to be simpler and often better for coarse comparative workflows. Weighting can be binary or distance-based, but any weight rule
+                must be recorded because it changes propagation behavior.
+              </p>
+              <div class="note">
+                <p>
+                  When comparing variants, treat graph construction parameters as experimental conditions. If cutoff or contact mode changes between runs, you may be
+                  comparing two different graphs rather than two different proteins.
+                </p>
+              </div>
+            </section>
+
+            <section id="models">
+              <h2>Propagation model</h2>
+              <p>
+                The default operator is diffusion-like dynamics on a graph Laplacian. Let <code class="inline">x</code> be a residue-indexed state and let
+                <code class="inline">L</code> be the Laplacian derived from the adjacency. A common update is
+                <code class="inline">x_{t+1} = x_t + dt · (−L x_t)</code>. The step size and number of steps determine whether the profile remains localized or becomes
+                overly smooth. Because graphs differ in density across proteins, parameter sweeps under controlled conditions are recommended when generating conclusions.
+              </p>
+            </section>
+
+            <section id="inference">
+              <h2>Inference suite</h2>
+              <p>
+                Forward propagation produces a coupling profile for a specified seed residue or region. Scan inference runs forward propagation across candidate seeds and
+                aggregates influence-as-seed into a global score. Inverse attribution proposes plausible upstream sources for a downstream effect under an explicit inverse
+                model. Mediator discovery highlights residues that behave like bridges in influence routes, even when they are not maximal endpoints.
+              </p>
+            </section>
+
+            <section id="reports">
+              <h2>Reports and outputs</h2>
+              <p>
+                RINet exports residue-indexed vectors to CSV and renders the same values as a profile plot for rapid review. A professional export should also include a
+                metadata JSON capturing structure identifiers, graph construction parameters, and operator settings. If you support serialized graph bundles, include them
+                in the export so exact adjacency can be reloaded without reconstruction.
+              </p>
+            </section>
+
+            <section id="data">
+              <h2>Data handling</h2>
+              <p>
+                RINet is designed so core inference can run locally without uploading structures to external services. This posture supports teams working with proprietary
+                structures or unpublished variants. In enterprise environments, the default expectation is that scientific tools are explicit about data flows. If you add
+                collaboration or cloud features later, those should be opt-in and documented as explicit transmission and storage pathways.
+              </p>
+            </section>
+
+            <section id="troubleshooting">
+              <h2>Troubleshooting</h2>
+              <p>
+                If the download reports missing file, confirm the DMG exists at <code class="inline">downloads/RINet-Desktop-macOS-v1.0.dmg</code> relative to the site
+                root and confirm you are serving the folder. If the GUI shows blank plots, confirm a graph has been created or imported and that residues exist for the
+                selected contact mode.
+              </p>
+            </section>
+
+            <div class="footer">
+              © RINet — Documentation. Return to Overview to download the macOS installer.
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function(){
+      const ROUTES = ["home", "docs"];
+      const pages = Array.from(document.querySelectorAll(".page"));
+      const navLinks = Array.from(document.querySelectorAll("[data-route]"));
+      const docSearch = document.getElementById("docSearch");
+      const docLinksWrap = document.getElementById("docLinks");
+      const docLinks = docLinksWrap ? Array.from(docLinksWrap.querySelectorAll("a.doclink")) : [];
+
+      function parseRoute(){
+        const hash = (window.location.hash || "#home").replace(/^#/, "");
+        const parts = hash.split("#").filter(Boolean);
+        const route = parts[0] || "home";
+        const sub = parts[1] || "";
+        return {route, sub};
+      }
+
+      function showRoute(route){
+        for(const p of pages){
+          p.classList.toggle("active", p.getAttribute("data-page") === route);
+        }
+        for(const a of navLinks){
+          const r = a.getAttribute("data-route");
+          const href = a.getAttribute("href") || "";
+          const isRouteLink = href.startsWith("#" + route);
+          a.classList.toggle("active", r === route && isRouteLink);
+        }
+        document.title = (route === "docs")
+          ? "RINet — Documentation"
+          : "RINet — Residue Interaction Network Inference Toolkit";
+      }
+
+      function scrollToSub(route, sub){
+        if(!sub) return;
+        const el = document.getElementById(sub);
+        if(el) el.scrollIntoView({behavior:"smooth", block:"start"});
+      }
+
+      function activateDocNav(){
+        const {route, sub} = parseRoute();
+        if(route !== "docs") return;
+        const target = sub ? "#docs#" + sub : "#docs#overview";
+        for(const a of docLinks){
+          a.classList.toggle("active", a.getAttribute("href") === target);
+        }
+      }
+
+      function bindDocsSearch(){
+        if(!docSearch || !docLinks.length) return;
+        const norm = s => (s || "").toLowerCase().trim();
+        docSearch.addEventListener("input", ()=>{
+          const q = norm(docSearch.value);
+          for(const a of docLinks){
+            const tags = norm(a.getAttribute("data-tags"));
+            const text = norm(a.textContent);
+            const show = !q || tags.includes(q) || text.includes(q);
+            a.style.display = show ? "" : "none";
+          }
+        });
+      }
+
+      window.addEventListener("hashchange", ()=>{
+        const {route, sub} = parseRoute();
+        const safe = ROUTES.includes(route) ? route : "home";
+        showRoute(safe);
+        activateDocNav();
+        setTimeout(()=> scrollToSub(safe, sub), 0);
+      });
+
+      (function init(){
+        bindDocsSearch();
+        const {route, sub} = parseRoute();
+        const safe = ROUTES.includes(route) ? route : "home";
+        showRoute(safe);
+        if(safe === "docs" && !sub){
+          window.location.hash = "#docs#overview";
+          return;
+        }
+        activateDocNav();
+        setTimeout(()=> scrollToSub(safe, sub), 0);
+      })();
+    })();
+  </script>
+</body>
+</html>
