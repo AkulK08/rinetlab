@@ -617,6 +617,10 @@
               <div class="download-box" id="download">
                 <h2>RINet Desktop — macOS installer (DMG)</h2>
                 <p>
+                  The RINet desktop application is currently available for macOS only.
+                  Linux and Windows users should use the command-line interface via pip.
+                </p>
+                <p>
                   Download the desktop app for an interactive workflow: load a structure, construct a contact graph, run inference modes, inspect residue profiles,
                   and export a report folder containing CSVs, plots, and run metadata.
                 </p>
@@ -657,9 +661,13 @@ shasum -a 256 RINet-Desktop-macOS-v1.0.dmg</code></pre>
               <div class="download-box" style="margin-top:14px" id="pip">
                 <h2>RINet CLI + Python API — pip installation</h2>
                 <p>
+                Naming note: <code class="inline">rinet</code> is the PyPI package name and CLI command,
+                while <code class="inline">allograph</code> is the internal Python module used for imports.
+                </p>     
+                <p>
                   For batch runs, parameter sweeps, and integration into pipelines, install the RINet command line interface and Python API with pip.
-                  This path works on macOS, Linux, and Windows. After installation, the CLI is available as <code class="inline">rinet</code>.
-                  If your installation includes the GUI launcher, it can be started with <code class="inline">rinet-gui</code>.
+                  This path works on macOS, Linux, and Windows. After installation, the command-line interface is available as <code class="inline">rinet</code>.
+                  The Python API can be accessed via <code class="inline">import allograph</code>. The desktop GUI is distributed separately as a macOS application.
                 </p>
 
                 <pre><code># macOS / Linux
@@ -834,8 +842,8 @@ rinet --help</code></pre>
 
               <h3 style="margin-top:16px; font-size: 16px; font-weight: 900; letter-spacing: -.2px; color: rgba(14,22,38,.90);">Python package (CLI + API)</h3>
               <p>
-                The pip install pathway is recommended for batch workflows, compute environments, and cross-platform installs. After installation, the CLI is available
-                as <code class="inline">rinet</code>. If your distribution includes the GUI launcher, it can be started with <code class="inline">rinet-gui</code>.
+                The pip install pathway is recommended for batch workflows, compute environments, and cross-platform installs. After installation, the Python API is available via <code class="inline">import allograph</code>, 
+                and the command-line interface is available as <code class="inline">rinet</code>. The desktop GUI is distributed separately as a macOS application.
               </p>
 
               <pre><code># macOS / Linux
@@ -954,9 +962,7 @@ rinet inverse --pdb path/to/structure.pdb --cutoff 8.0 --out rinet_inverse.csv</
             <section id="troubleshooting">
               <h2>Troubleshooting</h2>
               <p>
-                If the macOS app will not open, check your macOS security prompt and ensure the DMG was fully downloaded. If the CLI command is not found after pip
-                installation, confirm the environment is activated and run <code class="inline">python -m pip -V</code> to verify pip is pointing to the expected
-                environment. If a run produces a flat profile, confirm your graph construction settings generate a nontrivial contact graph and that the seed residue
+                If the macOS app will not open, check your macOS security prompt and ensure the DMG was fully downloaded. If the CLI command is not found after pip installation, ensure that your virtual environment is activated and that <code class="inline">python -m pip</code> refers to the same Python installation used to run <code class="inline">rinet</code>. If a run produces a flat profile, confirm your graph construction settings generate a nontrivial contact graph and that the seed residue
                 index is valid for the structure.
               </p>
             </section>
