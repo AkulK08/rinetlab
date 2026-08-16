@@ -18,6 +18,7 @@ function displayInstitutionCount(value) {
   const nextValue = String(Math.max(institutionBaseline, Number(value) || 0));
   document.querySelectorAll("[data-institution-count]").forEach(node => {
     if (node.textContent !== nextValue) node.textContent = nextValue;
+    node.classList.add("is-ready");
   });
 }
 

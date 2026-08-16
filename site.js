@@ -2,10 +2,15 @@ const film = document.getElementById("heroFilm");
 const filmToggle = document.getElementById("filmToggle");
 const copyCommand = document.getElementById("copyCommand");
 const installCommand = document.getElementById("installCommand");
-const demoDownloadAssetName = "rinet-structure-brief-demo.txt";
 const downloadBaseline = 1863;
 const downloadMetricsUrl = "/metrics/downloads.json";
 const feedbackDialog = document.getElementById("feedbackDialog");
+
+function displayDownloadCount(value) {
+  const display = document.getElementById("downloadCount");
+  display.textContent = Math.max(downloadBaseline, Number(value) || 0).toLocaleString();
+  display.classList.add("is-ready");
+}
 
 document.getElementById("year").textContent = new Date().getFullYear();
 const mobileHero = window.matchMedia("(max-width: 600px)");
@@ -56,7 +61,6 @@ if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
 }
 
 async function loadDownloadCount() {
-  const display = document.getElementById("downloadCount");
   try {
     const response = await fetch(`${downloadMetricsUrl}?v=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) throw new Error("metrics feed unavailable");
@@ -64,35 +68,10 @@ async function loadDownloadCount() {
     let total = Number(metrics.website_total);
     if (!Number.isFinite(total) || total < downloadBaseline) throw new Error("outdated metrics feed");
 
-    try {
-      const liveResponse = await fetch("https://api.github.com/repos/AkulK08/rinetlab/releases/tags/v1.2.0-build012", { headers: { Accept: "application/vnd.github+json" } });
-      if (liveResponse.ok) {
-        const release = await liveResponse.json();
-        const liveDemo = release.assets?.find(asset => asset.name === demoDownloadAssetName);
-        const liveZip = release.assets?.find(asset => asset.name.endsWith(".zip"));
-        const trackedDemo = metrics.instant_demo || {};
-        const trackedZip = metrics.installer_and_zip || {};
-
-        if (liveDemo) {
-          total += liveDemo.id === trackedDemo.asset_id
-            ? Math.max(0, Number(liveDemo.download_count) - Number(trackedDemo.raw_download_count || 0))
-            : Number(liveDemo.download_count || 0);
-        }
-        if (liveZip) {
-          total += liveZip.id === trackedZip.asset_id
-            ? Math.max(0, Number(liveZip.download_count) - Number(trackedZip.raw_download_count || 0))
-            : Number(liveZip.download_count || 0);
-        }
-      }
-    } catch (_) {
-      // The durable snapshot still provides the correct last recorded total.
-    }
-
-    display.textContent = Math.max(downloadBaseline, total).toLocaleString();
+    displayDownloadCount(total);
   } catch (_) {
-    display.textContent = downloadBaseline.toLocaleString();
+    displayDownloadCount(downloadBaseline);
   }
 }
 
 loadDownloadCount();
-window.setInterval(loadDownloadCount, 90_000);
