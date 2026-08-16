@@ -1,0 +1,122 @@
+name: Update download metrics
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: download-metrics
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Collect release downloads
+        id: collect
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          release="$(curl -fsSL \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            -H 'User-Agent: rinet-download-metrics' \
+            'https://api.github.com/repos/AkulK08/rinetlab/releases/tags/v1.2.0-build012')"
+
+          zip_asset="$(jq -c '[.assets[] | select(.name | endswith(".zip"))] | first' <<<"$release")"
+          demo_asset="$(jq -c '[.assets[] | select(.name == "rinet-structure-brief-demo.txt")] | first' <<<"$release")"
+
+          if [[ "$zip_asset" == "null" || "$demo_asset" == "null" ]]; then
+            echo "Expected release assets were not found." >&2
+            exit 1
+          fi
+
+          old_zip_id="$(jq -r '.installer_and_zip.asset_id // 0' metrics/downloads.json)"
+          old_zip_raw="$(jq -r '.installer_and_zip.raw_download_count // 0' metrics/downloads.json)"
+          old_zip_lifetime="$(jq -r '.installer_and_zip.lifetime_since_tracking // 0' metrics/downloads.json)"
+          old_demo_id="$(jq -r '.instant_demo.asset_id // 0' metrics/downloads.json)"
+          old_demo_raw="$(jq -r '.instant_demo.raw_download_count // 0' metrics/downloads.json)"
+          old_demo_lifetime="$(jq -r '.instant_demo.lifetime_since_tracking // 0' metrics/downloads.json)"
+          baseline="$(jq -r '.historical_baseline // 5500' metrics/downloads.json)"
+
+          zip_id="$(jq -r '.id' <<<"$zip_asset")"
+          zip_name="$(jq -r '.name' <<<"$zip_asset")"
+          zip_raw="$(jq -r '.download_count' <<<"$zip_asset")"
+          demo_id="$(jq -r '.id' <<<"$demo_asset")"
+          demo_name="$(jq -r '.name' <<<"$demo_asset")"
+          demo_raw="$(jq -r '.download_count' <<<"$demo_asset")"
+
+          if [[ "$zip_id" == "$old_zip_id" ]]; then
+            zip_delta=$((zip_raw - old_zip_raw))
+            (( zip_delta < 0 )) && zip_delta=0
+          else
+            zip_delta="$zip_raw"
+          fi
+
+          if [[ "$demo_id" == "$old_demo_id" ]]; then
+            demo_delta=$((demo_raw - old_demo_raw))
+            (( demo_delta < 0 )) && demo_delta=0
+          else
+            demo_delta="$demo_raw"
+          fi
+
+          zip_lifetime=$((old_zip_lifetime + zip_delta))
+          demo_lifetime=$((old_demo_lifetime + demo_delta))
+          website_total=$((baseline + zip_lifetime + demo_lifetime))
+
+          if [[ "$zip_id" == "$old_zip_id" && "$zip_raw" == "$old_zip_raw" && \
+                "$demo_id" == "$old_demo_id" && "$demo_raw" == "$old_demo_raw" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          jq -n \
+            --arg updated_at "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            --arg zip_name "$zip_name" \
+            --arg demo_name "$demo_name" \
+            --argjson baseline "$baseline" \
+            --argjson zip_id "$zip_id" \
+            --argjson zip_raw "$zip_raw" \
+            --argjson zip_lifetime "$zip_lifetime" \
+            --argjson demo_id "$demo_id" \
+            --argjson demo_raw "$demo_raw" \
+            --argjson demo_lifetime "$demo_lifetime" \
+            --argjson website_total "$website_total" \
+            '{
+              schema_version: 1,
+              updated_at: $updated_at,
+              source_repository: "AkulK08/rinetlab",
+              source_release: "v1.2.0-build012",
+              historical_baseline: $baseline,
+              installer_and_zip: {
+                asset_id: $zip_id,
+                asset_name: $zip_name,
+                raw_download_count: $zip_raw,
+                lifetime_since_tracking: $zip_lifetime
+              },
+              instant_demo: {
+                asset_id: $demo_id,
+                asset_name: $demo_name,
+                raw_download_count: $demo_raw,
+                lifetime_since_tracking: $demo_lifetime
+              },
+              website_total: $website_total
+            }' > metrics/downloads.json
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Publish updated metrics
+        if: steps.collect.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- metrics/downloads.json
+          git commit -m "Update download metrics"
+          git push

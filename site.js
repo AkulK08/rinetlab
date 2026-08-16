@@ -4,6 +4,7 @@ const copyCommand = document.getElementById("copyCommand");
 const installCommand = document.getElementById("installCommand");
 const demoDownloadAssetName = "rinet-structure-brief-demo.txt";
 const downloadBaseline = 5500;
+const downloadMetricsUrl = "https://raw.githubusercontent.com/AkulK08/rinetlab/main/metrics/downloads.json";
 
 document.getElementById("year").textContent = new Date().getFullYear();
 film.defaultPlaybackRate = 0.4;
@@ -49,14 +50,24 @@ if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
 async function loadDownloadCount() {
   const display = document.getElementById("downloadCount");
   try {
-    const response = await fetch("https://api.github.com/repos/AkulK08/rinetlab/releases/tags/v1.2.0-build012", { headers: { Accept: "application/vnd.github+json" } });
-    if (!response.ok) throw new Error("download count unavailable");
-    const release = await response.json();
-    const demoAsset = release.assets?.find(asset => asset.name === demoDownloadAssetName);
-    const total = downloadBaseline + Number(demoAsset?.download_count || 0);
+    const response = await fetch(`${downloadMetricsUrl}?v=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error("metrics feed unavailable");
+    const metrics = await response.json();
+    const total = Number(metrics.website_total);
+    if (!Number.isFinite(total)) throw new Error("invalid metrics feed");
     display.textContent = `${total.toLocaleString()}+`;
   } catch (_) {
-    display.textContent = `${downloadBaseline.toLocaleString()}+`;
+    try {
+      const response = await fetch("https://api.github.com/repos/AkulK08/rinetlab/releases/tags/v1.2.0-build012", { headers: { Accept: "application/vnd.github+json" } });
+      if (!response.ok) throw new Error("download count unavailable");
+      const release = await response.json();
+      const demoAsset = release.assets?.find(asset => asset.name === demoDownloadAssetName);
+      const zipAsset = release.assets?.find(asset => asset.name.endsWith(".zip"));
+      const total = downloadBaseline + Number(demoAsset?.download_count || 0) + Number(zipAsset?.download_count || 0);
+      display.textContent = `${total.toLocaleString()}+`;
+    } catch (_) {
+      display.textContent = `${downloadBaseline.toLocaleString()}+`;
+    }
   }
 }
 
