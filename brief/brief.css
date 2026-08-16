@@ -309,7 +309,7 @@ body.demo-mode.analysis-mode .demo-skip-status.active { display: grid; animation
 .discovery-radar { border-top: 1px solid #31483c; background: radial-gradient(circle at 73% 16%, rgba(102,215,255,.07), transparent 26%), radial-gradient(circle at 18% 78%, rgba(185,140,255,.06), transparent 26%), #070c09; }
 .discovery-head { display: grid; grid-template-columns: 1fr minmax(300px, .8fr); gap: 8vw; align-items: end; padding: 54px 34px 42px; }
 .discovery-head .eyebrow { color: #66d7ff; }
-.discovery-head h4 { max-width: 800px; margin: 16px 0 0; color: #edf3ef; font-size: clamp(40px, 5.2vw, 76px); line-height: .93; font-weight: 530; letter-spacing: -.06em; }
+.discovery-head h4 { max-width: 800px; margin: 16px 0 0; color: #edf3ef; font-size: clamp(40px, 5.2vw, 76px); line-height: .93; font-weight: 450; letter-spacing: -.06em; }
 .discovery-head > p { margin: 0; color: #91a299; font-size: 13px; line-height: 1.7; }
 .discovery-modes { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid #2b3d33; border-bottom: 1px solid #2b3d33; }
 .discovery-modes button { min-height: 74px; display: flex; align-items: center; gap: 14px; border: 0; border-right: 1px solid #2b3d33; padding: 0 22px; background: rgba(8,15,11,.72); color: #7f9087; font: 8px var(--mono); letter-spacing: .12em; cursor: pointer; }
@@ -343,7 +343,7 @@ body.demo-mode.analysis-mode .demo-skip-status.active { display: grid; animation
 .experiment-blueprint { border-top: 1px solid #2e4037; }
 .blueprint-head { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 8vw; padding: 40px 34px 30px; background: #0a130e; }
 .blueprint-head > span { grid-column: 1/-1; color: var(--acid); font: 8px var(--mono); letter-spacing: .11em; }
-.blueprint-head h4 { margin: 0; font-size: clamp(34px, 4.2vw, 62px); line-height: .95; font-weight: 530; letter-spacing: -.055em; }
+.blueprint-head h4 { margin: 0; font-size: clamp(34px, 4.2vw, 62px); line-height: .95; font-weight: 450; letter-spacing: -.055em; }
 .blueprint-head p { align-self: end; margin: 0; color: #8d9b93; font-size: 13px; line-height: 1.65; }
 .blueprint-grid { display: grid; grid-template-columns: repeat(2, 1fr); border-top: 1px solid #2e4037; }
 .blueprint-grid > article { min-height: 430px; padding: 30px 32px; border-right: 1px solid #2e4037; border-bottom: 1px solid #2e4037; }
