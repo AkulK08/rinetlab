@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f1f3ef">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/brief/brief.css">
+  <title>Structure Brief — RINet</title>
+  <meta name="description" content="A private, zero-install PDB inventory, contact summary, methods capsule and reproducible research receipt.">
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="/"><span>R/</span>RINet</a>
+    <div class="app-title">Structure Brief <i>1.0</i></div>
+    <div class="privacy"><b></b> Local browser analysis</div>
+  </header>
+
+  <main>
+    <section class="intro">
+      <div>
+        <p class="eyebrow">Zero-install structure utility</p>
+        <h1>Know what is actually<br>in your PDB.</h1>
+      </div>
+      <div class="intro-copy">
+        <p>Generate a coordinate inventory, structural flags, Cα contact summary, methods-ready paragraph and reproducible receipt in under a minute.</p>
+        <p class="boundary">Files are parsed on this device. They are never uploaded to RINet. Fetching a public PDB ID contacts RCSB PDB.</p>
+      </div>
+    </section>
+
+    <section class="input-workbench" aria-labelledby="input-title">
+      <div class="input-number">01</div>
+      <div class="input-main">
+        <h2 id="input-title">Supply coordinates</h2>
+        <div class="source-tabs" role="tablist" aria-label="Coordinate source">
+          <button class="source-tab active" id="fileTab" type="button" role="tab" aria-selected="true">Local file</button>
+          <button class="source-tab" id="idTab" type="button" role="tab" aria-selected="false">PDB ID</button>
+        </div>
+        <div class="source-panel" id="filePanel">
+          <input id="fileInput" type="file" accept=".pdb,.ent,text/plain" hidden>
+          <button class="dropzone" id="dropzone" type="button">
+            <span class="drop-icon">+</span>
+            <strong>Choose or drop a .pdb file</strong>
+            <small>Parsed in this tab · maximum recommended size 25 MB</small>
+          </button>
+        </div>
+        <div class="source-panel hidden" id="idPanel">
+          <form class="id-form" id="pdbForm">
+            <label for="pdbId">RCSB PDB identifier</label>
+            <div><input id="pdbId" name="pdbId" maxlength="4" autocomplete="off" spellcheck="false" placeholder="1CRN" aria-describedby="pdbHint"><button type="submit">Fetch + analyze</button></div>
+            <small id="pdbHint">Public coordinates are requested directly from files.rcsb.org.</small>
+          </form>
+        </div>
+      </div>
+      <button class="demo-button" id="demoButton" type="button">Load 1CRN demo ↗</button>
+    </section>
+
+    <div class="status hidden" id="status" role="status"></div>
+
+    <section class="results hidden" id="results" aria-live="polite">
+      <div class="result-head">
+        <div><p class="eyebrow">Structure inventory</p><h2 id="structureName">—</h2></div>
+        <div class="receipt-id"><span>RECEIPT</span><strong id="receiptId">—</strong></div>
+      </div>
+
+      <div class="metric-strip">
+        <div><span>Polymer residues</span><strong id="residueMetric">—</strong></div>
+        <div><span>Polymer atoms</span><strong id="atomMetric">—</strong></div>
+        <div><span>Chains</span><strong id="chainMetric">—</strong></div>
+        <div><span>Cα contacts</span><strong id="contactMetric">—</strong></div>
+        <div><span>Mean B-factor</span><strong id="bMetric">—</strong></div>
+      </div>
+
+      <div class="analysis-grid">
+        <section class="analysis-section">
+          <div class="section-head"><span>02</span><h3>Coordinate record</h3></div>
+          <table>
+            <thead><tr><th>Chain</th><th>Residues</th><th>Atoms</th><th>Sequence span</th><th>Gaps / breaks</th></tr></thead>
+            <tbody id="chainRows"></tbody>
+          </table>
+          <div class="inventory" id="inventory"></div>
+        </section>
+
+        <section class="analysis-section">
+          <div class="section-head"><span>03</span><h3>Structural flags</h3></div>
+          <div class="flag-list" id="flagList"></div>
+        </section>
+      </div>
+
+      <section class="analysis-section topology">
+        <div class="section-head"><span>04</span><h3>Contact-dense residues</h3><p>Cα ≤ 8.0 Å · adjacent residues excluded</p></div>
+        <div class="topology-grid" id="topologyRows"></div>
+        <p class="scope-note">Contact degree is a geometric descriptor, not proof of functional importance or allosteric causality.</p>
+      </section>
+
+      <section class="methods">
+        <div class="section-head"><span>05</span><h3>Methods capsule</h3><button type="button" id="copyMethods">Copy paragraph</button></div>
+        <p id="methodsText"></p>
+      </section>
+
+      <section class="receipt">
+        <div class="receipt-intro">
+          <p class="eyebrow">Optional public receipt</p>
+          <h2>Used it? Leave one useful line.</h2>
+          <p>This creates a public GitHub issue containing only the summary, your affiliation and feedback—not the structure. It gives you a citable receipt and helps document real academic use.</p>
+          <button class="download-button" id="downloadReceipt" type="button">Download private JSON receipt</button>
+        </div>
+        <form id="receiptForm">
+          <label>Institution / affiliation <input id="affiliation" required maxlength="120" placeholder="e.g. Department of Biology, University of …"></label>
+          <label>Name or lab <span>optional</span><input id="researcher" maxlength="100" placeholder="e.g. Smith Lab"></label>
+          <label>Research area <input id="field" maxlength="100" placeholder="e.g. membrane protein biophysics"></label>
+          <label>One line of feedback <textarea id="feedback" required maxlength="500" rows="3" placeholder="What did you check, and what would make this more useful?"></textarea></label>
+          <label class="consent"><input id="consent" type="checkbox" required> I understand this will open a public GitHub issue for my review before submission.</label>
+          <button class="publish-button" type="submit">Review public receipt on GitHub ↗</button>
+          <p class="form-note">A GitHub account is required only to publish the optional receipt. Analysis and downloads require no account.</p>
+        </form>
+      </section>
+    </section>
+  </main>
+
+  <footer><a href="/">← RINet home</a><span>Structure Brief 1.0 · descriptive coordinate analysis</span></footer>
+  <script src="/brief/brief.js"></script>
+</body>
+</html>

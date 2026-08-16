@@ -3,484 +3,122 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#2d52bd">
+  <meta name="theme-color" content="#050606">
   <link rel="icon" type="image/png" href="/favicon.png">
-  <title>RINet — Protein Research Studio</title>
-  <meta name="description" content="A structure-first local research environment for multi-state comparison, uncertainty-aware domain consensus, allosteric hypothesis robustness, and falsifiable residue prioritization.">
+  <link rel="stylesheet" href="/site.css">
+  <title>RINet — Find the residue worth testing</title>
+  <meta name="description" content="Local protein structure analysis that connects supplied states, uncertainty, residue graphs and falsifiable experiment design.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://rinetlab.com/">
-  <meta property="og:title" content="RINet — Protein Research Studio">
-  <meta property="og:description" content="Move from one predicted fold to a testable, multi-state structural argument.">
-  <meta property="og:image" content="https://rinetlab.com/media/rinet-research-studio-poster.jpg">
+  <meta property="og:title" content="RINet — Find the residue worth testing">
+  <meta property="og:description" content="A supplied structure in. A falsifiable evidence record out.">
+  <meta property="og:image" content="https://rinetlab.com/media/rinet-structural-scan-poster.jpg">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="RINet — Protein Research Studio">
-  <meta name="twitter:description" content="Structure, uncertainty, graph robustness, and falsification in one local evidence record.">
-  <meta name="twitter:image" content="https://rinetlab.com/media/rinet-research-studio-poster.jpg">
-  <style>
-    :root {
-      --paper: #ffffff;
-      --wash: #f5f7fb;
-      --ink: #101828;
-      --muted: #546176;
-      --line: #d9dee8;
-      --blue: #2d52bd;
-      --blue-dark: #173174;
-      --cyan: #63c6e4;
-      --yellow: #ffd84a;
-      --orange: #ef7a45;
-      --green: #2d936c;
-      --sans: "Avenir Next", Avenir, "Helvetica Neue", Helvetica, Arial, sans-serif;
-      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-      --max: 1420px;
-    }
-
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      background: var(--paper);
-      color: var(--ink);
-      font-family: var(--sans);
-      -webkit-font-smoothing: antialiased;
-    }
-    a { color: inherit; }
-    button, a { -webkit-tap-highlight-color: transparent; }
-    section[id] { scroll-margin-top: 92px; }
-    .wrap { width: min(calc(100% - 48px), var(--max)); margin: 0 auto; }
-
-    .site-header {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: rgba(255,255,255,.96);
-      border-bottom: 1px solid var(--line);
-      backdrop-filter: blur(12px);
-    }
-    .header-grid {
-      min-height: 72px;
-      display: grid;
-      grid-template-columns: 330px 1fr auto;
-      align-items: center;
-      gap: 28px;
-    }
-    .wordmark { display: flex; align-items: center; gap: 13px; text-decoration: none; }
-    .wordmark-mark {
-      width: 38px;
-      height: 38px;
-      display: grid;
-      place-items: center;
-      color: #fff;
-      background: var(--blue);
-      font-size: 19px;
-      font-weight: 700;
-    }
-    .wordmark-copy { display: grid; line-height: 1.06; }
-    .wordmark-copy strong { font-size: 20px; letter-spacing: -.4px; }
-    .wordmark-copy span { color: var(--muted); font-size: 11px; letter-spacing: .02em; margin-top: 4px; }
-    .nav { display: flex; justify-content: center; gap: 30px; }
-    .nav a { color: #37445a; font-size: 13px; font-weight: 600; text-decoration: none; }
-    .nav a:hover { color: var(--blue); }
-    .header-status { display: flex; align-items: center; gap: 9px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
-
-    .hero { border-bottom: 1px solid var(--line); }
-    .hero-grid { min-height: 710px; display: grid; grid-template-columns: .83fr 1.17fr; }
-    .hero-copy { padding: 78px 64px 66px 0; display: flex; flex-direction: column; justify-content: center; }
-    .eyebrow { color: var(--blue); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; }
-    h1 {
-      margin: 22px 0 24px;
-      max-width: 760px;
-      font-size: clamp(46px, 5.1vw, 78px);
-      line-height: .99;
-      letter-spacing: -.055em;
-      font-weight: 650;
-    }
-    .lede { max-width: 660px; margin: 0; color: #3e4b61; font-size: 19px; line-height: 1.62; }
-    .hero-actions { margin-top: 34px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .button {
-      min-height: 46px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 19px;
-      border: 1px solid #aeb7c7;
-      background: #fff;
-      color: var(--ink);
-      font-size: 13px;
-      font-weight: 650;
-      text-decoration: none;
-      cursor: pointer;
-    }
-    .button.primary { border-color: var(--blue); background: var(--blue); color: #fff; }
-    .button:hover { border-color: var(--blue); }
-    .button.primary:hover { background: var(--blue-dark); }
-    .micro-proof { margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-    .micro-proof strong { display: block; font-size: 14px; }
-    .micro-proof span { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.45; }
-
-    .hero-visual { background: var(--wash); border-left: 1px solid var(--line); display: flex; flex-direction: column; justify-content: center; padding: 46px 0 46px 46px; overflow: hidden; }
-    .visual-head { padding: 0 32px 16px 0; display: flex; justify-content: space-between; gap: 20px; align-items: end; }
-    .visual-head strong { display: block; font-size: 17px; }
-    .visual-head span { color: var(--muted); font-family: var(--mono); font-size: 10px; }
-    .video-shell { position: relative; border: 1px solid #c8cfdb; background: #fff; box-shadow: 0 28px 60px rgba(28,42,73,.16); }
-    .video-shell video { width: 100%; height: auto; display: block; aspect-ratio: 8/5; object-fit: cover; }
-    .video-tag { position: absolute; top: 14px; left: 14px; padding: 7px 9px; background: rgba(16,24,40,.9); color: #fff; font-family: var(--mono); font-size: 9px; letter-spacing: .08em; }
-    .video-control { position: absolute; right: 14px; bottom: 14px; border: 1px solid rgba(255,255,255,.72); background: rgba(16,24,40,.86); color: #fff; padding: 8px 11px; font: 10px var(--mono); cursor: pointer; }
-    .confidence-rail { margin-top: 16px; padding-right: 32px; display: grid; grid-template-columns: auto repeat(4, minmax(86px, 1fr)); align-items: center; gap: 0; }
-    .confidence-rail .label { padding-right: 16px; color: var(--muted); font: 10px var(--mono); }
-    .confidence-rail span:not(.label) { padding: 9px 10px; color: #172033; font: 9px var(--mono); border-top: 3px solid; background: rgba(255,255,255,.7); }
-    .confidence-rail .c1 { border-color: var(--blue); }
-    .confidence-rail .c2 { border-color: var(--cyan); }
-    .confidence-rail .c3 { border-color: var(--yellow); }
-    .confidence-rail .c4 { border-color: var(--orange); }
-
-    .data-strip { background: var(--blue); color: #fff; }
-    .data-grid { display: grid; grid-template-columns: 1.35fr repeat(4, 1fr); min-height: 112px; }
-    .data-cell { padding: 25px 26px; border-right: 1px solid rgba(255,255,255,.22); display: flex; flex-direction: column; justify-content: center; }
-    .data-cell:last-child { border-right: 0; }
-    .data-cell .k { color: #cbd7ff; font: 9px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
-    .data-cell .v { margin-top: 9px; font-size: 16px; font-weight: 600; line-height: 1.25; }
-
-    .section { padding: 100px 0; }
-    .section-head { display: grid; grid-template-columns: 1fr 1.15fr; gap: 80px; margin-bottom: 52px; }
-    .section-index { color: var(--blue); font: 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
-    h2 { margin: 13px 0 0; font-size: clamp(36px, 4vw, 57px); line-height: 1.02; letter-spacing: -.046em; font-weight: 630; }
-    .section-intro { margin: 22px 0 0; color: #48566c; font-size: 18px; line-height: 1.7; }
-
-    .facility-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
-    .facility { min-height: 430px; padding: 34px 32px 38px; border-right: 1px solid var(--line); display: flex; flex-direction: column; }
-    .facility:last-child { border-right: 0; }
-    .facility-number { color: var(--blue); font: 12px var(--mono); }
-    .facility h3 { margin: 42px 0 16px; font-size: 28px; line-height: 1.1; letter-spacing: -.035em; font-weight: 620; }
-    .facility p { margin: 0; color: #526076; font-size: 15px; line-height: 1.72; }
-    .facility ul { margin: auto 0 0; padding: 28px 0 0; list-style: none; border-top: 1px solid var(--line); }
-    .facility li { position: relative; padding: 6px 0 6px 15px; color: #344258; font: 11px/1.45 var(--mono); }
-    .facility li::before { content: ""; position: absolute; width: 5px; height: 5px; left: 0; top: 11px; background: var(--blue); }
-
-    .ledger { background: #111c36; color: #f6f8ff; padding: 100px 0; overflow: hidden; }
-    .ledger-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 80px; align-items: center; }
-    .ledger .section-index { color: #8aa7ff; }
-    .ledger h2 { max-width: 680px; }
-    .ledger p { color: #b9c5df; font-size: 18px; line-height: 1.72; }
-    .ledger-points { margin-top: 34px; display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #43506c; }
-    .ledger-point { padding: 18px 18px 18px 0; border-bottom: 1px solid #43506c; color: #dbe3f8; font: 11px/1.55 var(--mono); }
-    .ledger-point:nth-child(odd) { border-right: 1px solid #43506c; }
-    .ledger-point:nth-child(even) { padding-left: 18px; }
-    .evidence-figure { position: relative; min-height: 520px; border: 1px solid #43506c; background: #16213c; padding: 24px; }
-    .figure-bar { display: flex; justify-content: space-between; color: #9daccc; font: 9px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
-    .evidence-figure svg { width: 100%; height: 430px; display: block; margin-top: 12px; }
-    .figure-note { position: absolute; right: 24px; bottom: 20px; color: #95a5c4; font: 9px var(--mono); }
-
-    .workflow { background: var(--wash); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    .workflow-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 90px; align-items: start; }
-    .steps { border-top: 1px solid var(--ink); }
-    .step { display: grid; grid-template-columns: 64px 1fr; gap: 14px; padding: 24px 0; border-bottom: 1px solid var(--line); }
-    .step .n { color: var(--blue); font: 11px var(--mono); }
-    .step strong { display: block; font-size: 17px; }
-    .step span { display: block; margin-top: 7px; color: var(--muted); font-size: 13px; line-height: 1.55; }
-
-    .install-card { background: #fff; border: 1px solid var(--line); }
-    .install-card-head { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; border-bottom: 1px solid var(--line); }
-    .install-card-head strong { font-size: 13px; }
-    .copy-button { border: 0; background: transparent; color: var(--blue); font: 10px var(--mono); cursor: pointer; }
-    pre { margin: 0; padding: 26px 24px; overflow-x: auto; background: #101827; color: #eaf0ff; font: 12px/1.85 var(--mono); }
-    .install-meta { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); }
-    .install-meta div { padding: 18px; border-right: 1px solid var(--line); }
-    .install-meta div:last-child { border-right: 0; }
-    .install-meta span { display: block; color: var(--muted); font: 9px var(--mono); text-transform: uppercase; }
-    .install-meta strong { display: block; margin-top: 5px; font-size: 12px; }
-
-    .guardrail-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 80px; }
-    .guardrails { border-top: 1px solid var(--ink); }
-    .guardrail { display: grid; grid-template-columns: 160px 1fr; gap: 30px; padding: 25px 0; border-bottom: 1px solid var(--line); }
-    .guardrail strong { font-size: 13px; }
-    .guardrail p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.65; }
-
-    footer { background: #0d1424; color: #fff; padding: 55px 0 38px; }
-    .footer-grid { display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: start; }
-    .footer-title { font-size: 28px; letter-spacing: -.035em; font-weight: 620; }
-    .footer-sub { margin-top: 9px; color: #9da9bf; font-size: 13px; }
-    .footer-links { display: flex; gap: 24px; }
-    .footer-links a { color: #d8dfef; font-size: 12px; text-decoration: none; }
-    .footer-bottom { margin-top: 50px; padding-top: 20px; border-top: 1px solid #303a50; color: #8793aa; display: flex; justify-content: space-between; gap: 20px; font: 9px var(--mono); }
-
-    @media (max-width: 1080px) {
-      .header-grid { grid-template-columns: 1fr auto; }
-      .nav { display: none; }
-      .hero-grid, .ledger-grid, .workflow-grid { grid-template-columns: 1fr; }
-      .hero-copy { padding-right: 0; }
-      .hero-visual { border-left: 0; border-top: 1px solid var(--line); padding-left: 0; }
-      .visual-head, .confidence-rail { padding-left: 24px; }
-      .video-shell { margin-left: 24px; }
-      .data-grid { grid-template-columns: 1fr 1fr; }
-      .data-cell:first-child { grid-column: 1 / -1; }
-      .facility-grid { grid-template-columns: 1fr; }
-      .facility { min-height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
-      .facility:last-child { border-bottom: 0; }
-      .facility ul { margin-top: 32px; }
-      .section-head, .guardrail-grid { grid-template-columns: 1fr; gap: 24px; }
-    }
-
-    @media (max-width: 680px) {
-      .wrap { width: min(calc(100% - 28px), var(--max)); }
-      .header-grid { min-height: 64px; }
-      .wordmark-copy span, .header-status { display: none; }
-      .hero-grid { min-height: 0; }
-      .hero-copy { padding: 64px 0 48px; }
-      h1 { font-size: 48px; }
-      .lede { font-size: 17px; }
-      .micro-proof { grid-template-columns: 1fr; }
-      .hero-visual { padding-top: 28px; }
-      .video-shell { margin-left: 14px; }
-      .visual-head, .confidence-rail { padding-left: 14px; padding-right: 14px; }
-      .confidence-rail { grid-template-columns: 1fr 1fr; }
-      .confidence-rail .label { grid-column: 1 / -1; padding: 0 0 8px; }
-      .data-grid { grid-template-columns: 1fr; }
-      .data-cell:first-child { grid-column: auto; }
-      .data-cell { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.22); }
-      .section, .ledger { padding: 72px 0; }
-      .ledger-grid { gap: 42px; }
-      .evidence-figure { min-height: 410px; padding: 14px; }
-      .evidence-figure svg { height: 340px; }
-      .ledger-points { grid-template-columns: 1fr; }
-      .ledger-point:nth-child(odd) { border-right: 0; }
-      .ledger-point:nth-child(even) { padding-left: 0; }
-      .install-meta { grid-template-columns: 1fr; }
-      .install-meta div { border-right: 0; border-bottom: 1px solid var(--line); }
-      .guardrail { grid-template-columns: 1fr; gap: 8px; }
-      .footer-grid { grid-template-columns: 1fr; }
-      .footer-bottom { flex-direction: column; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      html { scroll-behavior: auto; }
-    }
-  </style>
+  <meta name="twitter:title" content="RINet — Find the residue worth testing">
+  <meta name="twitter:description" content="Local protein structure analysis. No account. No structure upload.">
+  <meta name="twitter:image" content="https://rinetlab.com/media/rinet-structural-scan-poster.jpg">
 </head>
 <body>
-  <header class="site-header">
-    <div class="wrap header-grid">
-      <a class="wordmark" href="#top" aria-label="RINet home">
-        <span class="wordmark-mark">R</span>
-        <span class="wordmark-copy"><strong>RINet</strong><span>Protein Research Studio</span></span>
-      </a>
-      <nav class="nav" aria-label="Primary navigation">
-        <a href="#facilities">Facilities</a>
-        <a href="#evidence">Evidence ledger</a>
-        <a href="#workflow">Workflow</a>
-        <a href="#install">Install</a>
-      </nav>
-      <div class="header-status"><span class="status-dot"></span>Build 011 · local</div>
-    </div>
+  <header class="nav-shell">
+    <a class="brand" href="#top" aria-label="RINet home"><span class="brand-mark">R/</span><span>RINet</span></a>
+    <nav aria-label="Primary navigation">
+      <a href="#product">Product</a>
+      <a href="#install">Install</a>
+      <a href="/brief/">Structure Brief</a>
+    </nav>
+    <a class="nav-cta" href="/brief/">Analyze a PDB <span>↗</span></a>
   </header>
 
   <main id="top">
-    <section class="hero">
-      <div class="wrap hero-grid">
-        <div class="hero-copy">
-          <div class="eyebrow">Structure intelligence beyond a single fold</div>
-          <h1>Turn structural uncertainty into a testable argument.</h1>
-          <p class="lede">RINet links supplied conformational states, PAE, graph robustness and matched negative controls in one residue-level research record—then tells you what experiment could prove it wrong.</p>
-          <div class="hero-actions">
-            <a class="button primary" href="https://github.com/AkulK08/rinetlab/releases/download/v1.1.0-build011/RINet_Build_011_Protein_Research_Studio_2026-08-16.zip">Download Build 011</a>
-            <a class="button" href="#install">Launch from Terminal</a>
-          </div>
-          <div class="micro-proof" aria-label="Release facts">
-            <div><strong>3 flagship facilities</strong><span>State, uncertainty and allosteric graph consensus</span></div>
-            <div><strong>69 tests</strong><span>Verified again from the extracted release ZIP</span></div>
-            <div><strong>Local by default</strong><span>No remote account and no structure upload</span></div>
-          </div>
+    <section class="hero" aria-labelledby="hero-title">
+      <video class="hero-film" id="heroFilm" autoplay muted loop playsinline preload="auto" poster="/media/rinet-structural-scan-poster.jpg">
+        <source src="/media/rinet-structural-scan.mp4" type="video/mp4">
+      </video>
+      <div class="hero-shade"></div>
+      <div class="hero-copy">
+        <p class="overline">Protein science, made testable.</p>
+        <h1 id="hero-title">Find the residue<br>worth testing.</h1>
+        <p class="hero-summary">RINet turns supplied protein structures, uncertainty and residue networks into an inspectable argument—and the experiment that could prove it wrong.</p>
+        <div class="hero-links">
+          <a class="button button-light" href="/brief/">Try it on a PDB</a>
+          <a class="text-link" href="#install">Install locally <span>↓</span></a>
         </div>
+      </div>
+      <div class="hero-proof" aria-label="RINet facts">
+        <div><strong>5,500+</strong><span>downloads</span></div>
+        <div><strong>Local</strong><span>by default</span></div>
+        <div><strong>0</strong><span>structures uploaded</span></div>
+      </div>
+      <button class="film-toggle" id="filmToggle" type="button" aria-label="Pause molecular scan">Pause scan</button>
+    </section>
 
-        <div class="hero-visual">
-          <div class="visual-head">
-            <div><strong>One structure. Every linked claim.</strong><span>LIVE PRODUCT CAPTURE · NGL 2.4.0</span></div>
-            <span>SUPPLIED COORDINATES</span>
-          </div>
-          <div class="video-shell">
-            <video id="studioVideo" autoplay muted loop playsinline preload="metadata" poster="media/rinet-research-studio-poster.jpg">
-              <source src="media/rinet-research-studio-3d.mp4" type="video/mp4">
-            </video>
-            <span class="video-tag">BUILD 011 / 3D LINKED VIEW</span>
-            <button class="video-control" id="videoToggle" type="button">PAUSE</button>
-          </div>
-          <div class="confidence-rail" aria-label="Confidence color legend">
-            <span class="label">pLDDT / B</span>
-            <span class="c1">VERY HIGH ≥90</span>
-            <span class="c2">CONFIDENT 70–90</span>
-            <span class="c3">LOW 50–70</span>
-            <span class="c4">VERY LOW &lt;50</span>
-          </div>
-        </div>
+    <section class="statement" id="product">
+      <p class="section-tag">01 / The product</p>
+      <h2>A supplied structure in.<br>A falsifiable evidence record out.</h2>
+      <div class="statement-grid">
+        <p>Most structure tools end at a colored model or a ranked list. RINet keeps going: compare states, challenge domain boundaries, rebuild residue graphs under alternative definitions, and surface the places where the evidence disagrees.</p>
+        <p>Every claim retains its coordinates, assumptions, masks, warnings and matched controls. Static graph evidence stays a hypothesis. A geometric interpolation stays a display—not a molecular-dynamics trajectory.</p>
       </div>
     </section>
 
-    <section class="data-strip" aria-label="Scientific operating envelope">
-      <div class="wrap data-grid">
-        <div class="data-cell"><span class="k">Operating principle</span><span class="v">No hidden magic score. Preserve disagreement.</span></div>
-        <div class="data-cell"><span class="k">State Atlas</span><span class="v">2–32 structures</span></div>
-        <div class="data-cell"><span class="k">Domain Lab</span><span class="v">1–16 PAE/model pairs</span></div>
-        <div class="data-cell"><span class="k">Allostery</span><span class="v">1–16 structures</span></div>
-        <div class="data-cell"><span class="k">Execution</span><span class="v">CPU · local · reproducible</span></div>
+    <section class="capabilities" aria-label="RINet scientific facilities">
+      <article><span>A</span><h3>State Atlas</h3><p>Superposition, pairwise RMSD, contact changes and rigid-community motion across 2–32 supplied states.</p></article>
+      <article><span>B</span><h3>Domain Consensus</h3><p>Multi-scale PAE partitions, co-assignment, stability and explicit abstention when the inputs do not support a clean answer.</p></article>
+      <article><span>C</span><h3>Allosteric Consensus</h3><p>Multiple graph definitions, supplied-state agreement, degree-preserving nulls and matched negative controls.</p></article>
+      <article><span>D</span><h3>Evidence Ledger</h3><p>One residue identity across state, uncertainty and graph evidence—with disagreement kept visible.</p></article>
+    </section>
+
+    <section class="brief-promo" id="brief">
+      <div class="brief-copy">
+        <p class="section-tag">02 / Zero-install utility</p>
+        <h2>Get a structure methods brief in sixty seconds.</h2>
+        <p>Drop a PDB or enter a PDB ID. The browser produces a chain inventory, quality flags, contact summary, methods-ready paragraph and reproducible receipt. Coordinates never go to RINet.</p>
+        <a class="button button-dark" href="/brief/">Open Structure Brief</a>
+      </div>
+      <div class="brief-terminal" aria-label="Example Structure Brief output">
+        <div class="terminal-head"><span>STRUCTURE BRIEF / 1CRN</span><span>LOCAL BROWSER</span></div>
+        <div class="terminal-line"><span>POLYMER</span><strong>46 residues · chain A</strong></div>
+        <div class="terminal-line"><span>COORDINATES</span><strong>327 polymer atoms</strong></div>
+        <div class="terminal-line"><span>CONTACT MODEL</span><strong>Cα ≤ 8.0 Å</strong></div>
+        <div class="terminal-line"><span>OUTPUT</span><strong>Methods capsule + JSON receipt</strong></div>
+        <div class="terminal-status"><i></i> READY · NO ACCOUNT REQUIRED</div>
       </div>
     </section>
 
-    <section class="section" id="facilities">
-      <div class="wrap">
-        <div class="section-head">
-          <div><div class="section-index">01 / Flagship facilities</div><h2>Three laboratories.<br>One structural question.</h2></div>
-          <p class="section-intro">Most tools end at a ranked residue list. RINet asks whether that list survives alternative states, uncertainty partitions, contact definitions and matched controls—and keeps every intermediate claim inspectable.</p>
-        </div>
-        <div class="facility-grid">
-          <article class="facility">
-            <div class="facility-number">A / STATE ATLAS</div>
-            <h3>See which structural differences actually persist.</h3>
-            <p>Map, superpose and compare a supplied state library while retaining missing-residue masks and contact changes. Structural display similarity is explicitly not TM-score or lDDT.</p>
-            <ul><li>PAIRWISE RMSD + CLUSTERING</li><li>CONTACT GAINS AND LOSSES</li><li>RIGID-COMMUNITY MOTION</li><li>2–32 SUPPLIED STATES</li></ul>
-          </article>
-          <article class="facility">
-            <div class="facility-number">B / CONSENSUS DOMAIN LAB</div>
-            <h3>Separate stable domain boundaries from PAE artifacts.</h3>
-            <p>Compute multi-scale partitions for each exact model/PAE pair, then expose co-assignment, ARI stability, interface evidence and abstention instead of forcing a clean answer.</p>
-            <ul><li>FULL PAE DIMENSIONALITY GATE</li><li>MULTI-SCALE SPECTRAL PARTITIONS</li><li>CO-ASSIGNMENT + ARI STABILITY</li><li>EXPLICIT ABSTENTION</li></ul>
-          </article>
-          <article class="facility">
-            <div class="facility-number">C / ALLOSTERIC CONSENSUS</div>
-            <h3>Stress-test a pathway before spending the plate.</h3>
-            <p>Rebuild the graph across radii, atom definitions, confidence weighting and supplied states. Compare multiple centralities with degree-preserving nulls and matched negative controls.</p>
-            <ul><li>CA + HEAVY-ATOM GRAPH FAMILIES</li><li>FIVE CENTRALITY DEFINITIONS</li><li>DEGREE-PRESERVING NULLS</li><li>FALSIFYING EXPERIMENTS</li></ul>
-          </article>
-        </div>
+    <section class="ledger" id="ledger">
+      <div>
+        <p class="section-tag">03 / Public research receipts</p>
+        <h2>Usage you can verify,<br>not a vanity counter.</h2>
+      </div>
+      <div class="ledger-copy">
+        <p>After using Structure Brief, a researcher can optionally attach an affiliation and one line of feedback to a public, structure-free receipt. The ledger exposes the count and institutions directly from GitHub.</p>
+        <div class="receipt-count"><strong id="receiptCount">—</strong><span>public research receipts</span></div>
+        <p class="institutions" id="institutionList">The first verified institutions will appear here.</p>
+        <a class="text-link" href="https://github.com/AkulK08/rinetlab-studio/issues?q=is%3Aissue+label%3Aresearch-use" target="_blank" rel="noreferrer">Inspect the public ledger <span>↗</span></a>
       </div>
     </section>
 
-    <section class="ledger" id="evidence">
-      <div class="wrap ledger-grid">
-        <div>
-          <div class="section-index">02 / Integrated evidence ledger</div>
-          <h2>Find the residues where the facilities disagree.</h2>
-          <p>Agreement is useful. Disagreement is often more valuable. The ledger aligns residue-level state motion, uncertainty and graph evidence without collapsing them into an opaque combined score.</p>
-          <div class="ledger-points">
-            <div class="ledger-point">TRIANGULATED CANDIDATES<br>supported across independent evidence types</div>
-            <div class="ledger-point">SURPRISE FLAGS<br>high state motion, weak graph signal—or the reverse</div>
-            <div class="ledger-point">MATCHED CONTROLS<br>distance, burial and graph-degree comparators</div>
-            <div class="ledger-point">FALSIFICATION PORTFOLIO<br>an explicit result that would weaken each claim</div>
-          </div>
-        </div>
-        <figure class="evidence-figure" aria-label="Illustrative cross-facility evidence scatterplot">
-          <div class="figure-bar"><span>STATE EVIDENCE PERCENTILE</span><span>N = 72 RESIDUES</span></div>
-          <svg viewBox="0 0 620 430" role="img" aria-label="Residues distributed across state and graph evidence axes">
-            <g stroke="#34435f" stroke-width="1">
-              <line x1="58" y1="35" x2="58" y2="370"/><line x1="58" y1="370" x2="590" y2="370"/>
-              <line x1="58" y1="286" x2="590" y2="286"/><line x1="58" y1="202" x2="590" y2="202"/><line x1="58" y1="118" x2="590" y2="118"/>
-              <line x1="191" y1="35" x2="191" y2="370"/><line x1="324" y1="35" x2="324" y2="370"/><line x1="457" y1="35" x2="457" y2="370"/>
-            </g>
-            <g fill="#7282a5" opacity=".8">
-              <circle cx="91" cy="339" r="5"/><circle cx="114" cy="315" r="4"/><circle cx="135" cy="342" r="4"/><circle cx="151" cy="283" r="5"/>
-              <circle cx="179" cy="303" r="4"/><circle cx="206" cy="266" r="5"/><circle cx="228" cy="314" r="4"/><circle cx="252" cy="248" r="4"/>
-              <circle cx="278" cy="286" r="5"/><circle cx="303" cy="227" r="4"/><circle cx="338" cy="248" r="5"/><circle cx="365" cy="208" r="4"/>
-              <circle cx="387" cy="239" r="4"/><circle cx="409" cy="164" r="5"/><circle cx="438" cy="197" r="4"/><circle cx="475" cy="149" r="5"/>
-              <circle cx="501" cy="179" r="4"/><circle cx="532" cy="128" r="5"/><circle cx="556" cy="96" r="4"/>
-            </g>
-            <g fill="#ffd84a" stroke="#111c36" stroke-width="3"><circle cx="493" cy="76" r="10"/><circle cx="541" cy="58" r="10"/><circle cx="565" cy="116" r="10"/></g>
-            <g fill="#ef7a45" stroke="#111c36" stroke-width="3"><circle cx="120" cy="85" r="9"/><circle cx="185" cy="111" r="9"/><circle cx="525" cy="325" r="9"/></g>
-            <g fill="#9daccc" font-family="SFMono-Regular, monospace" font-size="10"><text x="44" y="392">0</text><text x="313" y="392">50</text><text x="570" y="392">100</text><text transform="translate(18 310) rotate(-90)">GRAPH ROBUSTNESS PERCENTILE</text></g>
-            <g fill="#fff" font-family="SFMono-Regular, monospace" font-size="10"><text x="461" y="51">TRIANGULATED</text><text x="78" y="62">SURPRISE</text><text x="490" y="352">DISAGREEMENT</text></g>
-          </svg>
-          <figcaption class="figure-note">ILLUSTRATIVE VIEW · EACH POINT REMAINS INSPECTABLE</figcaption>
-        </figure>
+    <section class="install" id="install">
+      <p class="section-tag">04 / Local application</p>
+      <h2>One command.<br>Your structures stay yours.</h2>
+      <p class="install-note">macOS · Python 3.11–3.13 · loopback-only browser GUI</p>
+      <div class="command-bar">
+        <code id="installCommand">curl -fsSL https://rinetlab.com/install.sh | bash &amp;&amp; ~/.local/bin/rinet gui</code>
+        <button type="button" id="copyCommand">Copy</button>
       </div>
-    </section>
-
-    <section class="section workflow" id="workflow">
-      <div class="wrap workflow-grid">
-        <div>
-          <div class="section-index">03 / Research workflow</div>
-          <h2>From coordinate files to the next decisive experiment.</h2>
-          <p class="section-intro">Every result is stored with assumptions, provenance, masks, warnings and exports. You can return to the argument without reconstructing it from screenshots.</p>
-        </div>
-        <div class="steps">
-          <div class="step"><div class="n">01</div><div><strong>Supply the evidence</strong><span>Structures, exact PAE/model pairs and optional annotations remain local.</span></div></div>
-          <div class="step"><div class="n">02</div><div><strong>Run the flagship suite</strong><span>State, domain and graph facilities execute in a bounded persistent job queue.</span></div></div>
-          <div class="step"><div class="n">03</div><div><strong>Inspect linked residue claims</strong><span>3D, sequence, PAE, contact maps and evidence ledger share one selection.</span></div></div>
-          <div class="step"><div class="n">04</div><div><strong>Export a falsifiable record</strong><span>JSON, long-form CSV, standalone HTML and checksummed .rinetproj bundles.</span></div></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="install">
-      <div class="wrap">
-        <div class="section-head">
-          <div><div class="section-index">04 / Build 011 release</div><h2>Launch the GUI from Terminal.</h2></div>
-          <p class="section-intro">Build 011 deliberately avoids a downloaded macOS app bundle. The installer creates a local command, preserves existing data and opens the loopback-only GUI from <code>rinet gui</code>.</p>
-        </div>
-        <div class="install-card">
-          <div class="install-card-head"><strong>macOS · after extracting the ZIP</strong><button class="copy-button" id="copyInstall" type="button">COPY COMMANDS</button></div>
-          <pre id="installCode"><code>cd "$HOME/Downloads/RINet_Build_011_Protein_Research_Studio"
-chmod +x INSTALL_BUILD_011.sh
-bash INSTALL_BUILD_011.sh
-
-export PATH="$HOME/.local/bin:$PATH"
-rinet gui</code></pre>
-          <div class="install-meta"><div><span>Python</span><strong>3.11–3.13</strong></div><div><span>Runtime</span><strong>127.0.0.1 only</strong></div><div><span>Version</span><strong>1.1.0-build011</strong></div></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="scope">
-      <div class="wrap guardrail-grid">
-        <div><div class="section-index">05 / Scientific scope</div><h2>Useful because it refuses to pretend.</h2></div>
-        <div class="guardrails">
-          <div class="guardrail"><strong>Not AlphaFold inference</strong><p>RINet analyzes supplied structures and uncertainty data. It does not predict a fold from sequence or reproduce AlphaFold neural inference.</p></div>
-          <div class="guardrail"><strong>Not causal proof</strong><p>Allosteric consensus is hypothesis-generating network evidence. A robust graph signal still requires experimental validation.</p></div>
-          <div class="guardrail"><strong>Not a trajectory</strong><p>Interpolated structural views are mathematical display aids, not molecular dynamics or a claim about physical kinetics.</p></div>
-          <div class="guardrail"><strong>Not one score</strong><p>State, uncertainty and graph evidence remain separately inspectable so disagreement cannot be hidden by aggregation.</p></div>
-        </div>
+      <div class="install-links">
+        <a href="https://github.com/AkulK08/rinetlab/releases/tag/v1.1.0-build011">Release notes ↗</a>
+        <a href="https://github.com/AkulK08/rinetlab/releases/download/v1.1.0-build011/RINet_Build_011_Protein_Research_Studio_2026-08-16.zip">Download ZIP ↗</a>
+        <a href="https://github.com/AkulK08/rinetlab-studio">Source ↗</a>
       </div>
     </section>
   </main>
 
   <footer>
-    <div class="wrap">
-      <div class="footer-grid">
-        <div><div class="footer-title">RINet Protein Research Studio</div><div class="footer-sub">Structure-first. Local. Falsifiable.</div></div>
-        <div class="footer-links"><a href="https://github.com/AkulK08/rinetlab">GitHub</a><a href="#install">Install</a><a href="#scope">Scientific scope</a></div>
-      </div>
-      <div class="footer-bottom"><span>© <span id="year"></span> RINet · BUILD 011</span><span>SUPPLIED COORDINATES · EXPLICIT ASSUMPTIONS · PRESERVED PROVENANCE</span></div>
-    </div>
+    <a class="brand" href="#top"><span class="brand-mark">R/</span><span>RINet</span></a>
+    <p>Structure-first. Local. Falsifiable.</p>
+    <p>© <span id="year"></span> RINet</p>
   </footer>
-
-  <script>
-    const video = document.getElementById("studioVideo");
-    const videoToggle = document.getElementById("videoToggle");
-    const copyInstall = document.getElementById("copyInstall");
-    const installCode = document.getElementById("installCode");
-    document.getElementById("year").textContent = new Date().getFullYear();
-
-    videoToggle.addEventListener("click", async () => {
-      if (video.paused) {
-        await video.play();
-        videoToggle.textContent = "PAUSE";
-      } else {
-        video.pause();
-        videoToggle.textContent = "PLAY";
-      }
-    });
-
-    copyInstall.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(installCode.innerText);
-        copyInstall.textContent = "COPIED";
-        setTimeout(() => { copyInstall.textContent = "COPY COMMANDS"; }, 1600);
-      } catch (_) {
-        copyInstall.textContent = "SELECT + COPY";
-      }
-    });
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      video.pause();
-      videoToggle.textContent = "PLAY";
-    }
-  </script>
+  <script src="/site.js"></script>
 </body>
 </html>
