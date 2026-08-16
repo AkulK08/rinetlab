@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-08-16T09:32:07Z",
+  "updated_at": "2026-08-16T09:49:08Z",
   "source_repository": "AkulK08/rinetlab",
   "source_release": "v1.2.0-build012",
   "historical_baseline": 1658,
   "installer_and_zip": {
-    "asset_id": 516633187,
+    "asset_id": 516666058,
     "asset_name": "RINet_Build_012_Research_Utility_Studio_2026-08-16.zip",
     "raw_download_count": 0,
     "lifetime_since_tracking": 0
@@ -13,8 +13,8 @@
   "instant_demo": {
     "asset_id": 516553413,
     "asset_name": "rinet-structure-brief-demo.txt",
-    "raw_download_count": 11,
-    "lifetime_since_tracking": 11
+    "raw_download_count": 13,
+    "lifetime_since_tracking": 13
   },
-  "website_total": 1669
+  "website_total": 1671
 }
