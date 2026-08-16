@@ -4,7 +4,7 @@ const copyCommand = document.getElementById("copyCommand");
 const installCommand = document.getElementById("installCommand");
 const demoDownloadAssetName = "rinet-structure-brief-demo.txt";
 const downloadBaseline = 1863;
-const downloadMetricsUrl = "https://raw.githubusercontent.com/AkulK08/rinetlab/main/metrics/downloads.json";
+const downloadMetricsUrl = "/metrics/downloads.json";
 const feedbackDialog = document.getElementById("feedbackDialog");
 
 document.getElementById("year").textContent = new Date().getFullYear();
