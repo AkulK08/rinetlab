@@ -246,6 +246,11 @@ body.analysis-mode main { width: 100%; }
 .receipt-id strong { color: #cbd5cf; }
 .result-actions > button { border: 1px solid #4b5b52; padding: 10px 12px; background: #111812; color: #c9d3cd; font: 8px var(--mono); text-transform: uppercase; cursor: pointer; }
 .result-actions > button:hover { border-color: var(--acid); color: var(--acid); }
+.result-scroll-banner { width: min(390px, calc(100vw - 28px)); min-height: 66px; display: grid; grid-template-columns: 72px 1fr 30px; align-items: center; gap: 14px; margin: 14px auto; padding: 10px 16px; border: 1px solid rgba(201,251,60,.6); color: #d6e0da; background: linear-gradient(115deg, rgba(201,251,60,.14), rgba(6,9,7,.96) 52%); box-shadow: 0 12px 42px rgba(0,0,0,.35), inset 3px 0 0 #c9fb3c; font: 8px/1.5 var(--mono); letter-spacing: .09em; text-decoration: none; text-transform: uppercase; }
+.result-scroll-banner b { align-self: stretch; display: flex; align-items: center; border-right: 1px solid rgba(201,251,60,.3); color: #c9fb3c; font: 9px var(--mono); letter-spacing: .16em; }
+.result-scroll-banner span { max-width: 225px; }
+.result-scroll-banner i { width: 11px; height: 11px; display: block; border-right: 1px solid #c9fb3c; border-bottom: 1px solid #c9fb3c; transform: rotate(45deg); }
+.result-scroll-banner:hover { border-color: var(--acid); color: #efffc1; }
 .molecule-workbench { min-height: min(720px, calc(100svh - 82px)); grid-template-columns: minmax(0, 1.52fr) minmax(320px, .48fr); border-bottom-color: #344139; }
 .molecule-stage-wrap { background: radial-gradient(circle at 50% 44%, #10241b 0, #09110d 48%, #050706 100%); }
 #moleculeStage { background: transparent; }

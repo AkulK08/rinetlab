@@ -841,11 +841,11 @@ document.getElementById("viewerSpin").addEventListener("click", event => {
   event.currentTarget.textContent = molecular.spinning ? "Pause" : "Spin";
 });
 document.getElementById("newAnalysis").addEventListener("click", () => { window.location.href = "/brief/"; });
-document.getElementById("resultScrollCue")?.addEventListener("click", event => {
+document.querySelectorAll("[data-scroll-guidance]").forEach(control => control.addEventListener("click", event => {
   event.preventDefault();
   document.getElementById("resultScrollCue")?.classList.add("dismissed");
   document.getElementById("decisionBrief")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
-});
+}));
 function updateResultScrollCue() {
   const cue = document.getElementById("resultScrollCue");
   const decisionBrief = document.getElementById("decisionBrief");

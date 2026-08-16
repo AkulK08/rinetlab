@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#050806">
   <link rel="icon" type="image/png" href="/favicon.png?v=2">
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=2">
-  <link rel="stylesheet" href="/brief/brief.css?v=9">
+  <link rel="stylesheet" href="/brief/brief.css?v=10">
   <title>Structure Brief | RINet</title>
   <meta name="description" content="Interrogate a protein structure and turn its strongest structural signals into a falsifiable experiment plan.">
   <meta property="og:type" content="website">
@@ -81,6 +81,8 @@
         <div class="result-actions"><div class="receipt-id"><span>REPRODUCIBLE RECEIPT</span><strong id="receiptId">Pending</strong></div><button type="button" id="newAnalysis">Analyze another structure</button></div>
       </div>
 
+      <a class="result-scroll-banner" data-scroll-guidance href="#decisionBrief" aria-label="Scroll to biological guidance and experiment plan"><b>SCROLL</b><span>Biological guidance, research programs and experiment plan</span><i></i></a>
+
       <section class="molecule-workbench" aria-label="Interactive structure surface">
         <div class="molecule-stage-wrap">
           <div class="molecule-toolbar">
@@ -107,7 +109,7 @@
         </aside>
       </section>
 
-      <a class="result-scroll-cue" id="resultScrollCue" href="#decisionBrief" aria-label="Scroll to biological guidance and experiment plan"><span>View biological guidance</span><i></i></a>
+      <a class="result-scroll-cue" id="resultScrollCue" data-scroll-guidance href="#decisionBrief" aria-label="Scroll to biological guidance and experiment plan"><span>View biological guidance</span><i></i></a>
 
       <div class="analysis-status" id="analysisStatus" role="status">Analysis ready · coordinates remained on this device.</div>
 
@@ -232,6 +234,6 @@
 
   <footer><a href="/">← RINet home</a><span>Structure Intelligence 2.1 · local coordinate analysis</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
-  <script src="/brief/brief.js?v=8"></script>
+  <script src="/brief/brief.js?v=9"></script>
 </body>
 </html>
