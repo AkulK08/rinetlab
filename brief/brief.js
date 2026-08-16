@@ -926,7 +926,7 @@ document.getElementById("resultScrollCue")?.addEventListener("click", event => {
   if (document.body.classList.contains("demo-mode")) advanceDemoTour();
   else document.getElementById("decisionBrief")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
 });
-document.getElementById("demoSkipStatus")?.addEventListener("click", advanceDemoTour);
+document.getElementById("demoSkipStatus")?.addEventListener("click", stopDemoTour);
 function updateResultScrollCue() {
   const cue = document.getElementById("resultScrollCue");
   if (!cue || !document.body.classList.contains("analysis-mode")) return;
