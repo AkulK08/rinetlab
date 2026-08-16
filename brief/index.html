@@ -71,6 +71,22 @@
         <div><span>Mean B-factor</span><strong id="bMetric">—</strong></div>
       </div>
 
+      <section class="molecule-workbench" aria-label="Interactive structure surface">
+        <div class="molecule-stage-wrap">
+          <div class="molecule-toolbar">
+            <div><span>INTERACTIVE STRUCTURE</span><strong id="viewerLabel">Supplied coordinates</strong></div>
+            <div class="viewer-controls"><button type="button" class="active" data-representation="surface">Surface</button><button type="button" data-representation="cartoon">Cartoon</button><button type="button" id="viewerSpin">Pause</button><button type="button" id="viewerFit">Fit</button></div>
+          </div>
+          <div id="moleculeStage" aria-label="Rotatable molecular structure"></div>
+          <div class="viewer-boundary">SUPPLIED COORDINATES · STATIC STRUCTURE · NOT A TRAJECTORY</div>
+        </div>
+        <aside class="best-residues">
+          <div><p class="eyebrow">Contact topology</p><h3>Best residues to inspect first.</h3><p>Ranked by descriptive Cα contact degree. Click a residue to locate it on the surface.</p></div>
+          <div id="bestResidueRows"></div>
+          <p class="best-boundary">“Best” means contact-dense in this coordinate model—not biologically validated.</p>
+        </aside>
+      </section>
+
       <div class="analysis-grid">
         <section class="analysis-section">
           <div class="section-head"><span>02</span><h3>Coordinate record</h3></div>
@@ -119,6 +135,7 @@
   </main>
 
   <footer><a href="/">← RINet home</a><span>Structure Brief 1.0 · descriptive coordinate analysis</span></footer>
+  <script src="/brief/vendor/ngl-2.4.0.js"></script>
   <script src="/brief/brief.js"></script>
 </body>
 </html>

@@ -4,6 +4,7 @@ const copyCommand = document.getElementById("copyCommand");
 const installCommand = document.getElementById("installCommand");
 
 document.getElementById("year").textContent = new Date().getFullYear();
+film.playbackRate = 0.7;
 
 filmToggle.addEventListener("click", async () => {
   if (film.paused) {

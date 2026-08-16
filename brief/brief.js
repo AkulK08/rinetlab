@@ -8,6 +8,7 @@ const els = {
 };
 
 let current = null;
+const molecular = { stage: null, component: null, representation: "surface", spinning: true, highlight: null };
 const waterNames = new Set(["HOH", "WAT", "DOD"]);
 const metalElements = new Set(["LI", "NA", "MG", "AL", "K", "CA", "MN", "FE", "CO", "NI", "CU", "ZN", "SR", "MO", "CD", "CS", "BA", "HG"]);
 
@@ -123,7 +124,7 @@ function parsePdb(text) {
   const bValues = polymerAtoms.map(a => a.b).filter(Number.isFinite);
   const lowOccupancy = polymerAtoms.filter(a => Number.isFinite(a.occupancy) && a.occupancy < .999).length;
   const missingCa = residues.filter(r => !r.ca).length;
-  const topResidues = residues.map(r => ({ label: `${r.name} ${r.chain}:${r.seq}${r.insertion}`, degree: degree.get(r.key) })).sort((a,b) => b.degree - a.degree || a.label.localeCompare(b.label)).slice(0, 5);
+  const topResidues = residues.map(r => ({ label: `${r.name} ${r.chain}:${r.seq}${r.insertion}`, name: r.name, chain: r.chain, seq: r.seq, insertion: r.insertion, degree: degree.get(r.key) })).sort((a,b) => b.degree - a.degree || a.label.localeCompare(b.label)).slice(0, 5);
   return {
     residues: residues.length, polymerAtoms: polymerAtoms.length, chainReports, contacts, alternateCount, lowOccupancy, missingCa,
     waters: waters.length, hetero: [...hetero.values()].map(group => `${group.name} ${group.chain}:${group.seq}`), metals: metals.map(group => `${group.name} ${group.chain}:${group.seq}`),
@@ -143,7 +144,7 @@ async function analyze(text, sourceName, sourceType) {
     const report = parsePdb(text);
     const digest = await sha256(text);
     const receiptId = `RNB-${digest.slice(0, 12).toUpperCase()}`;
-    current = { sourceName, sourceType, digest, receiptId, report, analyzedAt: new Date().toISOString() };
+    current = { sourceName, sourceType, digest, receiptId, report, rawText: text, analyzedAt: new Date().toISOString() };
     render(current);
     setStatus(`Complete. ${sourceName} was parsed locally; no coordinates were sent to RINet.`);
   } catch (error) {
@@ -171,11 +172,69 @@ function render(data) {
   ];
   document.getElementById("flagList").innerHTML = flags.map(flag => `<div class="flag ${flag.warn ? "warn" : ""}"><i></i><div><strong>${esc(flag.title)}</strong><span>${esc(flag.note)}</span></div></div>`).join("");
   document.getElementById("topologyRows").innerHTML = r.topResidues.map((residue, i) => `<div class="topology-row"><strong>${String(i+1).padStart(2,"0")} / ${esc(residue.label)}</strong><span>CONTACT DEGREE ${residue.degree}</span></div>`).join("");
+  document.getElementById("bestResidueRows").innerHTML = r.topResidues.map((residue, i) => `<button class="best-residue-row" type="button" data-residue-index="${i}"><span>${String(i+1).padStart(2,"0")}</span><strong>${esc(residue.label)}</strong><small>DEG ${residue.degree}</small></button>`).join("");
   const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Brief 1.0 (receipt ${data.receiptId}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} chain${r.chainReports.length === 1 ? "" : "s"}. A descriptive residue-contact graph was constructed between Cα atoms separated by no more than 8.0 Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. Coordinate-record screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} sequence gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}); they were not assumed to represent prediction confidence. Contact degree and flags are geometric descriptors and were not interpreted as causal or functional proof.`;
   document.getElementById("methodsText").textContent = methods;
   els.results.classList.remove("hidden");
+  renderMolecule(data.rawText, data.sourceName, r.topResidues);
   els.results.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
 }
+
+function setMolecularRepresentation(type) {
+  molecular.representation = type;
+  if (!molecular.component) return;
+  molecular.component.removeAllRepresentations();
+  if (type === "surface") {
+    molecular.component.addRepresentation("surface", { sele: "protein", surfaceType: "av", probeRadius: 1.4, scaleFactor: 2.0, colorScheme: "residueindex", opacity: .9, roughness: .35 });
+    molecular.component.addRepresentation("cartoon", { sele: "protein", color: "#baf6e8", opacity: .28, quality: "high" });
+  } else {
+    molecular.component.addRepresentation("cartoon", { sele: "protein", colorScheme: "residueindex", quality: "high", aspectRatio: 5.0 });
+    molecular.component.addRepresentation("ball+stick", { sele: "not protein and not water", colorScheme: "element" });
+  }
+  document.querySelectorAll("[data-representation]").forEach(button => button.classList.toggle("active", button.dataset.representation === type));
+}
+
+async function renderMolecule(text, label, topResidues) {
+  if (!window.NGL) return;
+  if (!molecular.stage) {
+    molecular.stage = new NGL.Stage("moleculeStage", { backgroundColor: "#080b09", cameraType: "perspective", quality: "high", sampleLevel: 1 });
+    molecular.stage.setParameters({ backgroundColor: "#080b09", fogNear: 50, fogFar: 100, lightIntensity: 1.1, ambientIntensity: .42 });
+    window.addEventListener("resize", () => molecular.stage.handleResize());
+  }
+  molecular.stage.removeAllComponents(); molecular.component = null; molecular.highlight = null;
+  document.getElementById("viewerLabel").textContent = label;
+  const blob = new Blob([text], { type: "text/plain" });
+  Object.defineProperty(blob, "name", { value: label });
+  try {
+    molecular.component = await molecular.stage.loadFile(blob, { ext: label.toLowerCase().endsWith(".cif") || label.toLowerCase().endsWith(".mmcif") ? "cif" : "pdb", defaultRepresentation: false });
+    setMolecularRepresentation(molecular.representation);
+    molecular.component.autoView(500);
+    molecular.stage.setSpin([0, 1, .08], .0022);
+    molecular.spinning = true;
+    document.getElementById("viewerSpin").textContent = "Pause";
+    document.querySelectorAll(".best-residue-row").forEach(button => button.addEventListener("click", () => highlightResidue(topResidues[Number(button.dataset.residueIndex)], button)));
+  } catch (error) {
+    document.getElementById("viewerLabel").textContent = `Viewer unavailable: ${error.message}`;
+  }
+}
+
+function highlightResidue(residue, button) {
+  if (!molecular.component || !residue) return;
+  if (molecular.highlight) molecular.component.removeRepresentation(molecular.highlight);
+  const selection = `${residue.seq}${residue.insertion || ""}${residue.chain === "∅" ? "" : `:${residue.chain}`}`;
+  molecular.highlight = molecular.component.addRepresentation("ball+stick", { sele: selection, color: "#d9ff58", scale: 1.45, quality: "high" });
+  molecular.component.autoView(selection, 450);
+  document.querySelectorAll(".best-residue-row").forEach(row => row.classList.toggle("active", row === button));
+}
+
+document.querySelectorAll("[data-representation]").forEach(button => button.addEventListener("click", () => setMolecularRepresentation(button.dataset.representation)));
+document.getElementById("viewerFit").addEventListener("click", () => molecular.component?.autoView(450));
+document.getElementById("viewerSpin").addEventListener("click", event => {
+  if (!molecular.stage) return;
+  molecular.spinning = !molecular.spinning;
+  molecular.stage.setSpin(molecular.spinning ? [0, 1, .08] : false, .0022);
+  event.currentTarget.textContent = molecular.spinning ? "Pause" : "Spin";
+});
 
 document.getElementById("copyMethods").addEventListener("click", async e => {
   try { await navigator.clipboard.writeText(document.getElementById("methodsText").textContent); e.currentTarget.textContent = "Copied"; setTimeout(() => e.currentTarget.textContent = "Copy paragraph", 1500); }
