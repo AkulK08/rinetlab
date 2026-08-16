@@ -1,1002 +1,486 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2d52bd">
   <link rel="icon" type="image/png" href="/favicon.png">
-
-  <title>RINet — Residue Interaction Network Inference Toolkit</title>
-  <meta name="description" content="RINet is a structure-first toolkit for interpretable allostery inference from protein structures. Desktop app + CLI with deterministic graph dynamics, exports, and audit-friendly reporting." />
-
-  <!-- Link preview (Open Graph) -->
+  <title>RINet — Protein Research Studio</title>
+  <meta name="description" content="A structure-first local research environment for multi-state comparison, uncertainty-aware domain consensus, allosteric hypothesis robustness, and falsifiable residue prioritization.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://rinetlab.com/">
-  <meta property="og:title" content="RINet — Residue Interaction Network Inference Toolkit">
-  <meta property="og:description" content="Deterministic, interpretable allostery inference from protein structure. Desktop app + CLI with exportable reports.">
-  <meta property="og:image" content="https://rinetlab.com/logo_.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-
-  <!-- Twitter / X -->
+  <meta property="og:title" content="RINet — Protein Research Studio">
+  <meta property="og:description" content="Move from one predicted fold to a testable, multi-state structural argument.">
+  <meta property="og:image" content="https://rinetlab.com/media/rinet-research-studio-poster.jpg">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="RINet — Residue Interaction Network Inference Toolkit">
-  <meta name="twitter:description" content="Deterministic, interpretable allostery inference from protein structure. Desktop app + CLI with exportable reports.">
-  <meta name="twitter:image" content="https://rinetlab.com/logo_.png">
-
+  <meta name="twitter:title" content="RINet — Protein Research Studio">
+  <meta name="twitter:description" content="Structure, uncertainty, graph robustness, and falsification in one local evidence record.">
+  <meta name="twitter:image" content="https://rinetlab.com/media/rinet-research-studio-poster.jpg">
   <style>
-    :root{
-      --paper:#fbfbfc;
-      --paper2:#f3f5f8;
-      --ink:#0e1626;
-      --ink2:#22314a;
-      --muted:#54657f;
-      --line: rgba(14,22,38,.12);
-      --line2: rgba(14,22,38,.08);
-
-      --brand:#2a66f5;
-      --brand2:#0f4dd7;
-      --accent:#0b7a6b;
-      --gold:#b08a2e;
-      --danger:#b42318;
-
-      --shadow: 0 22px 60px rgba(14,22,38,.10);
-      --shadow2: 0 12px 30px rgba(14,22,38,.08);
-
-      --r1: 12px;
-      --r2: 18px;
-      --max: 1160px;
-
-      --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-              "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
-      --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-
-      --h1: clamp(34px, 3.2vw, 52px);
-      --h2: 20px;
-      --h3: 15.5px;
-      --p: 16px;
+    :root {
+      --paper: #ffffff;
+      --wash: #f5f7fb;
+      --ink: #101828;
+      --muted: #546176;
+      --line: #d9dee8;
+      --blue: #2d52bd;
+      --blue-dark: #173174;
+      --cyan: #63c6e4;
+      --yellow: #ffd84a;
+      --orange: #ef7a45;
+      --green: #2d936c;
+      --sans: "Avenir Next", Avenir, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      --max: 1420px;
     }
 
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family: var(--sans);
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
       color: var(--ink);
-      background:
-        radial-gradient(900px 500px at 18% -10%, rgba(42,102,245,.10), transparent 58%),
-        radial-gradient(900px 500px at 88% -10%, rgba(11,122,107,.08), transparent 58%),
-        linear-gradient(180deg, var(--paper), var(--paper2));
-      letter-spacing: .10px;
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
     }
+    a { color: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    section[id] { scroll-margin-top: 92px; }
+    .wrap { width: min(calc(100% - 48px), var(--max)); margin: 0 auto; }
 
-    a{color:inherit; text-decoration:none}
-    a:hover{color: var(--brand2)}
-    section[id]{scroll-margin-top: 110px}
-
-    .container{
-      max-width: var(--max);
-      margin: 0 auto;
-      padding: 0 22px;
-    }
-
-    .topbar{
+    .site-header {
       position: sticky;
       top: 0;
-      z-index: 1000;
-      background: rgba(251,251,252,.78);
-      border-bottom: 1px solid var(--line2);
-      backdrop-filter: blur(14px);
+      z-index: 20;
+      background: rgba(255,255,255,.96);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
     }
-    .topbar-inner{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 14px;
-      padding: 14px 0;
+    .header-grid {
+      min-height: 72px;
+      display: grid;
+      grid-template-columns: 330px 1fr auto;
+      align-items: center;
+      gap: 28px;
     }
-
-    .brand{
-      display:flex;
-      align-items:center;
-      gap: 12px;
-      min-width: 260px;
-    }
-    .mark{
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-      border: 1px solid var(--line);
-      background: linear-gradient(135deg, rgba(42,102,245,.12), rgba(11,122,107,.10));
-      display:grid;
-      place-items:center;
-      overflow:hidden;
-    }
-    .mark img{width:100%;height:100%;object-fit:cover;display:block}
-    .brand-title{
-      display:flex;
-      flex-direction:column;
-      line-height: 1.1;
-    }
-    .brand-title strong{
-      font-weight: 800;
-      font-size: 13px;
-      letter-spacing:.2px;
-      color: var(--ink);
-    }
-    .brand-title span{
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .nav{
-      display:flex;
-      align-items:center;
-      gap: 6px;
-      flex-wrap:wrap;
-    }
-    .nav a{
-      font-size: 13px;
-      color: rgba(14,22,38,.80);
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid transparent;
-    }
-    .nav a:hover{
-      background: rgba(14,22,38,.04);
-      border-color: rgba(14,22,38,.06);
-    }
-    .nav a.active{
-      background: rgba(42,102,245,.08);
-      border-color: rgba(42,102,245,.16);
-      color: var(--ink);
-    }
-
-    .actions{
-      display:flex;
-      gap: 10px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
-
-    .btn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,.66);
-      color: var(--ink);
-      font-weight: 700;
-      font-size: 13px;
-      box-shadow: none;
-    }
-    .btn:hover{
-      border-color: rgba(42,102,245,.26);
-      background: rgba(42,102,245,.06);
-      color: var(--ink);
-    }
-    .btn.primary{
-      border-color: rgba(42,102,245,.40);
-      background: linear-gradient(180deg, rgba(42,102,245,.14), rgba(42,102,245,.08));
-    }
-    .btn.download{
-      padding: 12px 14px;
-      border-radius: 12px;
-      font-weight: 800;
-      border-color: rgba(42,102,245,.42);
-      background: linear-gradient(180deg, rgba(42,102,245,.18), rgba(42,102,245,.10));
-      box-shadow: var(--shadow2);
-      white-space:nowrap;
-    }
-
-    .page{display:none}
-    .page.active{display:block}
-
-    .hero{padding: 52px 0 20px}
-    .hero-grid{
-      display:grid;
-      grid-template-columns: 1.05fr .95fr;
-      gap: 18px;
-      align-items: stretch;
-    }
-    @media (max-width: 980px){
-      .hero-grid{grid-template-columns: 1fr}
-      .nav{display:none}
-      .brand{min-width:auto}
-    }
-
-    .panel{
-      border: 1px solid var(--line2);
-      background: rgba(255,255,255,.72);
-      border-radius: var(--r2);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .panel-inner{padding: 26px 26px}
-
-    .kicker{
-      font-size: 12px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: .38px;
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-    .kicker:before{
-      content:"";
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: var(--brand);
-      box-shadow: 0 0 0 6px rgba(42,102,245,.10);
-    }
-
-    h1{
-      font-family: var(--serif);
-      font-weight: 700;
-      font-size: var(--h1);
-      line-height: 1.05;
-      margin: 0 0 12px;
-      letter-spacing: -0.6px;
-      color: var(--ink);
-    }
-    .lede{
-      font-size: 16.5px;
-      line-height: 1.95;
-      color: rgba(14,22,38,.82);
-      margin: 0 0 18px;
-      max-width: 92ch;
-    }
-
-    .tagrow{
-      display:flex;
-      flex-wrap:wrap;
-      gap: 10px;
-      margin-top: 14px;
-    }
-    .tag{
-      display:inline-flex;
-      align-items:center;
-      gap: 8px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(14,22,38,.10);
-      background: rgba(255,255,255,.55);
-      color: rgba(14,22,38,.78);
-      font-size: 12px;
-      font-weight: 700;
-      white-space:nowrap;
-    }
-    .tag i{
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: rgba(11,122,107,.85);
-      display:inline-block;
-    }
-
-    .split{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 18px;
-    }
-    @media (max-width: 680px){ .split{grid-template-columns:1fr} }
-
-    .mini{
-      border: 1px solid rgba(14,22,38,.10);
-      background: rgba(247,248,250,.80);
-      border-radius: var(--r1);
-      padding: 14px 14px;
-      box-shadow: var(--shadow2);
-    }
-    .mini h3{
-      margin: 0 0 8px;
-      font-size: var(--h3);
-      color: var(--ink);
-      font-weight: 800;
-      letter-spacing: -.1px;
-    }
-    .mini p{
-      margin: 0;
-      color: rgba(14,22,38,.70);
-      line-height: 1.85;
-      font-size: 14.5px;
-    }
-
-    .download-box{
-      border: 1px solid rgba(42,102,245,.22);
-      background: linear-gradient(180deg, rgba(42,102,245,.10), rgba(255,255,255,.76));
-      border-radius: var(--r2);
-      padding: 20px 20px;
-    }
-    .download-box h2{
-      margin: 0 0 10px;
-      font-size: 14px;
-      font-weight: 900;
-      letter-spacing: .2px;
-      color: var(--ink);
-    }
-    .download-box p{
-      margin: 0 0 14px;
-      color: rgba(14,22,38,.74);
-      line-height: 1.85;
-      font-size: 14.5px;
-    }
-    .download-row{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      flex-wrap:wrap;
-      margin-top: 10px;
-    }
-    .subbtn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      padding: 11px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,.70);
-      color: rgba(14,22,38,.86);
-      font-weight: 750;
-      font-size: 13px;
-    }
-    .subbtn:hover{
-      border-color: rgba(14,22,38,.16);
-      background: rgba(14,22,38,.04);
-    }
-
-    .kvgrid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      border-top: 1px solid rgba(14,22,38,.10);
-      padding-top: 12px;
-      margin-top: 14px;
-    }
-    @media (max-width: 520px){ .kvgrid{grid-template-columns:1fr} }
-
-    .kv .k{
-      font-size: 11px;
-      letter-spacing: .34px;
-      text-transform: uppercase;
-      color: rgba(14,22,38,.56);
-      margin-bottom: 4px;
-    }
-    .kv .v{
-      font-size: 13px;
-      font-weight: 900;
-      color: rgba(14,22,38,.86);
-    }
-    .kv code{
-      font-family: var(--mono);
-      font-size: 12px;
-      padding: 2px 6px;
-      border-radius: 8px;
-      border: 1px solid rgba(14,22,38,.12);
-      background: rgba(255,255,255,.70);
-      color: rgba(14,22,38,.80);
-    }
-
-    .section{padding: 26px 0 44px}
-    .section h2{
-      font-family: var(--serif);
-      font-size: 26px;
-      margin: 0 0 10px;
-      letter-spacing: -.2px;
-      color: var(--ink);
+    .wordmark { display: flex; align-items: center; gap: 13px; text-decoration: none; }
+    .wordmark-mark {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--blue);
+      font-size: 19px;
       font-weight: 700;
     }
-    .section p{
-      margin: 10px 0;
-      color: rgba(14,22,38,.82);
-      line-height: 2.02;
-      font-size: var(--p);
-      max-width: 98ch;
-    }
+    .wordmark-copy { display: grid; line-height: 1.06; }
+    .wordmark-copy strong { font-size: 20px; letter-spacing: -.4px; }
+    .wordmark-copy span { color: var(--muted); font-size: 11px; letter-spacing: .02em; margin-top: 4px; }
+    .nav { display: flex; justify-content: center; gap: 30px; }
+    .nav a { color: #37445a; font-size: 13px; font-weight: 600; text-decoration: none; }
+    .nav a:hover { color: var(--blue); }
+    .header-status { display: flex; align-items: center; gap: 9px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
 
-    .note{
-      border-left: 3px solid rgba(42,102,245,.55);
-      background: rgba(255,255,255,.70);
-      border: 1px solid rgba(14,22,38,.10);
-      border-left-width: 3px;
-      border-radius: var(--r1);
-      padding: 14px 14px;
-      margin: 14px 0;
-      box-shadow: var(--shadow2);
+    .hero { border-bottom: 1px solid var(--line); }
+    .hero-grid { min-height: 710px; display: grid; grid-template-columns: .83fr 1.17fr; }
+    .hero-copy { padding: 78px 64px 66px 0; display: flex; flex-direction: column; justify-content: center; }
+    .eyebrow { color: var(--blue); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; }
+    h1 {
+      margin: 22px 0 24px;
+      max-width: 760px;
+      font-size: clamp(46px, 5.1vw, 78px);
+      line-height: .99;
+      letter-spacing: -.055em;
+      font-weight: 650;
     }
-    .note p{
-      margin: 0;
-      color: rgba(14,22,38,.70);
-      line-height: 1.88;
-      font-size: 14.5px;
-    }
-
-    pre{
-      margin: 12px 0;
-      border-radius: var(--r1);
-      border: 1px solid rgba(14,22,38,.10);
-      background: rgba(255,255,255,.72);
-      padding: 14px;
-      overflow:auto;
-      box-shadow: var(--shadow2);
-    }
-    pre code{
-      font-family: var(--mono);
-      font-size: 12px;
-      color: rgba(14,22,38,.86);
-      line-height: 1.65;
-      display:block;
-      white-space: pre;
-    }
-    code.inline{
-      font-family: var(--mono);
-      font-size: 12.5px;
-      padding: 2px 6px;
-      border-radius: 8px;
-      border: 1px solid rgba(14,22,38,.12);
-      background: rgba(255,255,255,.70);
-      color: rgba(14,22,38,.80);
-    }
-
-    .doc-layout{
-      display:grid;
-      grid-template-columns: 330px 1fr;
-      gap: 18px;
-      padding: 28px 0 62px;
-    }
-    @media (max-width: 980px){ .doc-layout{grid-template-columns:1fr} }
-
-    .doc-nav{
-      position: sticky;
-      top: 92px;
-      max-height: calc(100vh - 120px);
-      overflow:auto;
-      padding: 16px;
-    }
-    @media (max-width: 980px){
-      .doc-nav{position:relative; top:auto; max-height:none}
-    }
-
-    .doc-nav h2{
-      margin: 0 0 10px;
+    .lede { max-width: 660px; margin: 0; color: #3e4b61; font-size: 19px; line-height: 1.62; }
+    .hero-actions { margin-top: 34px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .button {
+      min-height: 46px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 19px;
+      border: 1px solid #aeb7c7;
+      background: #fff;
+      color: var(--ink);
       font-size: 13px;
-      font-weight: 900;
-      letter-spacing: .28px;
-      text-transform: uppercase;
-      color: rgba(14,22,38,.70);
+      font-weight: 650;
+      text-decoration: none;
+      cursor: pointer;
     }
-    .search{
-      display:flex;
-      gap: 10px;
-      margin: 10px 0 12px;
-    }
-    .search input{
-      width:100%;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(14,22,38,.12);
-      background: rgba(255,255,255,.70);
-      color: rgba(14,22,38,.90);
-      outline:none;
-      font-size: 13px;
-    }
-    .search input:focus{
-      border-color: rgba(42,102,245,.34);
-      box-shadow: 0 0 0 4px rgba(42,102,245,.10);
+    .button.primary { border-color: var(--blue); background: var(--blue); color: #fff; }
+    .button:hover { border-color: var(--blue); }
+    .button.primary:hover { background: var(--blue-dark); }
+    .micro-proof { margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .micro-proof strong { display: block; font-size: 14px; }
+    .micro-proof span { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.45; }
+
+    .hero-visual { background: var(--wash); border-left: 1px solid var(--line); display: flex; flex-direction: column; justify-content: center; padding: 46px 0 46px 46px; overflow: hidden; }
+    .visual-head { padding: 0 32px 16px 0; display: flex; justify-content: space-between; gap: 20px; align-items: end; }
+    .visual-head strong { display: block; font-size: 17px; }
+    .visual-head span { color: var(--muted); font-family: var(--mono); font-size: 10px; }
+    .video-shell { position: relative; border: 1px solid #c8cfdb; background: #fff; box-shadow: 0 28px 60px rgba(28,42,73,.16); }
+    .video-shell video { width: 100%; height: auto; display: block; aspect-ratio: 8/5; object-fit: cover; }
+    .video-tag { position: absolute; top: 14px; left: 14px; padding: 7px 9px; background: rgba(16,24,40,.9); color: #fff; font-family: var(--mono); font-size: 9px; letter-spacing: .08em; }
+    .video-control { position: absolute; right: 14px; bottom: 14px; border: 1px solid rgba(255,255,255,.72); background: rgba(16,24,40,.86); color: #fff; padding: 8px 11px; font: 10px var(--mono); cursor: pointer; }
+    .confidence-rail { margin-top: 16px; padding-right: 32px; display: grid; grid-template-columns: auto repeat(4, minmax(86px, 1fr)); align-items: center; gap: 0; }
+    .confidence-rail .label { padding-right: 16px; color: var(--muted); font: 10px var(--mono); }
+    .confidence-rail span:not(.label) { padding: 9px 10px; color: #172033; font: 9px var(--mono); border-top: 3px solid; background: rgba(255,255,255,.7); }
+    .confidence-rail .c1 { border-color: var(--blue); }
+    .confidence-rail .c2 { border-color: var(--cyan); }
+    .confidence-rail .c3 { border-color: var(--yellow); }
+    .confidence-rail .c4 { border-color: var(--orange); }
+
+    .data-strip { background: var(--blue); color: #fff; }
+    .data-grid { display: grid; grid-template-columns: 1.35fr repeat(4, 1fr); min-height: 112px; }
+    .data-cell { padding: 25px 26px; border-right: 1px solid rgba(255,255,255,.22); display: flex; flex-direction: column; justify-content: center; }
+    .data-cell:last-child { border-right: 0; }
+    .data-cell .k { color: #cbd7ff; font: 9px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+    .data-cell .v { margin-top: 9px; font-size: 16px; font-weight: 600; line-height: 1.25; }
+
+    .section { padding: 100px 0; }
+    .section-head { display: grid; grid-template-columns: 1fr 1.15fr; gap: 80px; margin-bottom: 52px; }
+    .section-index { color: var(--blue); font: 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+    h2 { margin: 13px 0 0; font-size: clamp(36px, 4vw, 57px); line-height: 1.02; letter-spacing: -.046em; font-weight: 630; }
+    .section-intro { margin: 22px 0 0; color: #48566c; font-size: 18px; line-height: 1.7; }
+
+    .facility-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
+    .facility { min-height: 430px; padding: 34px 32px 38px; border-right: 1px solid var(--line); display: flex; flex-direction: column; }
+    .facility:last-child { border-right: 0; }
+    .facility-number { color: var(--blue); font: 12px var(--mono); }
+    .facility h3 { margin: 42px 0 16px; font-size: 28px; line-height: 1.1; letter-spacing: -.035em; font-weight: 620; }
+    .facility p { margin: 0; color: #526076; font-size: 15px; line-height: 1.72; }
+    .facility ul { margin: auto 0 0; padding: 28px 0 0; list-style: none; border-top: 1px solid var(--line); }
+    .facility li { position: relative; padding: 6px 0 6px 15px; color: #344258; font: 11px/1.45 var(--mono); }
+    .facility li::before { content: ""; position: absolute; width: 5px; height: 5px; left: 0; top: 11px; background: var(--blue); }
+
+    .ledger { background: #111c36; color: #f6f8ff; padding: 100px 0; overflow: hidden; }
+    .ledger-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 80px; align-items: center; }
+    .ledger .section-index { color: #8aa7ff; }
+    .ledger h2 { max-width: 680px; }
+    .ledger p { color: #b9c5df; font-size: 18px; line-height: 1.72; }
+    .ledger-points { margin-top: 34px; display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #43506c; }
+    .ledger-point { padding: 18px 18px 18px 0; border-bottom: 1px solid #43506c; color: #dbe3f8; font: 11px/1.55 var(--mono); }
+    .ledger-point:nth-child(odd) { border-right: 1px solid #43506c; }
+    .ledger-point:nth-child(even) { padding-left: 18px; }
+    .evidence-figure { position: relative; min-height: 520px; border: 1px solid #43506c; background: #16213c; padding: 24px; }
+    .figure-bar { display: flex; justify-content: space-between; color: #9daccc; font: 9px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+    .evidence-figure svg { width: 100%; height: 430px; display: block; margin-top: 12px; }
+    .figure-note { position: absolute; right: 24px; bottom: 20px; color: #95a5c4; font: 9px var(--mono); }
+
+    .workflow { background: var(--wash); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .workflow-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 90px; align-items: start; }
+    .steps { border-top: 1px solid var(--ink); }
+    .step { display: grid; grid-template-columns: 64px 1fr; gap: 14px; padding: 24px 0; border-bottom: 1px solid var(--line); }
+    .step .n { color: var(--blue); font: 11px var(--mono); }
+    .step strong { display: block; font-size: 17px; }
+    .step span { display: block; margin-top: 7px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+
+    .install-card { background: #fff; border: 1px solid var(--line); }
+    .install-card-head { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; border-bottom: 1px solid var(--line); }
+    .install-card-head strong { font-size: 13px; }
+    .copy-button { border: 0; background: transparent; color: var(--blue); font: 10px var(--mono); cursor: pointer; }
+    pre { margin: 0; padding: 26px 24px; overflow-x: auto; background: #101827; color: #eaf0ff; font: 12px/1.85 var(--mono); }
+    .install-meta { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); }
+    .install-meta div { padding: 18px; border-right: 1px solid var(--line); }
+    .install-meta div:last-child { border-right: 0; }
+    .install-meta span { display: block; color: var(--muted); font: 9px var(--mono); text-transform: uppercase; }
+    .install-meta strong { display: block; margin-top: 5px; font-size: 12px; }
+
+    .guardrail-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 80px; }
+    .guardrails { border-top: 1px solid var(--ink); }
+    .guardrail { display: grid; grid-template-columns: 160px 1fr; gap: 30px; padding: 25px 0; border-bottom: 1px solid var(--line); }
+    .guardrail strong { font-size: 13px; }
+    .guardrail p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.65; }
+
+    footer { background: #0d1424; color: #fff; padding: 55px 0 38px; }
+    .footer-grid { display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: start; }
+    .footer-title { font-size: 28px; letter-spacing: -.035em; font-weight: 620; }
+    .footer-sub { margin-top: 9px; color: #9da9bf; font-size: 13px; }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { color: #d8dfef; font-size: 12px; text-decoration: none; }
+    .footer-bottom { margin-top: 50px; padding-top: 20px; border-top: 1px solid #303a50; color: #8793aa; display: flex; justify-content: space-between; gap: 20px; font: 9px var(--mono); }
+
+    @media (max-width: 1080px) {
+      .header-grid { grid-template-columns: 1fr auto; }
+      .nav { display: none; }
+      .hero-grid, .ledger-grid, .workflow-grid { grid-template-columns: 1fr; }
+      .hero-copy { padding-right: 0; }
+      .hero-visual { border-left: 0; border-top: 1px solid var(--line); padding-left: 0; }
+      .visual-head, .confidence-rail { padding-left: 24px; }
+      .video-shell { margin-left: 24px; }
+      .data-grid { grid-template-columns: 1fr 1fr; }
+      .data-cell:first-child { grid-column: 1 / -1; }
+      .facility-grid { grid-template-columns: 1fr; }
+      .facility { min-height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      .facility:last-child { border-bottom: 0; }
+      .facility ul { margin-top: 32px; }
+      .section-head, .guardrail-grid { grid-template-columns: 1fr; gap: 24px; }
     }
 
-    .doc-links a{
-      display:block;
-      padding: 10px 10px;
-      border-radius: 12px;
-      border: 1px solid transparent;
-      color: rgba(14,22,38,.86);
-      font-size: 13px;
-      line-height: 1.25;
-    }
-    .doc-links a:hover{
-      background: rgba(14,22,38,.04);
-      border-color: rgba(14,22,38,.06);
-    }
-    .doc-links a.active{
-      background: rgba(42,102,245,.08);
-      border-color: rgba(42,102,245,.14);
-    }
-    .doc-links a small{
-      display:block;
-      color: rgba(14,22,38,.60);
-      margin-top: 3px;
-      font-size: 12px;
-      line-height:1.35;
+    @media (max-width: 680px) {
+      .wrap { width: min(calc(100% - 28px), var(--max)); }
+      .header-grid { min-height: 64px; }
+      .wordmark-copy span, .header-status { display: none; }
+      .hero-grid { min-height: 0; }
+      .hero-copy { padding: 64px 0 48px; }
+      h1 { font-size: 48px; }
+      .lede { font-size: 17px; }
+      .micro-proof { grid-template-columns: 1fr; }
+      .hero-visual { padding-top: 28px; }
+      .video-shell { margin-left: 14px; }
+      .visual-head, .confidence-rail { padding-left: 14px; padding-right: 14px; }
+      .confidence-rail { grid-template-columns: 1fr 1fr; }
+      .confidence-rail .label { grid-column: 1 / -1; padding: 0 0 8px; }
+      .data-grid { grid-template-columns: 1fr; }
+      .data-cell:first-child { grid-column: auto; }
+      .data-cell { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.22); }
+      .section, .ledger { padding: 72px 0; }
+      .ledger-grid { gap: 42px; }
+      .evidence-figure { min-height: 410px; padding: 14px; }
+      .evidence-figure svg { height: 340px; }
+      .ledger-points { grid-template-columns: 1fr; }
+      .ledger-point:nth-child(odd) { border-right: 0; }
+      .ledger-point:nth-child(even) { padding-left: 0; }
+      .install-meta { grid-template-columns: 1fr; }
+      .install-meta div { border-right: 0; border-bottom: 1px solid var(--line); }
+      .guardrail { grid-template-columns: 1fr; gap: 8px; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .footer-bottom { flex-direction: column; }
     }
 
-    .footer{
-      padding: 30px 0 46px;
-      border-top: 1px solid rgba(14,22,38,.10);
-      color: rgba(14,22,38,.62);
-      font-size: 12px;
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
     }
-
-    .sr{position:absolute;left:-9999px}
   </style>
 </head>
-
 <body>
-  <header class="topbar">
-    <div class="container">
-      <div class="topbar-inner">
-        <div class="brand">
-          <div class="mark" aria-hidden="true" title="RINet">
-            <img src="logo_.png" alt=""
-                 onerror="this.remove(); this.parentElement.textContent='R'; this.parentElement.style.fontWeight='900'; this.parentElement.style.color='#0e1626';" />
-          </div>
-          <div class="brand-title">
-            <strong>RINet</strong>
-            <span>Residue Interaction Network Inference Toolkit</span>
-          </div>
-        </div>
-
-        <nav class="nav" aria-label="Primary">
-          <a href="#home" data-route="home">Overview</a>
-          <a href="#docs" data-route="docs">Documentation</a>
-        </nav>
-
-        <div class="actions">
-          <a class="btn" href="#docs" data-route="docs">Open documentation</a>
-          <a class="btn" href="#docs#install" data-route="docs">Install (pip)</a>
-          <a class="btn download" href="https://github.com/AkulK08/rinetlab/releases/download/v1.0.0/RINet-Desktop-macOS-v1.0.dmg" download>
-            Download for macOS
-          </a>
-        </div>
-      </div>
+  <header class="site-header">
+    <div class="wrap header-grid">
+      <a class="wordmark" href="#top" aria-label="RINet home">
+        <span class="wordmark-mark">R</span>
+        <span class="wordmark-copy"><strong>RINet</strong><span>Protein Research Studio</span></span>
+      </a>
+      <nav class="nav" aria-label="Primary navigation">
+        <a href="#facilities">Facilities</a>
+        <a href="#evidence">Evidence ledger</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#install">Install</a>
+      </nav>
+      <div class="header-status"><span class="status-dot"></span>Build 011 · local</div>
     </div>
   </header>
 
-  <!-- PAGE: HOME -->
-  <main class="page active" data-page="home">
-    <section class="hero" id="home">
-      <div class="container">
-        <div class="hero-grid">
-
-          <div class="panel">
-            <div class="panel-inner">
-              <div class="kicker">Structure-first inference for protein teams</div>
-              <h1>Interpretable allostery signals from protein structure, delivered as reproducible analysis artifacts</h1>
-              <p class="lede">
-                RINet converts a protein structure into a residue interaction network and runs deterministic graph dynamics to generate residue-indexed coupling
-                profiles. It is designed for practical use in exploratory workflows where teams need fast, auditable signals that can be compared across variants
-                and exported in a report-friendly format.
-              </p>
-
-              <div class="tagrow" aria-label="Product pillars">
-                <span class="tag"><i></i> Desktop workflow with report export</span>
-                <span class="tag"><i></i> CLI for pipelines and sweeps</span>
-                <span class="tag"><i></i> Deterministic execution and metadata</span>
-                <span class="tag"><i></i> Forward, scan, inverse, mediators</span>
-              </div>
-
-              <div class="split" aria-label="Positioning">
-                <div class="mini">
-                  <h3>Designed for review</h3>
-                  <p>
-                    RINet emphasizes outputs that survive scrutiny: explicit graph assumptions, explicit operators, deterministic runs, and exports that preserve the
-                    context required to interpret and reproduce results. The goal is not a one-off plot, but a durable artifact your team can cite and revisit.
-                  </p>
-                </div>
-                <div class="mini">
-                  <h3>Fast enough to iterate</h3>
-                  <p>
-                    The model is intentionally lightweight compared to full simulation. That makes it suitable for parameter sensitivity analysis, comparative profiling
-                    across mutants, and early-stage hypothesis prioritization before expensive downstream work.
-                  </p>
-                </div>
-              </div>
-
-              <div class="note" style="margin-top:16px">
-                <p>
-                  RINet is an interpretable, structure-first coupling profiler. It does not attempt to reproduce full atomistic dynamics.
-                  Instead, it provides deterministic approximations that are fast enough for iteration and explicit enough to be compared across variants.
-                </p>
-              </div>
-            </div>
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Structure intelligence beyond a single fold</div>
+          <h1>Turn structural uncertainty into a testable argument.</h1>
+          <p class="lede">RINet links supplied conformational states, PAE, graph robustness and matched negative controls in one residue-level research record—then tells you what experiment could prove it wrong.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="https://github.com/AkulK08/rinetlab/releases/download/v1.1.0-build011/RINet_Build_011_Protein_Research_Studio_2026-08-16.zip">Download Build 011</a>
+            <a class="button" href="#install">Launch from Terminal</a>
           </div>
-
-          <div class="panel">
-            <div class="panel-inner">
-              <!-- pip -->
-              <div class="download-box" style="margin-top:14px" id="pip">
-                <h2>RINet CLI + Python API — pip installation</h2>
-                <p>
-                Naming note: <code class="inline">rinet</code> is the PyPI package name and CLI command,
-                while <code class="inline">allograph</code> is the internal Python module used for imports.
-                </p>     
-                <p>
-                  For batch runs, parameter sweeps, and integration into pipelines, install the RINet command line interface and Python API with pip.
-                  This path works on macOS, Linux, and Windows. After installation, the command-line interface is available as <code class="inline">rinet</code>.
-                  The Python API can be accessed via <code class="inline">import allograph</code>. The desktop GUI is distributed separately as a macOS application.
-                </p>
-
-                <pre><code># macOS / Linux
-python3 -m venv rinet-env
-source rinet-env/bin/activate
-
-python -m pip install -U pip
-python -m pip install rinet
-
-rinet --help</code></pre>
-
-                <pre><code># Windows (PowerShell)
-py -m venv rinet-env
-.\rinet-env\Scripts\Activate.ps1
-
-python -m pip install -U pip
-python -m pip install rinet
-
-rinet --help</code></pre>
-
-                <div class="note">
-                  <p>
-                    If you are in an offline or restricted environment, install from a wheel file instead of PyPI. Download a <code class="inline">.whl</code> release
-                    and install it with <code class="inline">python -m pip install rinet-*.whl</code>. The commands are the same after installation.
-                  </p>
-                </div>
-
-                <div class="download-row">
-                  <a class="subbtn" href="#docs#install">Install details</a>
-                  <a class="subbtn" href="#docs#cli">CLI usage</a>
-                </div>
-              </div>
-
-            </div>
+          <div class="micro-proof" aria-label="Release facts">
+            <div><strong>3 flagship facilities</strong><span>State, uncertainty and allosteric graph consensus</span></div>
+            <div><strong>69 tests</strong><span>Verified again from the extracted release ZIP</span></div>
+            <div><strong>Local by default</strong><span>No remote account and no structure upload</span></div>
           </div>
+        </div>
 
+        <div class="hero-visual">
+          <div class="visual-head">
+            <div><strong>One structure. Every linked claim.</strong><span>LIVE PRODUCT CAPTURE · NGL 2.4.0</span></div>
+            <span>SUPPLIED COORDINATES</span>
+          </div>
+          <div class="video-shell">
+            <video id="studioVideo" autoplay muted loop playsinline preload="metadata" poster="media/rinet-research-studio-poster.jpg">
+              <source src="media/rinet-research-studio-3d.mp4" type="video/mp4">
+            </video>
+            <span class="video-tag">BUILD 011 / 3D LINKED VIEW</span>
+            <button class="video-control" id="videoToggle" type="button">PAUSE</button>
+          </div>
+          <div class="confidence-rail" aria-label="Confidence color legend">
+            <span class="label">pLDDT / B</span>
+            <span class="c1">VERY HIGH ≥90</span>
+            <span class="c2">CONFIDENT 70–90</span>
+            <span class="c3">LOW 50–70</span>
+            <span class="c4">VERY LOW &lt;50</span>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="section" id="capabilities">
-      <div class="container">
-        <h2>Capabilities</h2>
-        <p>
-          RINet is built around residue-indexed outputs that are easy to compare across proteins and variants. The core capability is forward propagation: given a seed
-          residue or region, the tool produces a coupling profile indicating where influence concentrates under an explicit contact graph and operator. On top of that,
-          the toolkit includes scan inference to identify globally influential residues, inverse attribution to propose plausible upstream sources for a downstream effect,
-          and mediator discovery to highlight residues that behave as bridge-like conduits in influence routes.
-        </p>
-        <p>
-          The desktop application organizes these modes into a single workflow: ingest a structure, configure graph construction parameters, run inference, inspect the
-          resulting residue profiles in plots and tables, and export a report folder. The report folder is designed to preserve the context needed to interpret and
-          reproduce results without relying on screenshots or informal notes.
-        </p>
+    <section class="data-strip" aria-label="Scientific operating envelope">
+      <div class="wrap data-grid">
+        <div class="data-cell"><span class="k">Operating principle</span><span class="v">No hidden magic score. Preserve disagreement.</span></div>
+        <div class="data-cell"><span class="k">State Atlas</span><span class="v">2–32 structures</span></div>
+        <div class="data-cell"><span class="k">Domain Lab</span><span class="v">1–16 PAE/model pairs</span></div>
+        <div class="data-cell"><span class="k">Allostery</span><span class="v">1–16 structures</span></div>
+        <div class="data-cell"><span class="k">Execution</span><span class="v">CPU · local · reproducible</span></div>
       </div>
     </section>
 
-    <section class="section" id="deployment">
-      <div class="container">
-        <h2>Data handling and deployment posture</h2>
-        <p>
-          RINet is designed so core inference can be performed locally without transmitting structure files to external services. This is important for teams working with
-          unpublished structures or proprietary variants. The intended deployment model is straightforward: install the desktop application for interactive work, install
-          the CLI for pipeline integration, and store structure files and exported reports in controlled storage.
-        </p>
-        <p>
-          If collaboration or cloud-backed features are added, they will be explicit and opt-in. RINet’s default posture is local execution and export artifacts that
-          remain meaningful outside an interactive session.
-        </p>
+    <section class="section" id="facilities">
+      <div class="wrap">
+        <div class="section-head">
+          <div><div class="section-index">01 / Flagship facilities</div><h2>Three laboratories.<br>One structural question.</h2></div>
+          <p class="section-intro">Most tools end at a ranked residue list. RINet asks whether that list survives alternative states, uncertainty partitions, contact definitions and matched controls—and keeps every intermediate claim inspectable.</p>
+        </div>
+        <div class="facility-grid">
+          <article class="facility">
+            <div class="facility-number">A / STATE ATLAS</div>
+            <h3>See which structural differences actually persist.</h3>
+            <p>Map, superpose and compare a supplied state library while retaining missing-residue masks and contact changes. Structural display similarity is explicitly not TM-score or lDDT.</p>
+            <ul><li>PAIRWISE RMSD + CLUSTERING</li><li>CONTACT GAINS AND LOSSES</li><li>RIGID-COMMUNITY MOTION</li><li>2–32 SUPPLIED STATES</li></ul>
+          </article>
+          <article class="facility">
+            <div class="facility-number">B / CONSENSUS DOMAIN LAB</div>
+            <h3>Separate stable domain boundaries from PAE artifacts.</h3>
+            <p>Compute multi-scale partitions for each exact model/PAE pair, then expose co-assignment, ARI stability, interface evidence and abstention instead of forcing a clean answer.</p>
+            <ul><li>FULL PAE DIMENSIONALITY GATE</li><li>MULTI-SCALE SPECTRAL PARTITIONS</li><li>CO-ASSIGNMENT + ARI STABILITY</li><li>EXPLICIT ABSTENTION</li></ul>
+          </article>
+          <article class="facility">
+            <div class="facility-number">C / ALLOSTERIC CONSENSUS</div>
+            <h3>Stress-test a pathway before spending the plate.</h3>
+            <p>Rebuild the graph across radii, atom definitions, confidence weighting and supplied states. Compare multiple centralities with degree-preserving nulls and matched negative controls.</p>
+            <ul><li>CA + HEAVY-ATOM GRAPH FAMILIES</li><li>FIVE CENTRALITY DEFINITIONS</li><li>DEGREE-PRESERVING NULLS</li><li>FALSIFYING EXPERIMENTS</li></ul>
+          </article>
+        </div>
       </div>
     </section>
 
-    <section class="footer">
-      <div class="container">
-        © RINet — Residue Interaction Network Inference Toolkit. Deterministic, interpretable protein coupling analysis.
+    <section class="ledger" id="evidence">
+      <div class="wrap ledger-grid">
+        <div>
+          <div class="section-index">02 / Integrated evidence ledger</div>
+          <h2>Find the residues where the facilities disagree.</h2>
+          <p>Agreement is useful. Disagreement is often more valuable. The ledger aligns residue-level state motion, uncertainty and graph evidence without collapsing them into an opaque combined score.</p>
+          <div class="ledger-points">
+            <div class="ledger-point">TRIANGULATED CANDIDATES<br>supported across independent evidence types</div>
+            <div class="ledger-point">SURPRISE FLAGS<br>high state motion, weak graph signal—or the reverse</div>
+            <div class="ledger-point">MATCHED CONTROLS<br>distance, burial and graph-degree comparators</div>
+            <div class="ledger-point">FALSIFICATION PORTFOLIO<br>an explicit result that would weaken each claim</div>
+          </div>
+        </div>
+        <figure class="evidence-figure" aria-label="Illustrative cross-facility evidence scatterplot">
+          <div class="figure-bar"><span>STATE EVIDENCE PERCENTILE</span><span>N = 72 RESIDUES</span></div>
+          <svg viewBox="0 0 620 430" role="img" aria-label="Residues distributed across state and graph evidence axes">
+            <g stroke="#34435f" stroke-width="1">
+              <line x1="58" y1="35" x2="58" y2="370"/><line x1="58" y1="370" x2="590" y2="370"/>
+              <line x1="58" y1="286" x2="590" y2="286"/><line x1="58" y1="202" x2="590" y2="202"/><line x1="58" y1="118" x2="590" y2="118"/>
+              <line x1="191" y1="35" x2="191" y2="370"/><line x1="324" y1="35" x2="324" y2="370"/><line x1="457" y1="35" x2="457" y2="370"/>
+            </g>
+            <g fill="#7282a5" opacity=".8">
+              <circle cx="91" cy="339" r="5"/><circle cx="114" cy="315" r="4"/><circle cx="135" cy="342" r="4"/><circle cx="151" cy="283" r="5"/>
+              <circle cx="179" cy="303" r="4"/><circle cx="206" cy="266" r="5"/><circle cx="228" cy="314" r="4"/><circle cx="252" cy="248" r="4"/>
+              <circle cx="278" cy="286" r="5"/><circle cx="303" cy="227" r="4"/><circle cx="338" cy="248" r="5"/><circle cx="365" cy="208" r="4"/>
+              <circle cx="387" cy="239" r="4"/><circle cx="409" cy="164" r="5"/><circle cx="438" cy="197" r="4"/><circle cx="475" cy="149" r="5"/>
+              <circle cx="501" cy="179" r="4"/><circle cx="532" cy="128" r="5"/><circle cx="556" cy="96" r="4"/>
+            </g>
+            <g fill="#ffd84a" stroke="#111c36" stroke-width="3"><circle cx="493" cy="76" r="10"/><circle cx="541" cy="58" r="10"/><circle cx="565" cy="116" r="10"/></g>
+            <g fill="#ef7a45" stroke="#111c36" stroke-width="3"><circle cx="120" cy="85" r="9"/><circle cx="185" cy="111" r="9"/><circle cx="525" cy="325" r="9"/></g>
+            <g fill="#9daccc" font-family="SFMono-Regular, monospace" font-size="10"><text x="44" y="392">0</text><text x="313" y="392">50</text><text x="570" y="392">100</text><text transform="translate(18 310) rotate(-90)">GRAPH ROBUSTNESS PERCENTILE</text></g>
+            <g fill="#fff" font-family="SFMono-Regular, monospace" font-size="10"><text x="461" y="51">TRIANGULATED</text><text x="78" y="62">SURPRISE</text><text x="490" y="352">DISAGREEMENT</text></g>
+          </svg>
+          <figcaption class="figure-note">ILLUSTRATIVE VIEW · EACH POINT REMAINS INSPECTABLE</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section workflow" id="workflow">
+      <div class="wrap workflow-grid">
+        <div>
+          <div class="section-index">03 / Research workflow</div>
+          <h2>From coordinate files to the next decisive experiment.</h2>
+          <p class="section-intro">Every result is stored with assumptions, provenance, masks, warnings and exports. You can return to the argument without reconstructing it from screenshots.</p>
+        </div>
+        <div class="steps">
+          <div class="step"><div class="n">01</div><div><strong>Supply the evidence</strong><span>Structures, exact PAE/model pairs and optional annotations remain local.</span></div></div>
+          <div class="step"><div class="n">02</div><div><strong>Run the flagship suite</strong><span>State, domain and graph facilities execute in a bounded persistent job queue.</span></div></div>
+          <div class="step"><div class="n">03</div><div><strong>Inspect linked residue claims</strong><span>3D, sequence, PAE, contact maps and evidence ledger share one selection.</span></div></div>
+          <div class="step"><div class="n">04</div><div><strong>Export a falsifiable record</strong><span>JSON, long-form CSV, standalone HTML and checksummed .rinetproj bundles.</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="install">
+      <div class="wrap">
+        <div class="section-head">
+          <div><div class="section-index">04 / Build 011 release</div><h2>Launch the GUI from Terminal.</h2></div>
+          <p class="section-intro">Build 011 deliberately avoids a downloaded macOS app bundle. The installer creates a local command, preserves existing data and opens the loopback-only GUI from <code>rinet gui</code>.</p>
+        </div>
+        <div class="install-card">
+          <div class="install-card-head"><strong>macOS · after extracting the ZIP</strong><button class="copy-button" id="copyInstall" type="button">COPY COMMANDS</button></div>
+          <pre id="installCode"><code>cd "$HOME/Downloads/RINet_Build_011_Protein_Research_Studio"
+chmod +x INSTALL_BUILD_011.sh
+bash INSTALL_BUILD_011.sh
+
+export PATH="$HOME/.local/bin:$PATH"
+rinet gui</code></pre>
+          <div class="install-meta"><div><span>Python</span><strong>3.11–3.13</strong></div><div><span>Runtime</span><strong>127.0.0.1 only</strong></div><div><span>Version</span><strong>1.1.0-build011</strong></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="scope">
+      <div class="wrap guardrail-grid">
+        <div><div class="section-index">05 / Scientific scope</div><h2>Useful because it refuses to pretend.</h2></div>
+        <div class="guardrails">
+          <div class="guardrail"><strong>Not AlphaFold inference</strong><p>RINet analyzes supplied structures and uncertainty data. It does not predict a fold from sequence or reproduce AlphaFold neural inference.</p></div>
+          <div class="guardrail"><strong>Not causal proof</strong><p>Allosteric consensus is hypothesis-generating network evidence. A robust graph signal still requires experimental validation.</p></div>
+          <div class="guardrail"><strong>Not a trajectory</strong><p>Interpolated structural views are mathematical display aids, not molecular dynamics or a claim about physical kinetics.</p></div>
+          <div class="guardrail"><strong>Not one score</strong><p>State, uncertainty and graph evidence remain separately inspectable so disagreement cannot be hidden by aggregation.</p></div>
+        </div>
       </div>
     </section>
   </main>
 
-  <!-- PAGE: DOCS -->
-  <main class="page" data-page="docs" id="docs">
-    <div class="container">
-      <div class="doc-layout">
-
-        <aside class="panel doc-nav" aria-label="Documentation navigation">
-          <div class="panel-inner" style="padding:16px">
-            <h2>Documentation</h2>
-            <div class="search">
-              <label class="sr" for="docSearch">Search documentation</label>
-              <input id="docSearch" type="text" placeholder="Search docs…" autocomplete="off" />
-            </div>
-
-            <div class="doc-links" id="docLinks">
-              <a href="#docs#overview" data-tags="overview what is rinet product scope deterministic" class="doclink">
-                Overview
-                <small>What RINet produces and how to interpret it</small>
-              </a>
-              <a href="#docs#install" data-tags="install pip python dmg macos windows linux" class="doclink">
-                Installation
-                <small>Desktop installer and pip install (CLI + API)</small>
-              </a>
-              <a href="#docs#cli" data-tags="cli command line rinet forward scan inverse outputs csv examples" class="doclink">
-                Command line usage
-                <small>Reproducible runs, sweeps, and exported artifacts</small>
-              </a>
-              <a href="#docs#quickstart" data-tags="quickstart workflow load pdb build graph run export report" class="doclink">
-                Quickstart workflow
-                <small>From structure to exported report in minutes</small>
-              </a>
-              <a href="#docs#graph" data-tags="graph construction adjacency cutoff ca heavy atom weights chain" class="doclink">
-                Graph construction
-                <small>Contact rules, weights, and reproducibility</small>
-              </a>
-              <a href="#docs#models" data-tags="models diffusion laplacian operator dt steps stability" class="doclink">
-                Propagation model
-                <small>Operators, parameters, and qualitative behavior</small>
-              </a>
-              <a href="#docs#inference" data-tags="forward scan inverse attribution mediators sweeps sensitivity" class="doclink">
-                Inference suite
-                <small>Forward, scan, inverse, mediators, sweeps</small>
-              </a>
-              <a href="#docs#reports" data-tags="outputs report export csv png json metadata audit" class="doclink">
-                Reports and outputs
-                <small>What gets exported and what is inside a report folder</small>
-              </a>
-              <a href="#docs#data" data-tags="data handling local execution privacy offline deployment" class="doclink">
-                Data handling
-                <small>Local execution posture and deployment notes</small>
-              </a>
-              <a href="#docs#troubleshooting" data-tags="troubleshooting missing file blank plots gatekeeper performance pip" class="doclink">
-                Troubleshooting
-                <small>Common install + runtime issues and exact fixes</small>
-              </a>
-            </div>
-          </div>
-        </aside>
-
-        <article class="panel">
-          <div class="panel-inner" id="docContent">
-            <div class="kicker">Documentation</div>
-            <h1 style="margin-bottom:10px">RINet Documentation</h1>
-            <p class="lede" style="max-width: 96ch">
-              RINet is designed for structure-first coupling analysis with deterministic execution and export artifacts that support review.
-              This documentation focuses on installation, practical usage, and the meaning of the exported outputs.
-            </p>
-
-            <section id="overview">
-              <h2>Overview</h2>
-              <p>
-                RINet represents a protein structure as a residue interaction network. Each residue is a node. Structural contacts become edges under an explicit contact
-                rule. A perturbation is represented as an initial residue-indexed state. The state evolves under a deterministic operator derived from the graph,
-                producing a coupling profile that can be plotted, compared, and exported.
-              </p>
-              <p>
-                RINet is not a substitute for molecular dynamics. It is a structured approximation that provides fast, interpretable signals suitable for comparative
-                profiling across variants and for prioritizing downstream experiments or deeper simulation.
-              </p>
-              <h3 style="margin-top:16px; font-size: 16px; font-weight: 900; letter-spacing: -.2px; color: rgba(14,22,38,.90);">Python package (CLI + API)</h3>
-              <p>
-                The pip install pathway is recommended for batch workflows, compute environments, and cross-platform installs. After installation, the Python API is available via <code class="inline">import allograph</code>, 
-                and the command-line interface is available as <code class="inline">rinet</code>. The desktop GUI is distributed separately as a macOS application.
-              </p>
-
-              <pre><code># macOS / Linux
-python3 -m venv rinet-env
-source rinet-env/bin/activate
-
-python -m pip install -U pip
-python -m pip install rinet
-
-rinet --help</code></pre>
-
-              <pre><code># Windows (PowerShell)
-py -m venv rinet-env
-.\rinet-env\Scripts\Activate.ps1
-
-python -m pip install -U pip
-python -m pip install rinet
-
-rinet --help</code></pre>
-
-              <p>
-                If you are installing from a wheel file (offline installs or internal distribution), install it directly and then run the same commands:
-              </p>
-
-              <pre><code># Install from a downloaded wheel file
-python -m pip install rinet-0.1.0-py3-none-any.whl
-
-rinet --help</code></pre>
-            </section>
-
-            <section id="cli">
-              <h2>Command line usage</h2>
-              <p>
-                The CLI is designed for reproducible runs and batch processing. It emits explicit CSV outputs that can be versioned, diffed, and incorporated into
-                downstream pipelines. A typical workflow is: build a contact graph under an explicit rule, run an inference mode, and export a residue-indexed result
-                vector alongside the parameters used to generate it.
-              </p>
-
-              <pre><code># Forward propagation (seed a residue; produce coupling profile)
-rinet forward --pdb path/to/structure.pdb --seed 45 --cutoff 8.0 --out rinet_forward.csv
-
-# Scan inference (seed each residue; produce global influence score)
-rinet scan --pdb path/to/structure.pdb --cutoff 8.0 --out rinet_scan.csv
-
-# Inverse inference (propose likely upstream sources)
-rinet inverse --pdb path/to/structure.pdb --cutoff 8.0 --out rinet_inverse.csv</code></pre>
-
-              <div class="note">
-                <p>
-                  Tip: when comparing variants, keep graph construction parameters (contact mode, cutoff, chain selection, weight rule) fixed across runs so results are
-                  comparable. Changes to these parameters change the underlying graph and can dominate the profile.
-                </p>
-              </div>
-            </section>
-
-            <section id="quickstart">
-              <h2>Quickstart workflow</h2>
-              <p>
-                A standard analysis run consists of four steps. First, load a structure file and confirm residues are parsed with stable identifiers. Second, configure
-                graph construction: contact mode, distance cutoff, chain selection, and weight mode. Third, run an inference mode, typically forward propagation from a
-                seed residue or region, then optionally scan, inverse attribution, or mediator discovery depending on the question. Fourth, export a report folder that
-                contains the result vector, plot image, and run metadata capturing the settings used to generate the result.
-              </p>
-              <p>
-                The exported folder is meant to be shareable: it contains the values and the context needed to interpret them without relying on screenshots or informal
-                notes.
-              </p>
-            </section>
-
-            <section id="graph">
-              <h2>Graph construction</h2>
-              <p>
-                Graph construction is the central modeling assumption. In Cα mode, residues are connected when Cα distance is below a cutoff. In heavy-atom mode, a
-                contact can be defined by the existence of any heavy atom pair across residues within the cutoff. Heavy-atom graphs tend to be denser and emphasize
-                packing; Cα graphs tend to be simpler and often better for coarse comparative workflows. Weighting can be binary or distance-based; any weight rule used
-                should be kept fixed when comparing runs.
-              </p>
-            </section>
-
-            <section id="models">
-              <h2>Propagation model</h2>
-              <p>
-                The default operator is diffusion-like dynamics on a graph Laplacian. Let <code class="inline">x</code> be a residue-indexed state and let
-                <code class="inline">L</code> be the Laplacian derived from the adjacency. A common update is
-                <code class="inline">x_{t+1} = x_t + dt · (−L x_t)</code>. The step size and number of steps affect localization and smoothing. Because graph density
-                varies across proteins, parameter sweeps under controlled conditions are recommended when drawing conclusions.
-              </p>
-            </section>
-
-            <section id="inference">
-              <h2>Inference suite</h2>
-              <p>
-                Forward propagation produces a coupling profile for a specified seed residue or region. Scan inference runs forward propagation across candidate seeds and
-                aggregates influence-as-seed into a global score. Inverse attribution proposes plausible upstream sources for a downstream effect under an explicit inverse
-                model. Mediator discovery highlights residues that behave like bridge-like conduits in influence routes.
-              </p>
-            </section>
-
-            <section id="reports">
-              <h2>Reports and outputs</h2>
-              <p>
-                RINet exports residue-indexed vectors to CSV and can render the same values as a profile plot for rapid review. A complete export includes metadata that
-                records structure identifiers and run parameters. This is what makes results portable: a collaborator can interpret what was run and compare outputs across
-                variants under a consistent construction.
-              </p>
-            </section>
-
-            <section id="data">
-              <h2>Data handling</h2>
-              <p>
-                RINet is designed so core inference can run locally without uploading structures to external services. This supports teams working with proprietary or
-                unpublished structures. If collaboration or cloud-backed features are added, they will be explicit and opt-in, with documented data transmission paths.
-              </p>
-            </section>
-
-            <section id="troubleshooting">
-              <h2>Troubleshooting</h2>
-              <p>
-                If the macOS app will not open, check your macOS security prompt and ensure the DMG was fully downloaded. If the CLI command is not found after pip installation, ensure that your virtual environment is activated and that <code class="inline">python -m pip</code> refers to the same Python installation used to run <code class="inline">rinet</code>. If a run produces a flat profile, confirm your graph construction settings generate a nontrivial contact graph and that the seed residue
-                index is valid for the structure.
-              </p>
-            </section>
-
-            <div class="footer">
-              © RINet — Documentation. Return to Overview for downloads and installation.
-            </div>
-          </div>
-        </article>
-
+  <footer>
+    <div class="wrap">
+      <div class="footer-grid">
+        <div><div class="footer-title">RINet Protein Research Studio</div><div class="footer-sub">Structure-first. Local. Falsifiable.</div></div>
+        <div class="footer-links"><a href="https://github.com/AkulK08/rinetlab">GitHub</a><a href="#install">Install</a><a href="#scope">Scientific scope</a></div>
       </div>
+      <div class="footer-bottom"><span>© <span id="year"></span> RINet · BUILD 011</span><span>SUPPLIED COORDINATES · EXPLICIT ASSUMPTIONS · PRESERVED PROVENANCE</span></div>
     </div>
-  </main>
+  </footer>
 
   <script>
-    (function(){
-      const ROUTES = ["home", "docs"];
-      const pages = Array.from(document.querySelectorAll(".page"));
-      const navLinks = Array.from(document.querySelectorAll("[data-route]"));
-      const docSearch = document.getElementById("docSearch");
-      const docLinksWrap = document.getElementById("docLinks");
-      const docLinks = docLinksWrap ? Array.from(docLinksWrap.querySelectorAll("a.doclink")) : [];
+    const video = document.getElementById("studioVideo");
+    const videoToggle = document.getElementById("videoToggle");
+    const copyInstall = document.getElementById("copyInstall");
+    const installCode = document.getElementById("installCode");
+    document.getElementById("year").textContent = new Date().getFullYear();
 
-      function parseRoute(){
-        const hash = (window.location.hash || "#home").replace(/^#/, "");
-        const parts = hash.split("#").filter(Boolean);
-        const route = parts[0] || "home";
-        const sub = parts[1] || "";
-        return {route, sub};
+    videoToggle.addEventListener("click", async () => {
+      if (video.paused) {
+        await video.play();
+        videoToggle.textContent = "PAUSE";
+      } else {
+        video.pause();
+        videoToggle.textContent = "PLAY";
       }
+    });
 
-      function showRoute(route){
-        for(const p of pages){
-          p.classList.toggle("active", p.getAttribute("data-page") === route);
-        }
-        for(const a of navLinks){
-          const r = a.getAttribute("data-route");
-          const href = a.getAttribute("href") || "";
-          const isRouteLink = href.startsWith("#" + route);
-          a.classList.toggle("active", r === route && isRouteLink);
-        }
-        document.title = (route === "docs")
-          ? "RINet — Documentation"
-          : "RINet — Residue Interaction Network Inference Toolkit";
+    copyInstall.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(installCode.innerText);
+        copyInstall.textContent = "COPIED";
+        setTimeout(() => { copyInstall.textContent = "COPY COMMANDS"; }, 1600);
+      } catch (_) {
+        copyInstall.textContent = "SELECT + COPY";
       }
+    });
 
-      function scrollToSub(route, sub){
-        if(!sub) return;
-        const el = document.getElementById(sub);
-        if(el) el.scrollIntoView({behavior:"smooth", block:"start"});
-      }
-
-      function activateDocNav(){
-        const {route, sub} = parseRoute();
-        if(route !== "docs") return;
-        const target = sub ? "#docs#" + sub : "#docs#overview";
-        for(const a of docLinks){
-          a.classList.toggle("active", a.getAttribute("href") === target);
-        }
-      }
-
-      function bindDocsSearch(){
-        if(!docSearch || !docLinks.length) return;
-        const norm = s => (s || "").toLowerCase().trim();
-        docSearch.addEventListener("input", ()=>{
-          const q = norm(docSearch.value);
-          for(const a of docLinks){
-            const tags = norm(a.getAttribute("data-tags"));
-            const text = norm(a.textContent);
-            const show = !q || tags.includes(q) || text.includes(q);
-            a.style.display = show ? "" : "none";
-          }
-        });
-      }
-
-      window.addEventListener("hashchange", ()=>{
-        const {route, sub} = parseRoute();
-        const safe = ROUTES.includes(route) ? route : "home";
-        showRoute(safe);
-        activateDocNav();
-        setTimeout(()=> scrollToSub(safe, sub), 0);
-      });
-
-      (function init(){
-        bindDocsSearch();
-        const {route, sub} = parseRoute();
-        const safe = ROUTES.includes(route) ? route : "home";
-        showRoute(safe);
-        if(safe === "docs" && !sub){
-          window.location.hash = "#docs#overview";
-          return;
-        }
-        activateDocNav();
-        setTimeout(()=> scrollToSub(safe, sub), 0);
-      })();
-    })();
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      video.pause();
+      videoToggle.textContent = "PLAY";
+    }
   </script>
 </body>
 </html>
