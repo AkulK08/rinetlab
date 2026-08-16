@@ -6,9 +6,9 @@ const demoDownloadAssetName = "rinet-structure-brief-demo.txt";
 const downloadBaseline = 5500;
 
 document.getElementById("year").textContent = new Date().getFullYear();
-film.defaultPlaybackRate = 0.3;
-film.playbackRate = 0.3;
-film.addEventListener("loadedmetadata", () => { film.playbackRate = 0.3; }, { once: true });
+film.defaultPlaybackRate = 0.4;
+film.playbackRate = 0.4;
+film.addEventListener("loadedmetadata", () => { film.playbackRate = 0.4; }, { once: true });
 
 filmToggle.addEventListener("click", async () => {
   if (film.paused) {
