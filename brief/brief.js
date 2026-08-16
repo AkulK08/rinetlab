@@ -12,8 +12,9 @@ const molecular = { stage: null, component: null, representation: "surface", spi
 const preview = { stage: null, component: null };
 const waterNames = new Set(["HOH", "WAT", "DOD"]);
 const metalElements = new Set(["LI", "NA", "MG", "AL", "K", "CA", "MN", "FE", "CO", "NI", "CU", "ZN", "SR", "MO", "CD", "CS", "BA", "HG"]);
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 
-function switchSource(source) {
+function switchSource(source, focusInput = true) {
   const file = source === "file";
   els.fileTab.classList.toggle("active", file);
   els.idTab.classList.toggle("active", !file);
@@ -21,7 +22,7 @@ function switchSource(source) {
   els.idTab.setAttribute("aria-selected", String(!file));
   els.filePanel.classList.toggle("hidden", !file);
   els.idPanel.classList.toggle("hidden", file);
-  if (!file) els.pdbId.focus();
+  if (!file && focusInput) els.pdbId.focus({ preventScroll: true });
 }
 
 els.fileTab.addEventListener("click", () => switchSource("file"));
@@ -113,12 +114,12 @@ function mutationSuggestion(residue) {
 function mutationLadder(residue) {
   const name = residue?.name || "Residue";
   const conservative = { ARG: "R→K", LYS: "K→R", ASP: "D→E", GLU: "E→D", ASN: "N→Q", GLN: "Q→N", SER: "S→T", THR: "T→S", PHE: "F→Y", TYR: "Y→F", TRP: "W→F", LEU: "L→I", ILE: "I→V", VAL: "V→I", MET: "M→L", CYS: "C→S", HIS: "H→N", ALA: "A→G", GLY: "G→A", PRO: "P→A" };
-  const neutral = { ARG: "R→Q", LYS: "K→Q", ASP: "D→N", GLU: "E→Q", HIS: "H→N", SER: "S→A", THR: "T→A", ASN: "N→A", GLN: "Q→A", CYS: "C→S" };
+  const neutral = { ARG: "R→Q", LYS: "K→Q", ASP: "D→N", GLU: "E→Q", HIS: "H→N", SER: "S→A", THR: "T→A", ASN: "N→A", GLN: "Q→A", CYS: "C→A" };
   const stress = { ARG: "R→E", LYS: "K→E", ASP: "D→K", GLU: "E→K", HIS: "H→E", GLY: "G→P", PRO: "P→G" };
   return {
     conservative: conservative[name] || `${name}→similar residue`,
     neutral: neutral[name] || `${name}→Ala`,
-    stress: stress[name] || `${name}→Pro`
+    stress: residue?.disulfidePartner ? `${residue.disulfidePartner.label.replace("CYS ", "Cys ")}→Ser` : (stress[name] || `${name}→Pro`)
   };
 }
 
@@ -138,6 +139,16 @@ function parsePdb(text) {
     const residue = residueMap.get(key); residue.atoms.push(atom); if (atom.atom === "CA") residue.ca = atom;
   });
   const residues = [...residueMap.values()];
+  const disulfidePartners = new Map();
+  const cysteines = residues.map(residue => ({ residue, sulfur: residue.atoms.find(atom => atom.atom === "SG") })).filter(item => item.residue.name === "CYS" && item.sulfur);
+  for (let i = 0; i < cysteines.length; i += 1) for (let j = i + 1; j < cysteines.length; j += 1) {
+    const separation = distance(cysteines[i].sulfur, cysteines[j].sulfur);
+    if (separation >= 1.7 && separation <= 2.3) {
+      const label = item => `CYS ${item.residue.chain}:${item.residue.seq}${item.residue.insertion}`;
+      disulfidePartners.set(cysteines[i].residue.key, { label: label(cysteines[j]), distance: separation });
+      disulfidePartners.set(cysteines[j].residue.key, { label: label(cysteines[i]), distance: separation });
+    }
+  }
   const chains = new Map();
   residues.forEach(residue => { if (!chains.has(residue.chain)) chains.set(residue.chain, []); chains.get(residue.chain).push(residue); });
   const degree = new Map(residues.map(r => [r.key, 0]));
@@ -189,7 +200,7 @@ function parsePdb(text) {
     return {
       label: `${r.name} ${r.chain}:${r.seq}${r.insertion}`, name: r.name, chain: r.chain, seq: r.seq, insertion: r.insertion,
       degree: degree.get(r.key), weighted: weighted.get(r.key), longRange: longRange.get(r.key), interchain: interchain.get(r.key),
-      burial: 1 - Math.min(1, distance(r.ca, centroid) / maxRadius), ligandDistance, bMean, residueClass: residueClass(r.name)
+      burial: 1 - Math.min(1, distance(r.ca, centroid) / maxRadius), ligandDistance, bMean, residueClass: residueClass(r.name), disulfidePartner: disulfidePartners.get(r.key) || null
     };
   });
   const maxima = {
@@ -198,8 +209,9 @@ function parsePdb(text) {
   };
   const rankedResidues = rawResidues.map(r => {
     const ligandSignal = r.ligandDistance === null ? 0 : Math.max(0, 1 - r.ligandDistance / 10);
-    const score = 100 * (.39 * r.degree / maxima.degree + .18 * r.weighted / maxima.weighted + .14 * r.longRange / maxima.longRange + .13 * r.interchain / maxima.interchain + .10 * r.burial + .06 * ligandSignal);
+    const score = Math.min(100, 100 * (.37 * r.degree / maxima.degree + .17 * r.weighted / maxima.weighted + .13 * r.longRange / maxima.longRange + .12 * r.interchain / maxima.interchain + .09 * r.burial + .06 * ligandSignal + (r.disulfidePartner ? .06 : 0)));
     const signals = [];
+    if (r.disulfidePartner) signals.push(`probable disulfide to ${r.disulfidePartner.label} (${r.disulfidePartner.distance.toFixed(2)} Å)`);
     if (r.interchain) signals.push(`${r.interchain} cross-chain contact${r.interchain === 1 ? "" : "s"}`);
     if (r.longRange) signals.push(`${r.longRange} long-range contact${r.longRange === 1 ? "" : "s"}`);
     if (r.ligandDistance !== null && r.ligandDistance <= 6) signals.push(`${r.ligandDistance.toFixed(1)} Å from a non-water hetero atom`);
@@ -215,7 +227,7 @@ function parsePdb(text) {
     return penalty(a) - penalty(b);
   })[0] || rankedResidues.at(-1) || null;
   return {
-    residues: residues.length, polymerAtoms: polymerAtoms.length, chainReports, contacts, alternateCount, lowOccupancy, missingCa,
+    residues: residues.length, polymerAtoms: polymerAtoms.length, chainReports, contacts, alternateCount, lowOccupancy, missingCa, disulfides: Math.floor(disulfidePartners.size / 2),
     waters: waters.length, hetero: [...hetero.values()].map(group => `${group.name} ${group.chain}:${group.seq}`), metals: metals.map(group => `${group.name} ${group.chain}:${group.seq}`),
     bMean: bValues.length ? bValues.reduce((sum,v) => sum+v,0)/bValues.length : null, bMedian: median(bValues), topResidues, controlResidue,
     models: lines.filter(line => line.startsWith("MODEL ")).length || 1
@@ -256,6 +268,10 @@ function renderGuidance(report) {
   const controlLabel = control?.label || "Choose a lower-contact residue";
   const contrast = runnerUp ? ` ${runnerUp.label} is the next site to examine if the first construct is inconclusive.` : "";
   const contactClass = candidate?.degree >= 8 ? "a highly connected structural hub" : candidate?.degree >= 4 ? "a moderately connected structural junction" : "the strongest available contact signal in this model";
+  const disulfide = candidate?.disulfidePartner;
+  const structuralThesis = disulfide
+    ? `${candidateLabel} forms a ${disulfide.distance.toFixed(2)} Å sulfur–sulfur contact with ${disulfide.label}, consistent with a disulfide constraint. The decisive question is whether function changes beyond any loss of structural integrity.`
+    : `${candidateLabel} is the strongest multi-signal structural contrast in this coordinate model. Test it against ${controlLabel} while holding expression and folding accountable.`;
 
   document.getElementById("guidancePrimary").textContent = candidateLabel;
   document.getElementById("guidancePrimaryReason").textContent = candidate ? candidate.rationale : "The model did not contain a rankable Cα contact graph.";
@@ -263,9 +279,13 @@ function renderGuidance(report) {
   document.getElementById("guidanceControl").textContent = controlLabel;
   document.getElementById("guidanceConfidence").textContent = `${Math.round(completeness * 100)}%`;
   document.getElementById("guidanceHypothesis").textContent = candidate
-    ? `${candidateLabel} sits in the densest non-local contact neighborhood in this structure. Perturbing it may affect the local structural network more strongly than a lower-contact position.${contrast}`
+    ? (disulfide
+      ? `${structuralThesis}${contrast}`
+      : `${candidateLabel} sits in the densest non-local contact neighborhood in this structure. Perturbing it may affect the local structural network more strongly than a lower-contact position.${contrast}`)
     : "This structure did not produce a residue-level contact hypothesis.";
-  document.getElementById("guidanceExperiment").textContent = `Build the ${mutation} candidate and an equivalent perturbation at ${controlLabel}. Test both beside wild type in the same expression background. Measure the protein-specific functional readout, plus expression or abundance and a folding or stability control.`;
+  document.getElementById("guidanceExperiment").textContent = disulfide
+    ? `Build ${candidateLabel} ${ladder.conservative}, ${ladder.stress} as the network-pair control, and the matched structural comparison at ${controlLabel}. Run all beside wild type. Measure expression or abundance and an orthogonal folding/stability readout before the protein-specific functional assay.`
+    : `Build the ${mutation} candidate and an equivalent perturbation at ${controlLabel}. Test both beside wild type in the same expression background. Measure the protein-specific functional readout, plus expression or abundance and a folding or stability control.`;
   document.getElementById("guidanceAdvance").textContent = `Advance the hypothesis if the ${candidateLabel} perturbation changes the biological readout more than ${controlLabel}, while expression and folding remain acceptably similar to wild type.`;
   document.getElementById("guidanceStop").textContent = `Do not interpret the site as specifically informative if candidate and comparison behave similarly, or if the candidate mainly lowers expression or disrupts folding. In that case, test ${runnerUp?.label || "the next-ranked residue"} or revise the assay.`;
   document.getElementById("mutationConservative").textContent = ladder.conservative;
@@ -283,7 +303,13 @@ function renderGuidance(report) {
   document.getElementById("alternateContext").textContent = `This static coordinate model may omit the assay-relevant state, ligand, partner or membrane context.`;
   document.getElementById("guidanceNext").textContent = runnerUp?.label || "No second site available";
   document.getElementById("viewerCandidate").textContent = candidateLabel;
-  document.getElementById("viewerCandidateReason").textContent = candidate ? `${candidate.degree} NON-LOCAL CONTACTS · ${contactClass.toUpperCase()}` : "NO RANKABLE CONTACT SIGNAL";
+  document.getElementById("viewerCandidateReason").textContent = candidate ? (disulfide ? `PROBABLE DISULFIDE · ${disulfide.distance.toFixed(2)} Å TO ${disulfide.label.toUpperCase()}` : `${candidate.degree} NON-LOCAL CONTACTS · ${contactClass.toUpperCase()}`) : "NO RANKABLE CONTACT SIGNAL";
+  document.getElementById("hudThesis").textContent = structuralThesis;
+  document.getElementById("hudMutation").textContent = ladder.conservative;
+  document.getElementById("hudMutationNote").textContent = disulfide ? "Disrupts the bridge; treat folding as the first readout." : `Tests ${candidateLabel} with the least severe informative change.`;
+  document.getElementById("hudControl").textContent = controlLabel;
+  document.getElementById("hudGate").textContent = disulfide ? "INTEGRITY BEFORE FUNCTION" : "CANDIDATE MUST BEAT CONTROL";
+  document.getElementById("hudGateNote").textContent = disulfide ? `A functional effect is not site-specific evidence if ${candidateLabel} also loses expression or fold.` : `Advance only if ${candidateLabel} changes the functional readout more than ${controlLabel} without a matching integrity defect.`;
 }
 
 function render(data) {
@@ -304,13 +330,14 @@ function render(data) {
     { warn: r.missingCa > 0, title: `${r.missingCa} residues without Cα coordinates`, note: "These residues are omitted from the Cα contact calculation." },
     { warn: r.lowOccupancy > 0, title: `${r.lowOccupancy} polymer atoms below full occupancy`, note: "Inspect alternate states and occupancy semantics before quantitative interpretation." },
     { warn: r.alternateCount > 0, title: `${r.alternateCount} alternate-location atom records beyond blank/A`, note: "The brief uses blank or A conformers for descriptive geometry." },
+    { warn: false, title: `${r.disulfides} probable disulfide constraint${r.disulfides === 1 ? "" : "s"}`, note: "Assigned only when cysteine Sγ atoms are 1.7–2.3 Å apart in the supplied coordinates." },
     { warn: false, title: r.metals.length ? `Potential metal groups: ${r.metals.join(", ")}` : "No metal groups detected", note: "Detection uses element labels and does not assign coordination chemistry." }
   ];
   document.getElementById("flagList").innerHTML = flags.map(flag => `<div class="flag ${flag.warn ? "warn" : ""}"><i></i><div><strong>${esc(flag.title)}</strong><span>${esc(flag.note)}</span></div></div>`).join("");
   document.getElementById("topologyRows").innerHTML = r.topResidues.map((residue, i) => `<div class="topology-row"><strong>${String(i+1).padStart(2,"0")} / ${esc(residue.label)}</strong><span>PRIORITY ${residue.score.toFixed(0)} · DEG ${residue.degree}</span></div>`).join("");
   document.getElementById("bestResidueRows").innerHTML = r.topResidues.map((residue, i) => `<button class="best-residue-row" type="button" data-residue-index="${i}"><span>${String(i+1).padStart(2,"0")}</span><strong>${esc(residue.label)}<em>${esc(residue.context)}</em></strong><small>${residue.score.toFixed(0)}</small></button>`).join("");
   renderGuidance(r);
-  const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Brief 2.0 (receipt ${data.receiptId}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} chain${r.chainReports.length === 1 ? "" : "s"}. A descriptive residue-contact graph was constructed between Cα atoms separated by no more than 8.0 Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. Residue priority integrated normalized contact degree, distance-weighted packing, long-range and cross-chain contacts, radial burial and proximity to non-water hetero atoms; it was used to create hypotheses rather than infer function. Coordinate-record screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} sequence gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}); they were not assumed to represent prediction confidence. Structural priority and flags were not interpreted as causal or functional proof.`;
+  const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Intelligence 2.1 (receipt ${data.receiptId}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} chain${r.chainReports.length === 1 ? "" : "s"}. A descriptive residue-contact graph was constructed between Cα atoms separated by no more than 8.0 Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. Residue priority integrated normalized contact degree, distance-weighted packing, long-range and cross-chain contacts, radial burial and proximity to non-water hetero atoms. ${r.disulfides} probable disulfide constraint${r.disulfides === 1 ? " was" : "s were"} assigned from cysteine Sγ separations of 1.7–2.3 Å. Coordinate-record screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} sequence gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}); they were not assumed to represent prediction confidence. Structural priority and flags were used to create hypotheses rather than infer function or causality.`;
   document.getElementById("methodsText").textContent = methods;
   els.results.classList.remove("hidden");
   document.body.classList.add("analysis-mode");
@@ -385,7 +412,7 @@ async function initPreview() {
     preview.component = await preview.stage.loadFile(blob, { ext: "pdb", defaultRepresentation: false });
     preview.component.addRepresentation("surface", { sele: "protein", surfaceType: "av", probeRadius: 1.4, scaleFactor: 2.0, color: "#285947", opacity: .92, roughness: .3 });
     preview.component.addRepresentation("cartoon", { sele: "protein", color: "#85efcb", opacity: .2, quality: "high" });
-    preview.component.addRepresentation("ball+stick", { sele: "10:A", color: "#d9ff58", scale: 1.5, quality: "high" });
+    preview.component.addRepresentation("ball+stick", { sele: "32:A", color: "#d9ff58", scale: 1.5, quality: "high" });
     preview.component.autoView(0);
     preview.stage.setSpin([0, 1, .05], .00125);
     window.addEventListener("resize", () => preview.stage?.handleResize());
@@ -419,7 +446,7 @@ document.getElementById("copyMethods").addEventListener("click", async e => {
 });
 
 function receiptPayload() {
-  return { tool: "RINet Structure Brief", version: "1.0", receiptId: current.receiptId, analyzedAt: current.analyzedAt, sourceLabel: current.sourceName, sourceType: current.sourceType, structureSha256: current.digest, summary: current.report, scientificBoundary: "Descriptive coordinate and Cα contact analysis; not functional or causal proof." };
+  return { tool: "RINet Structure Intelligence", version: "2.1", receiptId: current.receiptId, analyzedAt: current.analyzedAt, sourceLabel: current.sourceName, sourceType: current.sourceType, structureSha256: current.digest, summary: current.report, scientificBoundary: "Descriptive coordinate and Cα contact analysis; not functional or causal proof." };
 }
 
 document.getElementById("downloadReceipt").addEventListener("click", () => {
@@ -429,15 +456,16 @@ document.getElementById("downloadReceipt").addEventListener("click", () => {
 
 els.receiptForm.addEventListener("submit", event => {
   event.preventDefault(); if (!current || !els.receiptForm.reportValidity()) return;
-  const affiliation = document.getElementById("affiliation").value.trim();
+  const affiliation = document.getElementById("affiliation").value.trim() || "Not provided";
   const researcher = document.getElementById("researcher").value.trim() || "Not provided";
   const feedback = document.getElementById("feedback").value.trim();
-  const title = `Research receipt · ${affiliation} · ${current.receiptId}`;
-  const body = `## RINet Structure Brief institutional-use receipt\n\n**Affiliation**: ${affiliation}\n**Researcher / lab**: ${researcher}\n**Receipt**: ${current.receiptId}\n**Input label**: ${current.sourceName}\n**Structure SHA-256**: \`${current.digest}\`\n\n### One-line feedback\n${feedback}\n\n### Analysis summary\n- ${current.report.residues} polymer residues across ${current.report.chainReports.length} chain(s)\n- ${current.report.polymerAtoms} polymer atoms\n- ${current.report.contacts} descriptive Cα contacts at 8.0 Å\n- ${current.report.chainReports.reduce((s,c)=>s+c.breaks,0)} sequence gap / backbone break flags\n\n> Coordinates were analyzed locally and are not attached. This receipt documents use of the utility; it is not an endorsement of scientific conclusions.`;
+  const title = `RINet analysis feedback · ${current.receiptId}`;
+  const body = `## RINet analysis feedback\n\n**Affiliation**: ${affiliation}\n**Name / lab**: ${researcher}\n**Receipt**: ${current.receiptId}\n**Input label**: ${current.sourceName}\n**Structure SHA-256**: \`${current.digest}\`\n\n### Message\n${feedback}\n\n### Analysis summary\n- ${current.report.residues} polymer residues across ${current.report.chainReports.length} chain(s)\n- ${current.report.polymerAtoms} polymer atoms\n- ${current.report.contacts} descriptive Cα contacts at 8.0 Å\n- ${current.report.chainReports.reduce((s,c)=>s+c.breaks,0)} sequence gap / backbone break flags\n\n> Coordinates were analyzed locally and are not attached. This receipt records use of the utility; it is not an endorsement of scientific conclusions.`;
   const url = `https://github.com/AkulK08/rinetlab-studio/issues/new?labels=research-use&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
   window.open(url, "_blank", "noopener,noreferrer");
 });
 
-switchSource("id");
+switchSource("id", false);
+window.scrollTo({ top: 0, behavior: "auto" });
 initPreview();
 if (new URLSearchParams(window.location.search).get("demo") === "1") loadDemo();

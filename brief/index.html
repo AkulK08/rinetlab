@@ -3,38 +3,45 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f1f3ef">
-  <link rel="icon" type="image/png" href="/favicon.png">
-  <link rel="stylesheet" href="/brief/brief.css">
+  <meta name="theme-color" content="#050806">
+  <link rel="icon" type="image/png" href="/favicon.png?v=2">
+  <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=2">
+  <link rel="stylesheet" href="/brief/brief.css?v=3">
   <title>Structure Brief — RINet</title>
-  <meta name="description" content="A private, zero-install PDB inventory, contact summary, methods capsule and reproducible research receipt.">
+  <meta name="description" content="Interrogate a protein structure and turn its strongest structural signals into a falsifiable experiment plan.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://rinetlab.com/brief/">
+  <meta property="og:title" content="RINet — Find the residue worth testing">
+  <meta property="og:description" content="Interrogate a protein structure and turn its strongest structural signals into a falsifiable experiment plan.">
+  <meta property="og:image" content="https://rinetlab.com/media/og-rinet.png?v=2">
+  <meta name="twitter:card" content="summary_large_image">
 </head>
 <body>
   <header class="app-header">
-    <a class="brand" href="/"><span>R/</span>RINet</a>
-    <div class="app-title">Structure Brief <i>1.0</i></div>
+    <a class="brand" href="/"><img src="/media/rinet-mark.png?v=2" alt="">RINet</a>
+    <div class="app-title">Structure Intelligence <i>2.1</i></div>
     <div class="privacy"><b></b> Local browser analysis</div>
   </header>
 
   <main>
     <section class="launch-screen" id="launchScreen" aria-labelledby="input-title">
       <div class="launch-visual" aria-label="Animated preview of the RINet structure analysis">
-        <div class="preview-toolbar"><span>LIVE STRUCTURE / 1CRN</span><strong>ROTATING SURFACE + RESIDUE TARGETING</strong></div>
+        <div class="preview-toolbar"><span>LIVE STRUCTURE / 1CRN</span><strong>RESIDUE NETWORK INTERROGATION</strong></div>
         <div id="previewMolecule" aria-label="Rotating protein structure preview"></div>
         <div class="preview-reticle" aria-hidden="true"><i></i><i></i></div>
-        <div class="preview-callout"><span>PRIMARY STRUCTURAL SIGNAL</span><strong>CONTACT-DENSE RESIDUE</strong><small>CLICK DEMO TO CALCULATE THE FULL EXPERIMENT GUIDE</small></div>
+        <div class="preview-callout"><span>PRIMARY STRUCTURAL SIGNAL</span><strong>NETWORK CONSTRAINT DETECTED</strong><small>ENTER THE DEMO TO RESOLVE THE SITE AND EXPERIMENT</small></div>
         <div class="preview-footer"><span>SUPPLIED COORDINATES</span><span>LOCAL ANALYSIS · NO ACCOUNT</span></div>
       </div>
 
       <div class="launch-console">
-        <p class="eyebrow">RINet / one-structure experiment guide</p>
-        <h1 id="input-title">See the structure.<br>Know what to test.</h1>
-        <p class="launch-summary">A rotating 3D surface first, then residue priorities, perturbation strategy, assay gates, controls and explicit stop rules.</p>
+        <p class="eyebrow">RINet / structural intelligence</p>
+        <h1 id="input-title">Interrogate<br>the structure.</h1>
+        <p class="launch-summary">Resolve the strongest structural signal, the safest perturbation, the control that makes it interpretable, and the result that should stop you.</p>
 
         <button class="demo-button" id="demoButton" type="button">
-          <span>Fastest path · no file required</span>
-          <strong>Run the complete demo</strong>
-          <small>1CRN · interactive 3D · experiment blueprint <b>→</b></small>
+          <span>Instant mission · no file required</span>
+          <strong>Enter the live demo</strong>
+          <small>1CRN · interactive structure · experiment decision system <b>→</b></small>
         </button>
 
         <div class="input-main">
@@ -83,9 +90,15 @@
           <div class="viewer-boundary">SUPPLIED COORDINATES · STATIC STRUCTURE · NOT A TRAJECTORY</div>
         </div>
         <aside class="best-residues">
-          <div><p class="eyebrow">Structural priority</p><h3>Best residues to inspect first.</h3><p>Integrates packing, long-range contacts, interfaces, hetero proximity and coordinate context. Click a residue to locate it.</p></div>
+          <div class="intel-intro"><p class="eyebrow">RINet intelligence / live</p><h3>Experiment signal.</h3><p id="hudThesis">Resolving the most informative structural contrast.</p></div>
+          <div class="intel-cards">
+            <article><span>FIRST MOVE</span><strong id="hudMutation">—</strong><small id="hudMutationNote">Waiting for coordinates</small></article>
+            <article><span>MATCHED CONTROL</span><strong id="hudControl">—</strong><small>Separates a site effect from structural background.</small></article>
+            <article class="intel-risk"><span>INTERPRETATION GATE</span><strong id="hudGate">—</strong><small id="hudGateNote">Integrity must hold before function is interpreted.</small></article>
+          </div>
+          <div class="ranked-title"><span>RANKED TARGETS</span><small>Click to locate</small></div>
           <div id="bestResidueRows"></div>
-          <p class="best-boundary">“Best” means structurally prioritized in this coordinate model—not biologically validated.</p>
+          <p class="best-boundary">Structural priority generates a testable contrast—not a biological conclusion.</p>
         </aside>
       </section>
 
@@ -120,7 +133,7 @@
         <section class="experiment-blueprint" aria-labelledby="blueprint-title">
           <div class="blueprint-head"><span>EXPERIMENT BLUEPRINT / GENERATED LOCALLY</span><h4 id="blueprint-title">From construct design to interpretation.</h4><p>Use the sequence as a staged plan. Earlier gates prevent a folding defect from being mislabeled as mechanism.</p></div>
           <div class="blueprint-grid">
-            <article class="mutation-ladder"><span>A / PERTURBATION LADDER</span><h5>Change chemistry in interpretable steps.</h5><ol><li><b>Conservative</b><strong id="mutationConservative">—</strong><small>Tests whether subtle side-chain chemistry matters.</small></li><li><b>Neutralizing</b><strong id="mutationNeutral">—</strong><small>Reduces the dominant chemical feature.</small></li><li><b>Structural stress test</b><strong id="mutationStress">—</strong><small>Use only after the gentler construct is interpretable.</small></li></ol></article>
+            <article class="mutation-ladder"><span>A / PERTURBATION LADDER</span><h5>Change chemistry in interpretable steps.</h5><ol><li><b>Conservative</b><strong id="mutationConservative">—</strong><small>Tests whether subtle side-chain chemistry matters.</small></li><li><b>Neutralizing</b><strong id="mutationNeutral">—</strong><small>Reduces the dominant chemical feature.</small></li><li><b>Network-pair control</b><strong id="mutationStress">—</strong><small>Tests the linked structural explanation after the first construct is interpretable.</small></li></ol></article>
             <article class="assay-gates"><span>B / MEASUREMENT GATES</span><h5>Measure in this order.</h5><ol><li><b>Gate 0</b><p>Confirm numbering, construct sequence and assay dynamic range.</p></li><li><b>Gate 1</b><p id="guidanceIntegrity">Check abundance plus one folding or stability readout.</p></li><li><b>Gate 2</b><p id="guidanceFunction">Measure the protein-specific functional output.</p></li><li><b>Gate 3</b><p id="guidanceSpecificity">Compare candidate, matched residue and wild type in the same batch.</p></li></ol></article>
             <article class="diagnostic-matrix"><span>C / RESULT INTERPRETER</span><h5>What the pattern would mean.</h5><div><b>Function changes; integrity holds</b><p id="diagnosticAdvance">Structural hypothesis survives the first specificity gate.</p></div><div><b>Function and integrity both fall</b><p id="diagnosticFold">Treat as a stability or expression explanation first.</p></div><div><b>Candidate equals comparison</b><p id="diagnosticControl">The site is not more informative than structural background.</p></div><div><b>No measurable effect</b><p id="diagnosticNext">Move to the next-ranked residue or improve assay sensitivity.</p></div></article>
             <article class="alternative-models"><span>D / COMPETING EXPLANATIONS</span><h5>Keep these alive until the data separate them.</h5><ul><li id="alternatePacking">Local packing change rather than a specific functional pathway.</li><li id="alternateExpression">Expression, trafficking or folding loss rather than site-specific biology.</li><li id="alternateContext">The supplied static state may not represent the assay-relevant conformation.</li></ul><div class="next-site"><span>NEXT SITE IF INCONCLUSIVE</span><strong id="guidanceNext">—</strong></div></article>
@@ -162,13 +175,13 @@
 
       <section class="receipt">
         <div class="receipt-intro">
-          <p class="eyebrow">Optional institution receipt</p>
-          <h2>Used it? Leave one useful line.</h2>
-          <p>This opens a reviewable GitHub issue containing only the summary, your institution and feedback—not the structure.</p>
+          <p class="eyebrow">Optional analysis receipt</p>
+          <h2>Share one useful line.</h2>
+          <p>This opens a reviewable GitHub issue containing only the summary and your note—not the structure.</p>
           <button class="download-button" id="downloadReceipt" type="button">Download private JSON receipt</button>
         </div>
         <form id="receiptForm">
-          <label>Institution / affiliation <input id="affiliation" required maxlength="120" placeholder="e.g. Department of Biology, University of …"></label>
+          <label>Affiliation <span>optional</span><input id="affiliation" maxlength="120" placeholder="e.g. Department of Biology, University of …"></label>
           <label>Name or lab <span>optional</span><input id="researcher" maxlength="100" placeholder="e.g. Smith Lab"></label>
           <label>One line of feedback <textarea id="feedback" required maxlength="500" rows="3" placeholder="What did you check, and what would make this more useful?"></textarea></label>
           <label class="consent"><input id="consent" type="checkbox" required> I understand this will open a public GitHub issue for my review before submission.</label>
@@ -179,8 +192,8 @@
     </section>
   </main>
 
-  <footer><a href="/">← RINet home</a><span>Structure Brief 1.0 · descriptive coordinate analysis</span></footer>
-  <script src="/brief/vendor/ngl-2.4.0.js"></script>
-  <script src="/brief/brief.js"></script>
+  <footer><a href="/">← RINet home</a><span>Structure Intelligence 2.1 · local coordinate analysis</span></footer>
+  <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
+  <script src="/brief/brief.js?v=3"></script>
 </body>
 </html>

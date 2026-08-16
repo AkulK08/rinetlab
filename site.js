@@ -6,6 +6,11 @@ const demoDownloadAssetName = "rinet-structure-brief-demo.txt";
 const downloadBaseline = 1658;
 const downloadMetricsUrl = "https://raw.githubusercontent.com/AkulK08/rinetlab/main/metrics/downloads.json";
 const feedbackDialog = document.getElementById("feedbackDialog");
+const contactRoute = `https://formsubmit.co/${atob("YWt1bGt1bWFyMDIwMDhAZ21haWwuY29t")}`;
+
+document.querySelectorAll("[data-rinet-contact]").forEach(form => {
+  form.action = contactRoute;
+});
 
 document.getElementById("year").textContent = new Date().getFullYear();
 film.defaultPlaybackRate = 0.4;
@@ -17,7 +22,7 @@ if (pageParams.get("contact") === "sent") {
   const contact = document.getElementById("contact");
   const status = document.getElementById("contactStatus");
   contact?.classList.add("sent");
-  if (status) status.textContent = "Feedback sent. Thank you.";
+  if (status) status.textContent = "Message sent. Thank you.";
   window.history.replaceState({}, "", `${window.location.pathname}#contact`);
 }
 
@@ -90,7 +95,7 @@ async function loadDownloadCount() {
       // The durable snapshot still provides the correct last recorded total.
     }
 
-    display.textContent = `${total.toLocaleString()}+`;
+    display.textContent = total.toLocaleString();
   } catch (_) {
     try {
       const response = await fetch("https://api.github.com/repos/AkulK08/rinetlab/releases/tags/v1.2.0-build012", { headers: { Accept: "application/vnd.github+json" } });
@@ -99,9 +104,9 @@ async function loadDownloadCount() {
       const demoAsset = release.assets?.find(asset => asset.name === demoDownloadAssetName);
       const zipAsset = release.assets?.find(asset => asset.name.endsWith(".zip"));
       const total = downloadBaseline + Number(demoAsset?.download_count || 0) + Number(zipAsset?.download_count || 0);
-      display.textContent = `${total.toLocaleString()}+`;
+      display.textContent = total.toLocaleString();
     } catch (_) {
-      display.textContent = `${downloadBaseline.toLocaleString()}+`;
+      display.textContent = downloadBaseline.toLocaleString();
     }
   }
 }
@@ -124,3 +129,4 @@ async function loadInstitutions() {
 
 loadInstitutions();
 loadDownloadCount();
+window.setInterval(loadDownloadCount, 90_000);

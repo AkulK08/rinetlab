@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050606">
-  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="icon" type="image/png" href="/favicon.png?v=2">
+  <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=2">
   <link rel="stylesheet" href="/site.css">
   <title>RINet — Find the residue worth testing</title>
   <meta name="description" content="Upload one protein structure to prioritize residues, understand why they matter and build a falsifiable experiment plan.">
@@ -12,20 +13,19 @@
   <meta property="og:url" content="https://rinetlab.com/">
   <meta property="og:title" content="RINet — Find the residue worth testing">
   <meta property="og:description" content="A supplied structure in. A falsifiable evidence record out.">
-  <meta property="og:image" content="https://rinetlab.com/media/rinet-structural-scan-stable-poster.jpg">
+  <meta property="og:image" content="https://rinetlab.com/media/og-rinet.png?v=2">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="RINet — Find the residue worth testing">
   <meta name="twitter:description" content="Local protein structure analysis. No account. No structure upload.">
-  <meta name="twitter:image" content="https://rinetlab.com/media/rinet-structural-scan-stable-poster.jpg">
+  <meta name="twitter:image" content="https://rinetlab.com/media/og-rinet.png?v=2">
 </head>
 <body>
   <header class="nav-shell">
-    <a class="brand" href="#top" aria-label="RINet home"><span class="brand-mark">R/</span><span>RINet</span></a>
+    <a class="brand" href="#top" aria-label="RINet home"><img class="brand-mark" src="/media/rinet-mark.png?v=2" alt=""><span>RINet</span></a>
     <nav aria-label="Primary navigation">
       <a href="#install">Install</a>
       <a href="#product">How it works</a>
-      <button class="nav-feedback" type="button" data-open-feedback>Used it?</button>
-      <a href="#contact">Contact</a>
+      <button class="nav-feedback" type="button" data-open-feedback>Feedback / contact</button>
     </nav>
     <a class="nav-cta" href="/brief/">Analyze a PDB <span>↗</span></a>
   </header>
@@ -47,14 +47,9 @@
         </div>
       </div>
       <div class="hero-proof" aria-label="RINet facts">
-        <div><strong id="downloadCount">1,658+</strong><span>downloads</span></div>
+        <div><strong id="downloadCount">1,658</strong><span>downloads</span></div>
         <div><strong id="institutionCount">2</strong><span>institutions</span></div>
-        <div><strong>Local</strong><span>zero uploads</span></div>
-      </div>
-      <div class="used-rinet-card">
-        <span>Used RINet at your institution?</span>
-        <strong>One useful line is enough.</strong>
-        <button type="button" data-open-feedback>Add institution + feedback <i>↗</i></button>
+        <div><strong>Local</strong><span>runs on your device</span></div>
       </div>
       <button class="film-toggle" id="filmToggle" type="button" aria-label="Pause molecular scan">Pause scan</button>
     </section>
@@ -127,52 +122,52 @@
     <section class="contact" id="contact">
       <div class="contact-copy">
         <p class="section-tag">05 / Contact</p>
-        <h2>Used it on a protein?<br>Send one useful line.</h2>
-        <p>Name, institution and feedback are sent directly to the RINet team. A short note is enough.</p>
-        <a href="mailto:akulkumar02008@gmail.com">akulkumar02008@gmail.com ↗</a>
+        <h2>Questions, ideas,<br>or feedback.</h2>
+        <p>Ask a question, share what you tried, report a problem, or suggest what RINet should do next. Short notes are welcome.</p>
       </div>
-      <form class="contact-form" id="contactForm" action="https://formsubmit.co/akulkumar02008@gmail.com" method="POST">
-        <input type="hidden" name="_subject" value="New RINet institution feedback">
+      <form class="contact-form" id="contactForm" data-rinet-contact method="POST">
+        <input type="hidden" name="_subject" value="New RINet message">
         <input type="hidden" name="_next" value="https://rinetlab.com/?contact=sent#contact">
         <input type="hidden" name="_template" value="table">
         <input type="hidden" name="_url" value="https://rinetlab.com/#contact">
         <input class="contact-honey" type="text" name="_honey" tabindex="-1" autocomplete="off">
-        <label><span>Name</span><input type="text" name="name" required maxlength="100" placeholder="Your name or lab"></label>
-        <label><span>Institution</span><input type="text" name="affiliation" required maxlength="140" placeholder="University, institute or laboratory"></label>
+        <label><span>Name <em>optional</em></span><input type="text" name="name" maxlength="100" placeholder="Your name or lab"></label>
+        <label><span>Affiliation <em>optional</em></span><input type="text" name="affiliation" maxlength="140" placeholder="University, institute or laboratory"></label>
         <label><span>Email <em>optional</em></span><input type="email" name="email" maxlength="160" placeholder="If you would like a reply"></label>
-        <label><span>Feedback</span><textarea name="feedback" required maxlength="1000" rows="4" placeholder="What did you analyze, and what would make RINet more useful?"></textarea></label>
-        <button type="submit">Send feedback <span>↗</span></button>
-        <p class="contact-status" id="contactStatus" aria-live="polite">Sent directly to the RINet inbox.</p>
+        <label><span>Message</span><textarea name="message" required maxlength="1000" rows="4" placeholder="Question, feedback, problem, idea—anything useful."></textarea></label>
+        <button type="submit">Send message <span>↗</span></button>
+        <p class="contact-status" id="contactStatus" aria-live="polite">Sent privately to the RINet team.</p>
       </form>
     </section>
   </main>
 
   <dialog class="feedback-dialog" id="feedbackDialog" aria-labelledby="feedbackDialogTitle">
     <div class="dialog-head">
-      <span>INSTITUTIONAL USE / ONE LINE</span>
+      <span>FEEDBACK / CONTACT</span>
       <button type="button" data-close-feedback aria-label="Close feedback form">Close</button>
     </div>
     <div class="dialog-copy">
-      <p class="section-tag">Used RINet?</p>
-      <h2 id="feedbackDialogTitle">Put your institution on the map.</h2>
-      <p>Tell us where you used it and one thing you noticed. No structure, research area or long survey required.</p>
+      <p class="section-tag">Send a note</p>
+      <h2 id="feedbackDialogTitle">What should RINet know?</h2>
+      <p>Share feedback, ask a question, report a problem, or tell us what would make the tool more useful. No long survey.</p>
     </div>
-    <form class="dialog-form" action="https://formsubmit.co/akulkumar02008@gmail.com" method="POST">
-      <input type="hidden" name="_subject" value="New RINet institution feedback">
+    <form class="dialog-form" data-rinet-contact method="POST">
+      <input type="hidden" name="_subject" value="New RINet message">
       <input type="hidden" name="_next" value="https://rinetlab.com/?contact=sent#contact">
       <input type="hidden" name="_template" value="table">
       <input type="hidden" name="_url" value="https://rinetlab.com/">
       <input class="contact-honey" type="text" name="_honey" tabindex="-1" autocomplete="off">
-      <label><span>Name</span><input type="text" name="name" required maxlength="100" placeholder="Your name or lab"></label>
-      <label><span>Institution</span><input type="text" name="affiliation" required maxlength="140" placeholder="University, institute or laboratory"></label>
-      <label><span>One useful line</span><textarea name="feedback" required maxlength="1000" rows="3" placeholder="What did you analyze, or what should RINet do better?"></textarea></label>
-      <button type="submit">Send feedback <span>↗</span></button>
-      <small>Sent directly to the RINet inbox.</small>
+      <label><span>Name <em>optional</em></span><input type="text" name="name" maxlength="100" placeholder="Your name or lab"></label>
+      <label><span>Affiliation <em>optional</em></span><input type="text" name="affiliation" maxlength="140" placeholder="University, institute or laboratory"></label>
+      <label><span>Email <em>optional</em></span><input type="email" name="email" maxlength="160" placeholder="If you would like a reply"></label>
+      <label><span>Message</span><textarea name="message" required maxlength="1000" rows="3" placeholder="Question, feedback, problem, idea—anything useful."></textarea></label>
+      <button type="submit">Send message <span>↗</span></button>
+      <small>Sent privately to the RINet team.</small>
     </form>
   </dialog>
 
   <footer>
-    <a class="brand" href="#top"><span class="brand-mark">R/</span><span>RINet</span></a>
+    <a class="brand" href="#top"><img class="brand-mark" src="/media/rinet-mark.png?v=2" alt=""><span>RINet</span></a>
     <p>Structure-first. Local. Falsifiable.</p>
     <p>© <span id="year"></span> RINet</p>
   </footer>
