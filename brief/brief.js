@@ -643,6 +643,7 @@ function render(data) {
   document.getElementById("resultScrollCue")?.classList.remove("dismissed");
   preview.stage?.setSpin(false);
   window.scrollTo({ top: 0, behavior: "auto" });
+  requestAnimationFrame(updateResultScrollCue);
   renderMolecule(data.rawText, data.sourceName, r.topResidues);
 }
 
@@ -839,10 +840,15 @@ document.getElementById("viewerSpin").addEventListener("click", event => {
 });
 document.getElementById("newAnalysis").addEventListener("click", () => { window.location.href = "/brief/"; });
 document.getElementById("resultScrollCue")?.addEventListener("click", () => document.getElementById("resultScrollCue")?.classList.add("dismissed"));
-window.addEventListener("scroll", () => {
+function updateResultScrollCue() {
   const cue = document.getElementById("resultScrollCue");
-  if (cue) cue.classList.toggle("dismissed", window.scrollY > 40);
-}, { passive: true });
+  const decisionBrief = document.getElementById("decisionBrief");
+  if (!cue || !decisionBrief || !document.body.classList.contains("analysis-mode")) return;
+  const guidanceReached = decisionBrief.getBoundingClientRect().top <= window.innerHeight * .82;
+  cue.classList.toggle("dismissed", guidanceReached);
+}
+window.addEventListener("scroll", updateResultScrollCue, { passive: true });
+window.addEventListener("resize", updateResultScrollCue, { passive: true });
 
 document.getElementById("copyMethods").addEventListener("click", async e => {
   try { await navigator.clipboard.writeText(document.getElementById("methodsText").textContent); e.currentTarget.textContent = "Copied"; setTimeout(() => e.currentTarget.textContent = "Copy paragraph", 1500); }
