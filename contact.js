@@ -7,7 +7,7 @@ const rinetContactFields = {
 };
 const institutionCounterBase = "https://countapi.mileshilliard.com/api/v1";
 const institutionTotalKey = "rinetlab-institutions-live-v1-e1a7c4";
-const institutionBaseline = 2;
+const institutionBaseline = 3;
 
 function institutionCountValue(payload) {
   const value = Number(payload?.value);
@@ -15,8 +15,9 @@ function institutionCountValue(payload) {
 }
 
 function displayInstitutionCount(value) {
+  const nextValue = String(Math.max(institutionBaseline, Number(value) || 0));
   document.querySelectorAll("[data-institution-count]").forEach(node => {
-    node.textContent = String(Math.max(institutionBaseline, Number(value) || 0));
+    if (node.textContent !== nextValue) node.textContent = nextValue;
   });
 }
 
