@@ -53,8 +53,33 @@ async function loadDownloadCount() {
     const response = await fetch(`${downloadMetricsUrl}?v=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) throw new Error("metrics feed unavailable");
     const metrics = await response.json();
-    const total = Number(metrics.website_total);
+    let total = Number(metrics.website_total);
     if (!Number.isFinite(total)) throw new Error("invalid metrics feed");
+
+    try {
+      const liveResponse = await fetch("https://api.github.com/repos/AkulK08/rinetlab/releases/tags/v1.2.0-build012", { headers: { Accept: "application/vnd.github+json" } });
+      if (liveResponse.ok) {
+        const release = await liveResponse.json();
+        const liveDemo = release.assets?.find(asset => asset.name === demoDownloadAssetName);
+        const liveZip = release.assets?.find(asset => asset.name.endsWith(".zip"));
+        const trackedDemo = metrics.instant_demo || {};
+        const trackedZip = metrics.installer_and_zip || {};
+
+        if (liveDemo) {
+          total += liveDemo.id === trackedDemo.asset_id
+            ? Math.max(0, Number(liveDemo.download_count) - Number(trackedDemo.raw_download_count || 0))
+            : Number(liveDemo.download_count || 0);
+        }
+        if (liveZip) {
+          total += liveZip.id === trackedZip.asset_id
+            ? Math.max(0, Number(liveZip.download_count) - Number(trackedZip.raw_download_count || 0))
+            : Number(liveZip.download_count || 0);
+        }
+      }
+    } catch (_) {
+      // The durable snapshot still provides the correct last recorded total.
+    }
+
     display.textContent = `${total.toLocaleString()}+`;
   } catch (_) {
     try {
