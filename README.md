@@ -15,7 +15,7 @@ Then open `http://127.0.0.1:8891/`.
 - Product release: `v1.1.0-build011`
 - A black, full-bleed structural evidence scan rendered from the supplied PDB 1CRN.
 - Structure Brief: local PDB parsing, coordinate inventory, structural flags, Cα contact summary, methods capsule and private JSON export.
-- A private email contact form on the homepage and Structure Brief, with anonymous institution-count deduplication.
+- A private stored-message contact form on the homepage and Structure Brief, with anonymous institution-count deduplication.
 - A checksummed one-line macOS installer.
 - The downloadable ZIP contains the CLI-launched local GUI, scientific facilities, tests, checksums, documentation, wheel, and source distribution.
 

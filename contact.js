@@ -1,4 +1,10 @@
-const rinetContactRoute = `https://formsubmit.co/ajax/${atob("YWt1bGt1bWFyMDIwMDhAZ21haWwuY29t")}`;
+const rinetContactRoute = "https://docs.google.com/forms/d/e/1FAIpQLSekauigVwUPRU0-dN_20x_JDG3fR8QVAPe-r7VKfqygg3I9nQ/formResponse";
+const rinetContactFields = {
+  email: "entry.399291716",
+  message: "entry.1285651083",
+  name: "entry.1381481693",
+  affiliation: "entry.1710127868"
+};
 const institutionCounterBase = "https://countapi.mileshilliard.com/api/v1";
 const institutionTotalKey = "rinetlab-institutions-live-v1-e1a7c4";
 const institutionBaseline = 2;
@@ -73,11 +79,13 @@ function showContactToast(message, error = false) {
 }
 
 document.querySelectorAll("[data-rinet-contact]").forEach(form => {
-  form.action = rinetContactRoute;
-  form.querySelector('input[name="_url"]')?.setAttribute("value", window.location.href);
   form.addEventListener("submit", async event => {
-    if (!form.checkValidity() || form.querySelector('[name="_honey"]')?.value) return;
     event.preventDefault();
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+    if (form.querySelector('[name="_honey"]')?.value) return;
     const button = form.querySelector('button[type="submit"]');
     const originalButton = button?.innerHTML;
     if (button) {
@@ -86,14 +94,24 @@ document.querySelectorAll("[data-rinet-contact]").forEach(form => {
     }
     const affiliation = form.querySelector('[name="affiliation"]')?.value || "";
     try {
-      const payload = Object.fromEntries(new FormData(form).entries());
-      const response = await fetch(rinetContactRoute, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(payload)
+      const formData = new FormData(form);
+      const payload = new URLSearchParams({
+        [rinetContactFields.name]: String(formData.get("name") || ""),
+        [rinetContactFields.affiliation]: String(formData.get("affiliation") || ""),
+        [rinetContactFields.email]: String(formData.get("email") || ""),
+        [rinetContactFields.message]: String(formData.get("message") || ""),
+        fvv: "1",
+        pageHistory: "0",
+        submit: "Submit"
       });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || result.success === false || result.success === "false") throw new Error(result.message || "Message could not be sent");
+      await fetch(rinetContactRoute, {
+        method: "POST",
+        mode: "no-cors",
+        credentials: "omit",
+        cache: "no-store",
+        keepalive: true,
+        body: payload
+      });
       await Promise.race([
         registerInstitution(affiliation),
         new Promise(resolve => window.setTimeout(resolve, 2500))

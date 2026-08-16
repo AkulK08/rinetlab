@@ -242,26 +242,22 @@
     <div class="research-contact-copy">
       <p class="eyebrow">Feedback / contact</p>
       <h2>Questions, ideas,<br>or feedback.</h2>
-      <p>Ask a question, share what you tried, report a problem, or suggest what RINet should do next. Messages are sent privately by email.</p>
+      <p>Ask a question, share what you tried, report a problem, or suggest what RINet should do next. Messages are stored privately for the RINet team.</p>
     </div>
-    <form class="research-contact-form" data-rinet-contact method="POST">
-      <input type="hidden" name="_subject" value="New RINet message">
-      <input type="hidden" name="_next" value="https://rinetlab.com/brief/?contact=sent#contact">
-      <input type="hidden" name="_template" value="table">
-      <input type="hidden" name="_url" value="https://rinetlab.com/brief/">
+    <form class="research-contact-form" data-rinet-contact action="#contact" onsubmit="return false">
       <input class="contact-honey" type="text" name="_honey" tabindex="-1" autocomplete="off">
       <label><span>Name <em>optional</em></span><input type="text" name="name" maxlength="100" placeholder="Your name or lab"></label>
       <label><span>Affiliation <em>optional</em></span><input type="text" name="affiliation" maxlength="140" placeholder="University, institute or laboratory"></label>
       <label><span>Email <em>optional</em></span><input type="email" name="email" maxlength="160" placeholder="If you would like a reply"></label>
       <label><span>Message</span><textarea name="message" required maxlength="1000" rows="4" placeholder="Question, feedback, problem, idea, anything useful."></textarea></label>
       <button type="submit">Send message <span>↗</span></button>
-      <p data-contact-status aria-live="polite">Sent privately to the RINet team.</p>
+      <p data-contact-status aria-live="polite">Stored privately for the RINet team.</p>
     </form>
   </section>
 
   <footer><a href="/">← RINet home</a><span>Structure Intelligence 2.1 · local coordinate analysis</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
-  <script src="/contact.js?v=2"></script>
+  <script src="/contact.js?v=3"></script>
   <script src="/brief/brief.js?v=16"></script>
 </body>
 </html>
