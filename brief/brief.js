@@ -57,7 +57,7 @@ function stopDemoAutoScroll() {
   demoAutoScroll.active = false;
 }
 
-function scheduleDemoAutoScroll() {
+function scheduleDemoAutoScroll(delay = 1000) {
   stopDemoAutoScroll();
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   demoAutoScroll.active = true;
@@ -66,15 +66,18 @@ function scheduleDemoAutoScroll() {
     let previous = performance.now();
     const advance = now => {
       if (!demoAutoScroll.active || !document.body.classList.contains("demo-mode")) return stopDemoAutoScroll();
-      const guidance = document.getElementById("decisionBrief");
-      if (!guidance || guidance.getBoundingClientRect().top <= window.innerHeight * .78) return stopDemoAutoScroll();
+      const pageBottom = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      if (window.scrollY >= pageBottom - 2) {
+        updateResultScrollCue();
+        return stopDemoAutoScroll();
+      }
       const elapsed = Math.min(now - previous, 40);
       previous = now;
-      window.scrollBy(0, elapsed * .045);
+      window.scrollBy(0, elapsed * .12);
       demoAutoScroll.frame = window.requestAnimationFrame(advance);
     };
     demoAutoScroll.frame = window.requestAnimationFrame(advance);
-  }, 1800);
+  }, delay);
 }
 
 ["wheel", "touchstart", "pointerdown"].forEach(eventName => window.addEventListener(eventName, stopDemoAutoScroll, { passive: true }));
@@ -876,17 +879,20 @@ document.getElementById("viewerSpin").addEventListener("click", event => {
   event.currentTarget.textContent = molecular.spinning ? "Pause" : "Spin";
 });
 document.getElementById("newAnalysis").addEventListener("click", () => { window.location.href = "/brief/"; });
-document.querySelectorAll("[data-scroll-guidance]").forEach(control => control.addEventListener("click", event => {
+document.querySelector("[data-scroll-guidance]")?.addEventListener("click", event => {
   event.preventDefault();
-  document.getElementById("resultScrollCue")?.classList.add("dismissed");
   document.getElementById("decisionBrief")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
-}));
+});
+document.getElementById("resultScrollCue")?.addEventListener("click", event => {
+  event.preventDefault();
+  if (document.body.classList.contains("demo-mode")) scheduleDemoAutoScroll(0);
+  else document.getElementById("decisionBrief")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+});
 function updateResultScrollCue() {
   const cue = document.getElementById("resultScrollCue");
-  const decisionBrief = document.getElementById("decisionBrief");
-  if (!cue || !decisionBrief || !document.body.classList.contains("analysis-mode")) return;
-  const guidanceReached = decisionBrief.getBoundingClientRect().top <= window.innerHeight * .82;
-  cue.classList.toggle("dismissed", guidanceReached);
+  if (!cue || !document.body.classList.contains("analysis-mode")) return;
+  const pageBottom = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  cue.classList.toggle("dismissed", window.scrollY >= pageBottom - 2);
 }
 window.addEventListener("scroll", updateResultScrollCue, { passive: true });
 window.addEventListener("resize", updateResultScrollCue, { passive: true });
