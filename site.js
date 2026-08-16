@@ -111,22 +111,5 @@ async function loadDownloadCount() {
   }
 }
 
-async function loadInstitutions() {
-  const count = document.getElementById("institutionCount");
-  try {
-    const response = await fetch("https://api.github.com/repos/AkulK08/rinetlab-studio/issues?state=all&labels=research-use&per_page=100", { headers: { Accept: "application/vnd.github+json" } });
-    if (!response.ok) throw new Error("institution count unavailable");
-    const issues = (await response.json()).filter(issue => !issue.pull_request);
-    const institutions = [...new Set(issues.map(issue => {
-      const match = issue.body?.match(/\*\*Affiliation\*\*:\s*(.+)/i);
-      return match?.[1]?.trim().toLowerCase();
-    }).filter(Boolean))];
-    count.textContent = String(Math.max(2, institutions.length));
-  } catch (_) {
-    count.textContent = "2";
-  }
-}
-
-loadInstitutions();
 loadDownloadCount();
 window.setInterval(loadDownloadCount, 90_000);

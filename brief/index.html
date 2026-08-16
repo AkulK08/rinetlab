@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" sizes="any" href="/media/rinet-mark.png?v=20260816">
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=20260816">
   <link rel="image_src" href="https://rinetlab.com/media/rinet-mark.png?v=20260816">
-  <link rel="stylesheet" href="/brief/brief.css?v=15">
+  <link rel="stylesheet" href="/brief/brief.css?v=16">
   <title>Structure Brief | RINet</title>
   <meta name="description" content="Interrogate a protein structure and turn its strongest structural signals into a falsifiable experiment plan.">
   <meta property="og:type" content="website">
@@ -226,27 +226,19 @@
         </section>
       </details>
 
-      <section class="receipt" id="analysisEnd">
+      <section class="receipt private-export" id="analysisEnd">
         <div class="receipt-intro">
-          <p class="eyebrow">Optional analysis receipt</p>
-          <h2>Share one useful line.</h2>
-          <p>This opens a reviewable GitHub issue containing only the summary and your note, not the structure.</p>
-          <button class="download-button" id="downloadReceipt" type="button">Download private JSON receipt</button>
+          <p class="eyebrow">Private analysis export</p>
+          <h2>Keep the analysis.</h2>
+          <p>Download a local JSON record of the structure summary, ranked targets and reproducibility details. Nothing is published.</p>
+          <button class="download-button" id="downloadReceipt" type="button">Download private analysis JSON</button>
         </div>
-        <form id="receiptForm">
-          <label>Affiliation <span>optional</span><input id="affiliation" maxlength="120" placeholder="e.g. Department of Biology, University of …"></label>
-          <label>Name or lab <span>optional</span><input id="researcher" maxlength="100" placeholder="e.g. Smith Lab"></label>
-          <label>One line of feedback <textarea id="feedback" required maxlength="500" rows="3" placeholder="What did you check, and what would make this more useful?"></textarea></label>
-          <label class="consent"><input id="consent" type="checkbox" required> I understand this will open a public GitHub issue for my review before submission.</label>
-          <button class="publish-button" type="submit">Review public receipt on GitHub ↗</button>
-          <p class="form-note">A GitHub account is required only to publish the optional receipt. Analysis and downloads require no account.</p>
-        </form>
       </section>
     </section>
   </main>
 
   <footer><a href="/">← RINet home</a><span>Structure Intelligence 2.1 · local coordinate analysis</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
-  <script src="/brief/brief.js?v=15"></script>
+  <script src="/brief/brief.js?v=16"></script>
 </body>
 </html>

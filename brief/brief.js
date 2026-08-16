@@ -5,7 +5,7 @@ const els = {
   pdbForm: document.getElementById("pdbForm"), pdbId: document.getElementById("pdbId"),
   resultPdbForm: document.getElementById("resultPdbForm"), resultPdbId: document.getElementById("resultPdbId"),
   demoButton: document.getElementById("demoButton"), status: document.getElementById("status"),
-  analysisStatus: document.getElementById("analysisStatus"), results: document.getElementById("results"), receiptForm: document.getElementById("receiptForm")
+  analysisStatus: document.getElementById("analysisStatus"), results: document.getElementById("results")
 };
 
 let current = null;
@@ -948,17 +948,6 @@ function receiptPayload() {
 document.getElementById("downloadReceipt").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(receiptPayload(), null, 2)], { type: "application/json" });
   const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `${current.receiptId.toLowerCase()}-structure-brief.json`; link.click(); URL.revokeObjectURL(link.href);
-});
-
-els.receiptForm.addEventListener("submit", event => {
-  event.preventDefault(); if (!current || !els.receiptForm.reportValidity()) return;
-  const affiliation = document.getElementById("affiliation").value.trim() || "Not provided";
-  const researcher = document.getElementById("researcher").value.trim() || "Not provided";
-  const feedback = document.getElementById("feedback").value.trim();
-  const title = `RINet analysis feedback · ${current.receiptId}`;
-  const body = `## RINet analysis feedback\n\n**Affiliation**: ${affiliation}\n**Name / lab**: ${researcher}\n**Receipt**: ${current.receiptId}\n**Input label**: ${current.sourceName}\n**Structure SHA-256**: \`${current.digest}\`\n\n### Message\n${feedback}\n\n### Analysis summary\n- ${current.report.residues} polymer residues across ${current.report.chainReports.length} chain(s)\n- ${current.report.polymerAtoms} polymer atoms\n- ${current.report.contacts} descriptive Cα contacts at 8.0 Å\n- ${current.report.chainReports.reduce((s,c)=>s+c.breaks,0)} sequence gap / backbone break flags\n\n> Coordinates were analyzed locally and are not attached. This receipt records use of the utility; it is not an endorsement of scientific conclusions.`;
-  const url = `https://github.com/AkulK08/rinetlab-studio/issues/new?labels=research-use&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
-  window.open(url, "_blank", "noopener,noreferrer");
 });
 
 switchSource("id", false);
