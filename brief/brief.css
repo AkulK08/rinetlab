@@ -247,12 +247,36 @@ body.analysis-mode main { width: 100%; }
 .viewer-readout span { min-width: 135px; border: 1px solid rgba(112,137,123,.42); padding: 9px 11px; background: rgba(6,10,7,.74); color: #708077; font: 7px var(--mono); text-transform: uppercase; }
 .viewer-readout b { display: block; margin-bottom: 4px; color: #dfe8e2; font-size: 15px; font-weight: 560; }
 .analysis-status { min-height: 34px; display: flex; align-items: center; padding: 0 24px; border-bottom: 1px solid #2d3731; background: #0c120e; color: #8da097; font: 8px var(--mono); text-transform: uppercase; }
+.result-scroll-cue { position: fixed; z-index: 18; left: 50%; bottom: 18px; display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 8px 13px 4px; color: #aab8b0; background: rgba(6,9,7,.72); backdrop-filter: blur(10px); font: 7px var(--mono); letter-spacing: .12em; text-decoration: none; text-transform: uppercase; transition: opacity .25s ease, transform .25s ease; }
+.result-scroll-cue i { width: 1px; height: 28px; display: block; overflow: hidden; background: rgba(201,251,60,.2); }
+.result-scroll-cue i::after { content: ""; width: 1px; height: 12px; display: block; background: #c9fb3c; animation: scrollSignal 1.8s ease-in-out infinite; }
+.result-scroll-cue.dismissed { opacity: 0; transform: translateY(8px); pointer-events: none; }
+@keyframes scrollSignal { 0% { transform: translateY(-14px); opacity: 0; } 25% { opacity: 1; } 75% { opacity: 1; } 100% { transform: translateY(30px); opacity: 0; } }
 .metric-strip { border-color: #344139; background: #0a0f0b; }
 .metric-strip div { border-color: #2d3832; }
 .metric-strip span { color: #728077; }
 .metric-strip strong { color: #e2e9e4; }
 
 .ai-guidance { margin: 0; border: 0; border-bottom: 1px solid #31453b; }
+.deterministic-seal { align-self: end; border-left: 2px solid #66d7ff; padding: 4px 0 3px 19px; }
+.deterministic-seal strong, .deterministic-seal span, .deterministic-seal small { display: block; }
+.deterministic-seal strong { color: #66d7ff; font: 8px var(--mono); letter-spacing: .13em; }
+.deterministic-seal span { margin-top: 8px; color: #edf3ef; font: 560 15px var(--mono); }
+.deterministic-seal small { max-width: 390px; margin-top: 8px; color: #7f9188; font: 8px/1.5 var(--mono); }
+.guidance-summary article { position: relative; overflow: hidden; }
+.guidance-summary article::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--card-accent, #c9fb3c); }
+.guidance-summary .summary-identity { --card-accent: #66d7ff; background: linear-gradient(150deg, rgba(102,215,255,.08), transparent 58%); }
+.guidance-summary .summary-use { --card-accent: #b98cff; background: linear-gradient(150deg, rgba(185,140,255,.08), transparent 58%); }
+.guidance-summary .summary-action { --card-accent: #ffad61; background: linear-gradient(150deg, rgba(255,173,97,.075), transparent 58%); }
+.guidance-summary .summary-gate { --card-accent: #c9fb3c; background: linear-gradient(150deg, rgba(201,251,60,.07), transparent 58%); }
+.guidance-summary .summary-identity strong { color: #9de6ff; }
+.guidance-summary .summary-use strong { color: #cbb0ff; }
+.guidance-summary .summary-action strong { color: #ffc08a; }
+.guidance-summary .summary-gate strong { color: #dfff7d; }
+.guidance-grid article:nth-child(1) span { color: #66d7ff; }
+.guidance-grid article:nth-child(2) span { color: #ffad61; }
+.guidance-grid article:nth-child(3) span { color: #b98cff; }
+.guidance-grid article:nth-child(4) span { color: #c9fb3c; }
 .experiment-blueprint { border-top: 1px solid #2e4037; }
 .blueprint-head { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 8vw; padding: 40px 34px 30px; background: #0a130e; }
 .blueprint-head > span { grid-column: 1/-1; color: var(--acid); font: 8px var(--mono); letter-spacing: .11em; }
@@ -330,4 +354,7 @@ footer { border-color: #344139; }
   .mutation-ladder li, .diagnostic-matrix > div { grid-template-columns: 1fr; gap: 8px; }
   .mutation-ladder li small { grid-column: 1; }
   .technical-details, .receipt { padding-left: 18px; padding-right: 18px; }
+  .result-scroll-cue { bottom: 10px; }
 }
+
+@media (prefers-reduced-motion: reduce) { .result-scroll-cue i::after { animation: none; } }
