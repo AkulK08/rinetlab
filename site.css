@@ -29,8 +29,9 @@ section[id] { scroll-margin-top: 80px; }
 .nav-shell nav .nav-demo:hover, .nav-shell nav .nav-install:hover { border-color: var(--acid); color: #f3ffcd; background: rgba(204,255,50,.09); }
 .nav-feedback { color: var(--acid); }
 .nav-shell nav a:hover, .nav-feedback:hover { color: #fff; }
-.nav-cta { justify-self: end; color: var(--black); background: var(--acid); padding: 12px 16px; font-size: 12px; font-weight: 700; text-decoration: none; }
+.nav-cta { justify-self: end; border: 1px solid rgba(255,255,255,.24); color: #dce3df; background: rgba(255,255,255,.025); padding: 12px 16px; font-size: 12px; font-weight: 700; text-decoration: none; }
 .nav-cta span { margin-left: 12px; }
+.nav-cta:hover { border-color: rgba(255,255,255,.55); color: #fff; background: rgba(255,255,255,.065); }
 
 .hero { position: relative; min-height: 100svh; overflow: hidden; border-bottom: 1px solid var(--line); background: #020303; }
 .hero-film { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #020303; }
@@ -42,6 +43,7 @@ h1 { margin: 20px 0 22px; font-size: clamp(56px, 6.6vw, 110px); line-height: .88
 .hero-links { display: flex; align-items: center; gap: 28px; margin-top: 30px; }
 .button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0 18px; border: 1px solid currentColor; font-size: 12px; font-weight: 700; text-decoration: none; }
 .button-light { border-color: var(--acid); background: var(--acid); color: var(--black); }
+.button-light span { margin-left: 11px; }
 .button-dark { border-color: var(--paper-ink); background: var(--paper-ink); color: #fff; }
 .text-link { font-size: 12px; text-decoration: none; border-bottom: 1px solid #717a77; padding-bottom: 4px; }
 .text-link span { margin-left: 8px; color: var(--acid); }
@@ -186,11 +188,12 @@ footer { min-height: 150px; display: grid; grid-template-columns: 1fr auto auto;
   .nav-cta { padding: 10px; }
   .nav-feedback { font-size: 10px; }
   .nav-feedback { display: none; }
+  .hero { background: #020303 url("/media/rinet-structural-scan-stable-poster.jpg") center center / cover no-repeat; }
+  .hero-film, .film-toggle { display: none; }
   h1 { font-size: 57px; }
   .hero-summary { font-size: 14px; }
   .hero-proof div { width: 102px; }
   .hero-proof strong { font-size: 15px; }
-  .film-toggle { top: 80px; right: 16px; }
   .hero-links { flex-wrap: wrap; gap: 16px 22px; }
   .statement, .brief-copy, .install, .contact { padding-left: 22px; padding-right: 22px; }
   .evidence-step { grid-template-columns: 32px 1fr; }

@@ -44,7 +44,7 @@ jobs:
           old_demo_id="$(jq -r '.instant_demo.asset_id // 0' metrics/downloads.json)"
           old_demo_raw="$(jq -r '.instant_demo.raw_download_count // 0' metrics/downloads.json)"
           old_demo_lifetime="$(jq -r '.instant_demo.lifetime_since_tracking // 0' metrics/downloads.json)"
-          baseline="$(jq -r '.historical_baseline // 1658' metrics/downloads.json)"
+          baseline="$(jq -r '.historical_baseline // 1863' metrics/downloads.json)"
 
           zip_id="$(jq -r '.id' <<<"$zip_asset")"
           zip_name="$(jq -r '.name' <<<"$zip_asset")"

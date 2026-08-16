@@ -3,14 +3,21 @@ const filmToggle = document.getElementById("filmToggle");
 const copyCommand = document.getElementById("copyCommand");
 const installCommand = document.getElementById("installCommand");
 const demoDownloadAssetName = "rinet-structure-brief-demo.txt";
-const downloadBaseline = 1658;
+const downloadBaseline = 1863;
 const downloadMetricsUrl = "https://raw.githubusercontent.com/AkulK08/rinetlab/main/metrics/downloads.json";
 const feedbackDialog = document.getElementById("feedbackDialog");
 
 document.getElementById("year").textContent = new Date().getFullYear();
-film.defaultPlaybackRate = 0.4;
-film.playbackRate = 0.4;
-film.addEventListener("loadedmetadata", () => { film.playbackRate = 0.4; }, { once: true });
+const mobileHero = window.matchMedia("(max-width: 600px)");
+if (mobileHero.matches) {
+  film.pause();
+  film.removeAttribute("autoplay");
+  filmToggle.hidden = true;
+} else {
+  film.defaultPlaybackRate = 0.4;
+  film.playbackRate = 0.4;
+  film.addEventListener("loadedmetadata", () => { film.playbackRate = 0.4; }, { once: true });
+}
 
 document.querySelectorAll("[data-open-feedback]").forEach(button => button.addEventListener("click", () => {
   if (typeof feedbackDialog.showModal === "function") feedbackDialog.showModal();
@@ -55,7 +62,7 @@ async function loadDownloadCount() {
     if (!response.ok) throw new Error("metrics feed unavailable");
     const metrics = await response.json();
     let total = Number(metrics.website_total);
-    if (!Number.isFinite(total)) throw new Error("invalid metrics feed");
+    if (!Number.isFinite(total) || total < downloadBaseline) throw new Error("outdated metrics feed");
 
     try {
       const liveResponse = await fetch("https://api.github.com/repos/AkulK08/rinetlab/releases/tags/v1.2.0-build012", { headers: { Accept: "application/vnd.github+json" } });
@@ -81,19 +88,9 @@ async function loadDownloadCount() {
       // The durable snapshot still provides the correct last recorded total.
     }
 
-    display.textContent = total.toLocaleString();
+    display.textContent = Math.max(downloadBaseline, total).toLocaleString();
   } catch (_) {
-    try {
-      const response = await fetch("https://api.github.com/repos/AkulK08/rinetlab/releases/tags/v1.2.0-build012", { headers: { Accept: "application/vnd.github+json" } });
-      if (!response.ok) throw new Error("download count unavailable");
-      const release = await response.json();
-      const demoAsset = release.assets?.find(asset => asset.name === demoDownloadAssetName);
-      const zipAsset = release.assets?.find(asset => asset.name.endsWith(".zip"));
-      const total = downloadBaseline + Number(demoAsset?.download_count || 0) + Number(zipAsset?.download_count || 0);
-      display.textContent = total.toLocaleString();
-    } catch (_) {
-      display.textContent = downloadBaseline.toLocaleString();
-    }
+    display.textContent = downloadBaseline.toLocaleString();
   }
 }
 
