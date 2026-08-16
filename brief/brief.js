@@ -97,6 +97,14 @@ function parseAtom(line) {
 function distance(a, b) { return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z); }
 function median(values) { const s = [...values].sort((a,b) => a-b); return s.length ? (s[Math.floor((s.length-1)/2)] + s[Math.ceil((s.length-1)/2)]) / 2 : null; }
 function esc(value) { return String(value).replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"})[c]); }
+function residueClass(name) {
+  if (["ARG", "LYS", "HIS"].includes(name)) return "basic";
+  if (["ASP", "GLU"].includes(name)) return "acidic";
+  if (["SER", "THR", "ASN", "GLN", "CYS"].includes(name)) return "polar";
+  if (["PHE", "TYR", "TRP"].includes(name)) return "aromatic";
+  if (["GLY", "PRO"].includes(name)) return "backbone-special";
+  return "hydrophobic";
+}
 function mutationSuggestion(residue) {
   const substitutions = { ASP: "D→N", GLU: "E→Q", LYS: "K→Q", ARG: "R→Q", CYS: "C→S", ALA: "A→G", GLY: "G→A", PRO: "P→A" };
   return substitutions[residue?.name] || `${residue?.name || "Residue"}→Ala`;
@@ -133,12 +141,22 @@ function parsePdb(text) {
   const chains = new Map();
   residues.forEach(residue => { if (!chains.has(residue.chain)) chains.set(residue.chain, []); chains.get(residue.chain).push(residue); });
   const degree = new Map(residues.map(r => [r.key, 0]));
+  const weighted = new Map(residues.map(r => [r.key, 0]));
+  const longRange = new Map(residues.map(r => [r.key, 0]));
+  const interchain = new Map(residues.map(r => [r.key, 0]));
   const cas = residues.filter(r => r.ca);
   let contacts = 0;
   for (let i = 0; i < cas.length; i += 1) for (let j = i + 1; j < cas.length; j += 1) {
     const a = cas[i], b = cas[j];
     if (a.chain === b.chain && Math.abs(a.seq - b.seq) <= 2) continue;
-    if (distance(a.ca, b.ca) <= 8.0) { contacts += 1; degree.set(a.key, degree.get(a.key) + 1); degree.set(b.key, degree.get(b.key) + 1); }
+    const separation = distance(a.ca, b.ca);
+    if (separation <= 8.0) {
+      contacts += 1;
+      degree.set(a.key, degree.get(a.key) + 1); degree.set(b.key, degree.get(b.key) + 1);
+      weighted.set(a.key, weighted.get(a.key) + (8.0 - separation) / 8.0); weighted.set(b.key, weighted.get(b.key) + (8.0 - separation) / 8.0);
+      if (a.chain !== b.chain) { interchain.set(a.key, interchain.get(a.key) + 1); interchain.set(b.key, interchain.get(b.key) + 1); }
+      else if (Math.abs(a.seq - b.seq) >= 12) { longRange.set(a.key, longRange.get(a.key) + 1); longRange.set(b.key, longRange.get(b.key) + 1); }
+    }
   }
   const chainReports = [...chains.entries()].map(([chain, items]) => {
     items.sort((a,b) => a.seq - b.seq || a.insertion.localeCompare(b.insertion));
@@ -151,6 +169,7 @@ function parsePdb(text) {
     return { chain, residues: items.length, atoms: items.reduce((sum,r) => sum + r.atoms.length, 0), start: items[0]?.seq, end: items.at(-1)?.seq, breaks };
   });
   const hetero = new Map(); const waters = [];
+  const heteroAtoms = atoms.filter(a => a.record === "HETATM" && !waterNames.has(a.residue));
   atoms.filter(a => a.record === "HETATM").forEach(atom => {
     if (waterNames.has(atom.residue)) return waters.push(atom);
     const key = `${atom.residue}:${atom.chain}:${atom.seq}`;
@@ -161,9 +180,40 @@ function parsePdb(text) {
   const bValues = polymerAtoms.map(a => a.b).filter(Number.isFinite);
   const lowOccupancy = polymerAtoms.filter(a => Number.isFinite(a.occupancy) && a.occupancy < .999).length;
   const missingCa = residues.filter(r => !r.ca).length;
-  const rankedResidues = residues.map(r => ({ label: `${r.name} ${r.chain}:${r.seq}${r.insertion}`, name: r.name, chain: r.chain, seq: r.seq, insertion: r.insertion, degree: degree.get(r.key) })).sort((a,b) => b.degree - a.degree || a.label.localeCompare(b.label));
+  const centroid = cas.reduce((sum, residue) => ({ x: sum.x + residue.ca.x / Math.max(cas.length, 1), y: sum.y + residue.ca.y / Math.max(cas.length, 1), z: sum.z + residue.ca.z / Math.max(cas.length, 1) }), { x: 0, y: 0, z: 0 });
+  const radial = cas.map(residue => distance(residue.ca, centroid));
+  const maxRadius = Math.max(...radial, 1);
+  const rawResidues = residues.filter(r => r.ca).map(r => {
+    const ligandDistance = heteroAtoms.length ? Math.min(...heteroAtoms.slice(0, 5000).map(atom => distance(r.ca, atom))) : null;
+    const bMean = r.atoms.length ? r.atoms.reduce((sum, atom) => sum + (Number.isFinite(atom.b) ? atom.b : 0), 0) / r.atoms.length : null;
+    return {
+      label: `${r.name} ${r.chain}:${r.seq}${r.insertion}`, name: r.name, chain: r.chain, seq: r.seq, insertion: r.insertion,
+      degree: degree.get(r.key), weighted: weighted.get(r.key), longRange: longRange.get(r.key), interchain: interchain.get(r.key),
+      burial: 1 - Math.min(1, distance(r.ca, centroid) / maxRadius), ligandDistance, bMean, residueClass: residueClass(r.name)
+    };
+  });
+  const maxima = {
+    degree: Math.max(...rawResidues.map(r => r.degree), 1), weighted: Math.max(...rawResidues.map(r => r.weighted), 1),
+    longRange: Math.max(...rawResidues.map(r => r.longRange), 1), interchain: Math.max(...rawResidues.map(r => r.interchain), 1)
+  };
+  const rankedResidues = rawResidues.map(r => {
+    const ligandSignal = r.ligandDistance === null ? 0 : Math.max(0, 1 - r.ligandDistance / 10);
+    const score = 100 * (.39 * r.degree / maxima.degree + .18 * r.weighted / maxima.weighted + .14 * r.longRange / maxima.longRange + .13 * r.interchain / maxima.interchain + .10 * r.burial + .06 * ligandSignal);
+    const signals = [];
+    if (r.interchain) signals.push(`${r.interchain} cross-chain contact${r.interchain === 1 ? "" : "s"}`);
+    if (r.longRange) signals.push(`${r.longRange} long-range contact${r.longRange === 1 ? "" : "s"}`);
+    if (r.ligandDistance !== null && r.ligandDistance <= 6) signals.push(`${r.ligandDistance.toFixed(1)} Å from a non-water hetero atom`);
+    if (r.burial >= .58) signals.push("buried structural context");
+    if (!signals.length) signals.push("strongest available local contact context");
+    return { ...r, score, context: signals[0], rationale: `${r.degree} non-local contacts; ${signals.join("; ")}.` };
+  }).sort((a,b) => b.score - a.score || b.degree - a.degree || a.label.localeCompare(b.label));
   const topResidues = rankedResidues.slice(0, 5);
-  const controlResidue = rankedResidues[Math.min(rankedResidues.length - 1, Math.max(5, Math.floor(rankedResidues.length * .65)))] || rankedResidues.at(-1) || null;
+  const candidate = rankedResidues[0];
+  const controlPool = rankedResidues.slice(Math.min(5, rankedResidues.length), Math.max(6, Math.ceil(rankedResidues.length * .85)));
+  const controlResidue = controlPool.sort((a, b) => {
+    const penalty = row => (row.residueClass === candidate?.residueClass ? 0 : 1.5) + Math.abs(row.burial - (candidate?.burial || 0)) + row.score / 100;
+    return penalty(a) - penalty(b);
+  })[0] || rankedResidues.at(-1) || null;
   return {
     residues: residues.length, polymerAtoms: polymerAtoms.length, chainReports, contacts, alternateCount, lowOccupancy, missingCa,
     waters: waters.length, hetero: [...hetero.values()].map(group => `${group.name} ${group.chain}:${group.seq}`), metals: metals.map(group => `${group.name} ${group.chain}:${group.seq}`),
@@ -208,7 +258,7 @@ function renderGuidance(report) {
   const contactClass = candidate?.degree >= 8 ? "a highly connected structural hub" : candidate?.degree >= 4 ? "a moderately connected structural junction" : "the strongest available contact signal in this model";
 
   document.getElementById("guidancePrimary").textContent = candidateLabel;
-  document.getElementById("guidancePrimaryReason").textContent = candidate ? `${candidate.degree} non-local Cα contacts in this coordinate model.` : "The model did not contain a rankable Cα contact graph.";
+  document.getElementById("guidancePrimaryReason").textContent = candidate ? candidate.rationale : "The model did not contain a rankable Cα contact graph.";
   document.getElementById("guidanceMutation").textContent = mutation;
   document.getElementById("guidanceControl").textContent = controlLabel;
   document.getElementById("guidanceConfidence").textContent = `${Math.round(completeness * 100)}%`;
@@ -257,10 +307,10 @@ function render(data) {
     { warn: false, title: r.metals.length ? `Potential metal groups: ${r.metals.join(", ")}` : "No metal groups detected", note: "Detection uses element labels and does not assign coordination chemistry." }
   ];
   document.getElementById("flagList").innerHTML = flags.map(flag => `<div class="flag ${flag.warn ? "warn" : ""}"><i></i><div><strong>${esc(flag.title)}</strong><span>${esc(flag.note)}</span></div></div>`).join("");
-  document.getElementById("topologyRows").innerHTML = r.topResidues.map((residue, i) => `<div class="topology-row"><strong>${String(i+1).padStart(2,"0")} / ${esc(residue.label)}</strong><span>CONTACT DEGREE ${residue.degree}</span></div>`).join("");
-  document.getElementById("bestResidueRows").innerHTML = r.topResidues.map((residue, i) => `<button class="best-residue-row" type="button" data-residue-index="${i}"><span>${String(i+1).padStart(2,"0")}</span><strong>${esc(residue.label)}</strong><small>DEG ${residue.degree}</small></button>`).join("");
+  document.getElementById("topologyRows").innerHTML = r.topResidues.map((residue, i) => `<div class="topology-row"><strong>${String(i+1).padStart(2,"0")} / ${esc(residue.label)}</strong><span>PRIORITY ${residue.score.toFixed(0)} · DEG ${residue.degree}</span></div>`).join("");
+  document.getElementById("bestResidueRows").innerHTML = r.topResidues.map((residue, i) => `<button class="best-residue-row" type="button" data-residue-index="${i}"><span>${String(i+1).padStart(2,"0")}</span><strong>${esc(residue.label)}<em>${esc(residue.context)}</em></strong><small>${residue.score.toFixed(0)}</small></button>`).join("");
   renderGuidance(r);
-  const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Brief 1.0 (receipt ${data.receiptId}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} chain${r.chainReports.length === 1 ? "" : "s"}. A descriptive residue-contact graph was constructed between Cα atoms separated by no more than 8.0 Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. Coordinate-record screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} sequence gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}); they were not assumed to represent prediction confidence. Contact degree and flags are geometric descriptors and were not interpreted as causal or functional proof.`;
+  const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Brief 2.0 (receipt ${data.receiptId}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} chain${r.chainReports.length === 1 ? "" : "s"}. A descriptive residue-contact graph was constructed between Cα atoms separated by no more than 8.0 Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. Residue priority integrated normalized contact degree, distance-weighted packing, long-range and cross-chain contacts, radial burial and proximity to non-water hetero atoms; it was used to create hypotheses rather than infer function. Coordinate-record screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} sequence gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}); they were not assumed to represent prediction confidence. Structural priority and flags were not interpreted as causal or functional proof.`;
   document.getElementById("methodsText").textContent = methods;
   els.results.classList.remove("hidden");
   document.body.classList.add("analysis-mode");

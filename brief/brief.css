@@ -94,6 +94,7 @@ h1 { margin: 22px 0 0; font-size: clamp(54px, 6.6vw, 104px); line-height: .91; l
 .best-residue-row { width: 100%; display: grid; grid-template-columns: 32px 1fr auto; gap: 10px; align-items: center; border: 0; border-bottom: 1px solid #27322c; padding: 14px 0; background: transparent; color: #dce5df; text-align: left; cursor: pointer; }
 .best-residue-row > span { color: #75877d; font: 8px var(--mono); }
 .best-residue-row strong { font: 10px var(--mono); font-weight: 560; }
+.best-residue-row strong em { display: block; margin-top: 5px; color: #71847a; font: normal 7px/1.35 var(--mono); }
 .best-residue-row small { color: #94aa9f; font: 7px var(--mono); }
 .best-residue-row:hover, .best-residue-row.active { color: #bdf238; background: rgba(189,242,56,.055); }
 .best-boundary { margin: auto 0 0; padding-top: 18px; border-top: 1px solid #344139; color: #6f8077; font: 7px/1.55 var(--mono); text-transform: uppercase; }
