@@ -12,7 +12,7 @@ let current = null;
 const molecular = { stage: null, component: null, representation: "surface", spinning: true, highlight: null, topResidues: [], resultScheme: null, selectedResidue: null };
 let activeDiscoveryMode = "biology";
 const preview = { stage: null, component: null };
-const demoAutoScroll = { timer: null, frame: null, active: false };
+const demoTour = { timer: null, settleTimer: null, active: false };
 const waterNames = new Set(["HOH", "WAT", "DOD"]);
 const metalElements = new Set(["LI", "NA", "MG", "AL", "K", "CA", "MN", "FE", "CO", "NI", "CU", "ZN", "SR", "MO", "CD", "CS", "BA", "HG"]);
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
@@ -49,39 +49,58 @@ function setStatus(message, error = false) {
   }
 }
 
-function stopDemoAutoScroll() {
-  if (demoAutoScroll.timer) window.clearTimeout(demoAutoScroll.timer);
-  if (demoAutoScroll.frame) window.cancelAnimationFrame(demoAutoScroll.frame);
-  demoAutoScroll.timer = null;
-  demoAutoScroll.frame = null;
-  demoAutoScroll.active = false;
+function stopDemoTour() {
+  if (demoTour.timer) window.clearTimeout(demoTour.timer);
+  if (demoTour.settleTimer) window.clearTimeout(demoTour.settleTimer);
+  demoTour.timer = null;
+  demoTour.settleTimer = null;
+  demoTour.active = false;
+  document.getElementById("demoSkipStatus")?.classList.remove("active");
 }
 
-function scheduleDemoAutoScroll(delay = 1000) {
-  stopDemoAutoScroll();
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  demoAutoScroll.active = true;
-  demoAutoScroll.timer = window.setTimeout(() => {
-    demoAutoScroll.timer = null;
-    let previous = performance.now();
-    const advance = now => {
-      if (!demoAutoScroll.active || !document.body.classList.contains("demo-mode")) return stopDemoAutoScroll();
-      const pageBottom = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-      if (window.scrollY >= pageBottom - 2) {
-        updateResultScrollCue();
-        return stopDemoAutoScroll();
-      }
-      const elapsed = Math.min(now - previous, 40);
-      previous = now;
-      window.scrollBy(0, elapsed * .12);
-      demoAutoScroll.frame = window.requestAnimationFrame(advance);
-    };
-    demoAutoScroll.frame = window.requestAnimationFrame(advance);
-  }, delay);
+function demoTourStops() {
+  return [
+    document.querySelector(".guidance-heading"),
+    document.querySelector(".guidance-summary"),
+    document.querySelector(".guidance-grid"),
+    document.querySelector(".discovery-radar"),
+    document.querySelector(".experiment-blueprint"),
+    document.querySelector(".technical-details"),
+    document.getElementById("analysisEnd")
+  ].filter(Boolean);
 }
 
-["wheel", "touchstart", "pointerdown"].forEach(eventName => window.addEventListener(eventName, stopDemoAutoScroll, { passive: true }));
-window.addEventListener("keydown", stopDemoAutoScroll);
+function atPageBottom() {
+  return window.scrollY >= Math.max(0, document.documentElement.scrollHeight - window.innerHeight) - 2;
+}
+
+function scheduleDemoTour(delay = 3000) {
+  stopDemoTour();
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || atPageBottom()) return updateResultScrollCue();
+  const status = document.getElementById("demoSkipStatus");
+  demoTour.active = true;
+  status?.classList.remove("active");
+  if (status) void status.offsetWidth;
+  status?.classList.add("active");
+  demoTour.timer = window.setTimeout(advanceDemoTour, delay);
+}
+
+function advanceDemoTour() {
+  stopDemoTour();
+  if (!document.body.classList.contains("demo-mode") || atPageBottom()) return updateResultScrollCue();
+  const next = demoTourStops().find(section => section.getBoundingClientRect().top + window.scrollY > window.scrollY + 28);
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (next) next.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+  else window.scrollTo({ top: document.documentElement.scrollHeight, behavior: reducedMotion ? "auto" : "smooth" });
+  demoTour.settleTimer = window.setTimeout(() => {
+    demoTour.settleTimer = null;
+    updateResultScrollCue();
+    if (!atPageBottom()) scheduleDemoTour();
+  }, reducedMotion ? 0 : 750);
+}
+
+["wheel", "touchstart", "pointerdown"].forEach(eventName => window.addEventListener(eventName, stopDemoTour, { passive: true }));
+window.addEventListener("keydown", stopDemoTour);
 
 async function readFile(file) {
   if (file.size > 25 * 1024 * 1024) setStatus("Large file detected. Analysis may take a moment on this device.");
@@ -683,8 +702,8 @@ function render(data) {
   window.scrollTo({ top: 0, behavior: "auto" });
   requestAnimationFrame(updateResultScrollCue);
   renderMolecule(data.rawText, data.sourceName, r.topResidues);
-  if (data.sourceType === "built-in-demo") scheduleDemoAutoScroll();
-  else stopDemoAutoScroll();
+  if (data.sourceType === "built-in-demo") scheduleDemoTour();
+  else stopDemoTour();
 }
 
 function buildResultColorScheme(topResidues) {
@@ -885,9 +904,10 @@ document.querySelector("[data-scroll-guidance]")?.addEventListener("click", even
 });
 document.getElementById("resultScrollCue")?.addEventListener("click", event => {
   event.preventDefault();
-  if (document.body.classList.contains("demo-mode")) scheduleDemoAutoScroll(0);
+  if (document.body.classList.contains("demo-mode")) advanceDemoTour();
   else document.getElementById("decisionBrief")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
 });
+document.getElementById("demoSkipStatus")?.addEventListener("click", advanceDemoTour);
 function updateResultScrollCue() {
   const cue = document.getElementById("resultScrollCue");
   if (!cue || !document.body.classList.contains("analysis-mode")) return;
