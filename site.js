@@ -3,8 +3,9 @@ const filmToggle = document.getElementById("filmToggle");
 const copyCommand = document.getElementById("copyCommand");
 const installCommand = document.getElementById("installCommand");
 const demoDownloadAssetName = "rinet-structure-brief-demo.txt";
-const downloadBaseline = 5500;
+const downloadBaseline = 1658;
 const downloadMetricsUrl = "https://raw.githubusercontent.com/AkulK08/rinetlab/main/metrics/downloads.json";
+const feedbackDialog = document.getElementById("feedbackDialog");
 
 document.getElementById("year").textContent = new Date().getFullYear();
 film.defaultPlaybackRate = 0.4;
@@ -19,6 +20,15 @@ if (pageParams.get("contact") === "sent") {
   if (status) status.textContent = "Feedback sent. Thank you.";
   window.history.replaceState({}, "", `${window.location.pathname}#contact`);
 }
+
+document.querySelectorAll("[data-open-feedback]").forEach(button => button.addEventListener("click", () => {
+  if (typeof feedbackDialog.showModal === "function") feedbackDialog.showModal();
+  else feedbackDialog.setAttribute("open", "");
+}));
+document.querySelector("[data-close-feedback]")?.addEventListener("click", () => feedbackDialog.close());
+feedbackDialog?.addEventListener("click", event => {
+  if (event.target === feedbackDialog) feedbackDialog.close();
+});
 
 filmToggle.addEventListener("click", async () => {
   if (film.paused) {
@@ -96,25 +106,21 @@ async function loadDownloadCount() {
   }
 }
 
-async function loadReceipts() {
-  const count = document.getElementById("receiptCount");
-  const list = document.getElementById("institutionList");
+async function loadInstitutions() {
+  const count = document.getElementById("institutionCount");
   try {
     const response = await fetch("https://api.github.com/repos/AkulK08/rinetlab-studio/issues?state=all&labels=research-use&per_page=100", { headers: { Accept: "application/vnd.github+json" } });
-    if (!response.ok) throw new Error("ledger unavailable");
+    if (!response.ok) throw new Error("institution count unavailable");
     const issues = (await response.json()).filter(issue => !issue.pull_request);
-    count.textContent = String(Math.max(2, issues.length));
     const institutions = [...new Set(issues.map(issue => {
       const match = issue.body?.match(/\*\*Affiliation\*\*:\s*(.+)/i);
-      return match?.[1]?.trim();
-    }).filter(Boolean))].slice(0, 8);
-    if (institutions.length) list.textContent = institutions.join(" · ");
-    else list.textContent = "Two early university researchers. Public affiliations appear here as researchers opt in.";
+      return match?.[1]?.trim().toLowerCase();
+    }).filter(Boolean))];
+    count.textContent = String(Math.max(2, institutions.length));
   } catch (_) {
     count.textContent = "2";
-    list.textContent = "Two early university researchers. Public affiliations appear here as researchers opt in.";
   }
 }
 
-loadReceipts();
+loadInstitutions();
 loadDownloadCount();

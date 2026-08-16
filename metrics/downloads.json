@@ -3,7 +3,7 @@
   "updated_at": "2026-08-16T08:35:55Z",
   "source_repository": "AkulK08/rinetlab",
   "source_release": "v1.2.0-build012",
-  "historical_baseline": 5500,
+  "historical_baseline": 1658,
   "installer_and_zip": {
     "asset_id": 516611825,
     "asset_name": "RINet_Build_012_Research_Utility_Studio_2026-08-16.zip",
@@ -16,5 +16,5 @@
     "raw_download_count": 0,
     "lifetime_since_tracking": 0
   },
-  "website_total": 5500
+  "website_total": 1658
 }
