@@ -3,6 +3,7 @@ const els = {
   filePanel: document.getElementById("filePanel"), idPanel: document.getElementById("idPanel"),
   fileInput: document.getElementById("fileInput"), dropzone: document.getElementById("dropzone"),
   pdbForm: document.getElementById("pdbForm"), pdbId: document.getElementById("pdbId"),
+  resultPdbForm: document.getElementById("resultPdbForm"), resultPdbId: document.getElementById("resultPdbId"),
   demoButton: document.getElementById("demoButton"), status: document.getElementById("status"),
   analysisStatus: document.getElementById("analysisStatus"), results: document.getElementById("results"), receiptForm: document.getElementById("receiptForm")
 };
@@ -35,6 +36,7 @@ els.fileInput.addEventListener("change", () => { if (els.fileInput.files[0]) rea
 els.dropzone.addEventListener("drop", e => { const file = e.dataTransfer.files[0]; if (file) readFile(file); });
 els.demoButton.addEventListener("click", loadDemo);
 els.pdbForm.addEventListener("submit", e => { e.preventDefault(); fetchPdb(els.pdbId.value); });
+els.resultPdbForm.addEventListener("submit", e => { e.preventDefault(); fetchPdb(els.resultPdbId.value); });
 
 function setStatus(message, error = false) {
   els.status.textContent = message;

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#050806">
   <link rel="icon" type="image/png" href="/favicon.png?v=2">
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=2">
-  <link rel="stylesheet" href="/brief/brief.css?v=6">
+  <link rel="stylesheet" href="/brief/brief.css?v=7">
   <title>Structure Brief | RINet</title>
   <meta name="description" content="Interrogate a protein structure and turn its strongest structural signals into a falsifiable experiment plan.">
   <meta property="og:type" content="website">
@@ -74,6 +74,10 @@
     <section class="results hidden" id="results" aria-live="polite">
       <div class="result-head">
         <div><p class="eyebrow">RINet analysis / supplied structure</p><h2 id="structureName">Pending</h2></div>
+        <form class="result-quick-form" id="resultPdbForm">
+          <label for="resultPdbId">Or type another protein…</label>
+          <div><input id="resultPdbId" name="resultPdbId" maxlength="4" autocomplete="off" spellcheck="false" placeholder="PDB ID" aria-label="Four-character PDB ID"><button type="submit" aria-label="Analyze this PDB ID">Analyze <span>→</span></button></div>
+        </form>
         <div class="result-actions"><div class="receipt-id"><span>REPRODUCIBLE RECEIPT</span><strong id="receiptId">Pending</strong></div><button type="button" id="newAnalysis">Analyze another structure</button></div>
       </div>
 
@@ -228,6 +232,6 @@
 
   <footer><a href="/">← RINet home</a><span>Structure Intelligence 2.1 · local coordinate analysis</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
-  <script src="/brief/brief.js?v=6"></script>
+  <script src="/brief/brief.js?v=7"></script>
 </body>
 </html>

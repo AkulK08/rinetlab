@@ -233,6 +233,14 @@ body.analysis-mode main { width: 100%; }
 .results { padding: 0; background: #070a08; }
 .result-head { min-height: 82px; align-items: center; padding: 12px 24px; border-bottom: 1px solid #354039; background: #0a0e0b; }
 .result-head h2 { margin: 7px 0 0; color: #eef3ef; font: 560 22px/1 var(--sans); letter-spacing: -.035em; }
+.result-quick-form { width: min(330px, 26vw); margin: 0 24px; }
+.result-quick-form label { display: block; margin-bottom: 6px; color: #91a198; font: 8px var(--mono); letter-spacing: .09em; text-transform: uppercase; }
+.result-quick-form > div { display: grid; grid-template-columns: 1fr auto; }
+.result-quick-form input { min-width: 0; height: 35px; border: 1px solid #46544c; border-right: 0; padding: 0 11px; outline: none; background: #070b08; color: #e9f0eb; font: 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.result-quick-form input:focus { border-color: var(--acid); box-shadow: inset 2px 0 0 var(--acid); }
+.result-quick-form button { height: 35px; border: 1px solid rgba(201,251,60,.58); padding: 0 11px; background: rgba(201,251,60,.08); color: var(--acid); font: 8px var(--mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+.result-quick-form button span { margin-left: 7px; }
+.result-quick-form button:hover { background: var(--acid); color: #071007; }
 .result-actions { display: flex; align-items: center; gap: 22px; }
 .receipt-id span { color: #718078; }
 .receipt-id strong { color: #cbd5cf; }
@@ -372,6 +380,7 @@ footer { border-color: #344139; }
   .molecule-workbench { grid-template-columns: 1fr; }
   .molecule-stage-wrap { min-height: 650px; }
   .best-residues { min-height: 430px; }
+  .result-quick-form { width: min(300px, 34vw); margin: 0 12px; }
   .discovery-console { grid-template-columns: 1fr; }
   .discovery-thesis { border-right: 0; border-bottom: 1px solid #2b3d33; }
 }
@@ -394,6 +403,7 @@ footer { border-color: #344139; }
   .launch-console .id-form small { margin-top: 6px; font-size: 7px; }
   .launch-console .boundary { display: none; }
   .result-head { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .result-quick-form { width: 100%; margin: 0; }
   .result-actions { width: 100%; justify-content: space-between; }
   .molecule-stage-wrap { min-height: 560px; }
   .viewer-readout { display: none; }
