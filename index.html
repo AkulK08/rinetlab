@@ -7,32 +7,32 @@
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="stylesheet" href="/site.css">
   <title>RINet — Find the residue worth testing</title>
-  <meta name="description" content="Local protein structure analysis that connects supplied states, uncertainty, residue graphs and falsifiable experiment design.">
+  <meta name="description" content="Upload one protein structure to prioritize residues, understand why they matter and build a falsifiable experiment plan.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://rinetlab.com/">
   <meta property="og:title" content="RINet — Find the residue worth testing">
   <meta property="og:description" content="A supplied structure in. A falsifiable evidence record out.">
-  <meta property="og:image" content="https://rinetlab.com/media/rinet-structural-scan-ultra-poster.jpg">
+  <meta property="og:image" content="https://rinetlab.com/media/rinet-structural-scan-stable-poster.jpg">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="RINet — Find the residue worth testing">
   <meta name="twitter:description" content="Local protein structure analysis. No account. No structure upload.">
-  <meta name="twitter:image" content="https://rinetlab.com/media/rinet-structural-scan-ultra-poster.jpg">
+  <meta name="twitter:image" content="https://rinetlab.com/media/rinet-structural-scan-stable-poster.jpg">
 </head>
 <body>
   <header class="nav-shell">
     <a class="brand" href="#top" aria-label="RINet home"><span class="brand-mark">R/</span><span>RINet</span></a>
     <nav aria-label="Primary navigation">
-      <a href="#product">Product</a>
       <a href="#install">Install</a>
-      <a href="/brief/">Structure Brief</a>
+      <a href="#product">How it works</a>
+      <a href="#contact">Contact</a>
     </nav>
     <a class="nav-cta" href="/brief/">Analyze a PDB <span>↗</span></a>
   </header>
 
   <main id="top">
     <section class="hero" aria-labelledby="hero-title">
-      <video class="hero-film" id="heroFilm" autoplay muted loop playsinline preload="auto" poster="/media/rinet-structural-scan-ultra-poster.jpg">
-        <source src="/media/rinet-structural-scan-ultra.mp4" type="video/mp4">
+      <video class="hero-film" id="heroFilm" autoplay muted loop playsinline preload="auto" poster="/media/rinet-structural-scan-stable-poster.jpg">
+        <source src="/media/rinet-structural-scan-stable.mp4" type="video/mp4">
       </video>
       <div class="hero-shade"></div>
       <div class="hero-copy">
@@ -53,42 +53,74 @@
       <button class="film-toggle" id="filmToggle" type="button" aria-label="Pause molecular scan">Pause scan</button>
     </section>
 
+    <section class="install" id="install">
+      <div class="install-intro">
+        <p class="section-tag">01 / Run locally</p>
+        <h2>One command.<br>Your structures stay yours.</h2>
+        <p class="install-note">macOS · Python 3.11–3.13 · opens in your browser · runs on your computer</p>
+      </div>
+      <div class="install-action">
+        <div class="command-bar">
+          <code id="installCommand">curl -fsSL https://rinetlab.com/install.sh | bash &amp;&amp; ~/.local/bin/rinet gui</code>
+          <button type="button" id="copyCommand">Copy</button>
+        </div>
+        <div class="install-links">
+          <a href="https://github.com/AkulK08/rinetlab/releases/tag/v1.2.0-build012">Release notes ↗</a>
+          <a href="https://github.com/AkulK08/rinetlab/releases/download/v1.2.0-build012/RINet_Build_012_Research_Utility_Studio_2026-08-16.zip">Download ZIP ↗</a>
+          <a href="https://github.com/AkulK08/rinetlab-studio">Source ↗</a>
+        </div>
+        <div class="install-assurances" aria-label="Local application facts">
+          <span>One PDB to start</span><span>No account</span><span>No structure upload</span>
+        </div>
+      </div>
+    </section>
+
     <section class="statement" id="product">
-      <p class="section-tag">01 / The product</p>
-      <h2>A supplied structure in.<br>A falsifiable evidence record out.</h2>
-      <div class="statement-grid">
-        <p>Most structure tools end at a colored model or a ranked list. RINet keeps going: compare states, challenge domain boundaries, rebuild residue graphs under alternative definitions, and surface the places where the evidence disagrees.</p>
-        <p>Every claim retains its coordinates, assumptions, masks, warnings and matched controls. Static graph evidence stays a hypothesis. A geometric interpolation stays a display—not a molecular-dynamics trajectory.</p>
+      <div class="statement-lead">
+        <p class="section-tag">02 / What you get</p>
+        <h2>Upload one PDB.<br>Know what to test next.</h2>
+        <p>RINet finds residues that stand out in the supplied structure, explains them in biological language, suggests a comparison residue, and turns the result into a practical experiment plan.</p>
+      </div>
+      <div class="evidence-stack" aria-label="RINet analysis path">
+        <div class="stack-head"><span>FROM STRUCTURE TO EXPERIMENT</span><strong>One continuous analysis</strong></div>
+        <div class="evidence-step"><span>01</span><strong>Read the structure</strong><em>chains · missing atoms · confidence fields</em></div>
+        <div class="evidence-step"><span>02</span><strong>Prioritize residues</strong><em>local contacts · position · structural context</em></div>
+        <div class="evidence-step"><span>03</span><strong>Design a fair test</strong><em>candidate · matched comparison · mutation options</em></div>
+        <div class="evidence-verdict"><span>OUTPUT</span><strong>What to change, what to measure, and what result would change your mind.</strong></div>
       </div>
     </section>
 
     <section class="capabilities" aria-label="RINet scientific facilities">
-      <article><span>A</span><h3>State Atlas</h3><p>Superposition, pairwise RMSD, contact changes and rigid-community motion across 2–32 supplied states.</p></article>
-      <article><span>B</span><h3>Domain Consensus</h3><p>Multi-scale PAE partitions, co-assignment, stability and explicit abstention when the inputs do not support a clean answer.</p></article>
-      <article><span>C</span><h3>Allosteric Consensus</h3><p>Multiple graph definitions, supplied-state agreement, degree-preserving nulls and matched negative controls.</p></article>
-      <article><span>D</span><h3>Evidence Ledger</h3><p>One residue identity across state, uncertainty and graph evidence—with disagreement kept visible.</p></article>
+      <div class="capabilities-head"><p class="section-tag">03 / The guidance</p><h2>Built for decisions,<br>not dashboards.</h2></div>
+      <div class="capability-grid">
+        <article><span>A</span><h3>Where should I look?</h3><p>A short, clickable list of residues with the strongest structural reasons to investigate first.</p><small>PRIORITIZED RESIDUES</small></article>
+        <article><span>B</span><h3>Why might it matter?</h3><p>Plain-language explanations connect each residue to nearby contacts, structural position and data quality.</p><small>BIOLOGICAL CONTEXT</small></article>
+        <article><span>C</span><h3>What should I test?</h3><p>Mutation ideas, a matched comparison residue, measurements and a step-by-step experimental outline.</p><small>EXPERIMENT GUIDE</small></article>
+        <article><span>D</span><h3>What would disprove it?</h3><p>Every hypothesis includes the result that would weaken it, so a ranking never masquerades as proof.</p><small>DECISION RULE</small></article>
+      </div>
     </section>
 
     <section class="brief-promo" id="brief">
       <div class="brief-copy">
-        <p class="section-tag">02 / Zero-install utility</p>
-        <h2>Get a structure methods brief in sixty seconds.</h2>
-        <p>Drop a PDB or enter a PDB ID. The browser produces a chain inventory, quality flags, contact summary, methods-ready paragraph and reproducible receipt. Coordinates never go to RINet.</p>
-        <a class="button button-dark" href="/brief/">Open Structure Brief</a>
+        <p class="section-tag">04 / Try it now</p>
+        <h2>One PDB in.<br>An experiment guide out.</h2>
+        <p>Drop a PDB, enter a PDB ID, or run the instant demo. See the 3D surface, the residues worth inspecting, AI-guided interpretations, comparison controls and a methods-ready record. Your coordinates stay in the browser.</p>
+        <div class="brief-actions"><a class="button button-dark" href="/brief/">Analyze my PDB</a><a class="plain-link" href="/brief/?demo=1">Run instant demo ↗</a></div>
       </div>
       <div class="brief-terminal" aria-label="Example Structure Brief output">
-        <div class="terminal-head"><span>STRUCTURE BRIEF / 1CRN</span><span>LOCAL BROWSER</span></div>
-        <div class="terminal-line"><span>POLYMER</span><strong>46 residues · chain A</strong></div>
-        <div class="terminal-line"><span>COORDINATES</span><strong>327 polymer atoms</strong></div>
-        <div class="terminal-line"><span>CONTACT MODEL</span><strong>Cα ≤ 8.0 Å</strong></div>
-        <div class="terminal-line"><span>OUTPUT</span><strong>Methods capsule + JSON receipt</strong></div>
-        <div class="terminal-status"><i></i> READY · NO ACCOUNT REQUIRED</div>
+        <div class="terminal-head"><span>EXPERIMENT GUIDE / 1CRN</span><span>ANALYZED LOCALLY</span></div>
+        <div class="terminal-signal"><span>FIRST LOOK</span><strong>ARG A:10</strong><i style="--signal:88%"></i></div>
+        <div class="terminal-line"><span>WHY</span><strong>Contact-dense, structurally connected position</strong></div>
+        <div class="terminal-line"><span>COMPARE WITH</span><strong>Lower-contact residue in a similar context</strong></div>
+        <div class="terminal-line"><span>TEST</span><strong>Candidate perturbation + matched control</strong></div>
+        <div class="terminal-line"><span>READOUT</span><strong>Function · expression · folding</strong></div>
+        <div class="terminal-status"><i></i> GUIDANCE READY · NO ACCOUNT REQUIRED</div>
       </div>
     </section>
 
     <section class="ledger" id="ledger">
       <div>
-        <p class="section-tag">03 / Public research receipts</p>
+        <p class="section-tag">05 / Public research receipts</p>
         <h2>Usage you can verify,<br>not a vanity counter.</h2>
       </div>
       <div class="ledger-copy">
@@ -99,19 +131,26 @@
       </div>
     </section>
 
-    <section class="install" id="install">
-      <p class="section-tag">04 / Local application</p>
-      <h2>One command.<br>Your structures stay yours.</h2>
-      <p class="install-note">macOS · Python 3.11–3.13 · loopback-only browser GUI</p>
-      <div class="command-bar">
-        <code id="installCommand">curl -fsSL https://rinetlab.com/install.sh | bash &amp;&amp; ~/.local/bin/rinet gui</code>
-        <button type="button" id="copyCommand">Copy</button>
+    <section class="contact" id="contact">
+      <div class="contact-copy">
+        <p class="section-tag">06 / Contact</p>
+        <h2>Used it on a protein?<br>Send one useful line.</h2>
+        <p>Name, affiliation and feedback are sent directly to the RINet team. A short note is enough.</p>
+        <a href="mailto:akulkumar02008@gmail.com">akulkumar02008@gmail.com ↗</a>
       </div>
-      <div class="install-links">
-        <a href="https://github.com/AkulK08/rinetlab/releases/tag/v1.2.0-build012">Release notes ↗</a>
-        <a href="https://github.com/AkulK08/rinetlab/releases/download/v1.2.0-build012/RINet_Build_012_Research_Utility_Studio_2026-08-16.zip">Download ZIP ↗</a>
-        <a href="https://github.com/AkulK08/rinetlab-studio">Source ↗</a>
-      </div>
+      <form class="contact-form" id="contactForm" action="https://formsubmit.co/akulkumar02008@gmail.com" method="POST">
+        <input type="hidden" name="_subject" value="New RINet researcher feedback">
+        <input type="hidden" name="_next" value="https://rinetlab.com/?contact=sent#contact">
+        <input type="hidden" name="_template" value="table">
+        <input type="hidden" name="_url" value="https://rinetlab.com/#contact">
+        <input class="contact-honey" type="text" name="_honey" tabindex="-1" autocomplete="off">
+        <label><span>Name</span><input type="text" name="name" required maxlength="100" placeholder="Your name or lab"></label>
+        <label><span>Affiliation</span><input type="text" name="affiliation" required maxlength="140" placeholder="Department, university or institute"></label>
+        <label><span>Email <em>optional</em></span><input type="email" name="email" maxlength="160" placeholder="If you would like a reply"></label>
+        <label><span>Feedback</span><textarea name="feedback" required maxlength="1000" rows="4" placeholder="What did you analyze, and what would make RINet more useful?"></textarea></label>
+        <button type="submit">Send feedback <span>↗</span></button>
+        <p class="contact-status" id="contactStatus" aria-live="polite">Sent directly to the RINet inbox.</p>
+      </form>
     </section>
   </main>
 

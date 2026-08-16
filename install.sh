@@ -2,7 +2,7 @@
 set -euo pipefail
 
 RINET_RELEASE_URL="https://github.com/AkulK08/rinetlab/releases/download/v1.2.0-build012/RINet_Build_012_Research_Utility_Studio_2026-08-16.zip"
-RINET_RELEASE_SHA256="2b55b80f98b98df579d6d07c1d4787f13b0f7c5612686416f7b57c04faf301ff"
+RINET_RELEASE_SHA256="8013a1c877a8eefe0dd85421c0a2945146bb988be3b362b10559b171d2d56340"
 RINET_INSTALL_TMP="$(mktemp -d)"
 trap 'rm -rf "$RINET_INSTALL_TMP"' EXIT
 

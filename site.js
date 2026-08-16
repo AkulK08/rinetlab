@@ -10,6 +10,15 @@ film.defaultPlaybackRate = 0.4;
 film.playbackRate = 0.4;
 film.addEventListener("loadedmetadata", () => { film.playbackRate = 0.4; }, { once: true });
 
+const pageParams = new URLSearchParams(window.location.search);
+if (pageParams.get("contact") === "sent") {
+  const contact = document.getElementById("contact");
+  const status = document.getElementById("contactStatus");
+  contact?.classList.add("sent");
+  if (status) status.textContent = "Feedback sent. Thank you.";
+  window.history.replaceState({}, "", `${window.location.pathname}#contact`);
+}
+
 filmToggle.addEventListener("click", async () => {
   if (film.paused) {
     await film.play();

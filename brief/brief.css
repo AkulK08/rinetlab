@@ -57,6 +57,24 @@ h1 { margin: 22px 0 0; font-size: clamp(54px, 6.6vw, 104px); line-height: .91; l
 .metric-strip span, .metric-strip strong { display: block; }
 .metric-strip span { color: var(--muted); font: 8px var(--mono); text-transform: uppercase; }
 .metric-strip strong { margin-top: 24px; font-size: 28px; font-weight: 540; }
+.ai-guidance { margin: 34px 0 0; border: 1px solid #31453b; background: #08100c; color: #edf6f0; }
+.guidance-heading { display: grid; grid-template-columns: 1.15fr .85fr; gap: 8vw; align-items: end; padding: 48px 44px 40px; border-bottom: 1px solid #2e4037; background: radial-gradient(circle at 82% 5%, rgba(189,242,56,.11), transparent 34%); }
+.guidance-heading h3 { margin: 15px 0 0; font-size: clamp(42px, 5vw, 72px); line-height: .94; letter-spacing: -.06em; font-weight: 550; }
+.guidance-heading > p { margin: 0; color: #91a49a; font-size: 13px; line-height: 1.7; }
+.guidance-summary { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #2e4037; }
+.guidance-summary article { min-height: 176px; padding: 24px; border-right: 1px solid #2e4037; }
+.guidance-summary article:last-child { border-right: 0; }
+.guidance-summary span, .guidance-summary strong, .guidance-summary small { display: block; }
+.guidance-summary span { color: #82968b; font: 8px var(--mono); letter-spacing: .09em; }
+.guidance-summary strong { margin-top: 30px; color: #d8ff65; font-size: 23px; line-height: 1.05; font-weight: 570; letter-spacing: -.04em; }
+.guidance-summary small { margin-top: 10px; color: #7d9186; font: 8px/1.5 var(--mono); }
+.guidance-grid { display: grid; grid-template-columns: 1fr 1fr; }
+.guidance-grid article { min-height: 170px; padding: 30px 34px; border-right: 1px solid #27382f; border-bottom: 1px solid #27382f; }
+.guidance-grid article:nth-child(even) { border-right: 0; }
+.guidance-grid article span { color: #bdf238; font: 8px var(--mono); letter-spacing: .1em; }
+.guidance-grid article p { max-width: 620px; margin: 24px 0 0; color: #c2d0c8; font-size: 14px; line-height: 1.65; }
+.guidance-note { display: grid; grid-template-columns: 230px 1fr; gap: 30px; padding: 22px 34px; color: #71857a; font: 8px/1.55 var(--mono); }
+.guidance-note strong { color: #a9bbb1; text-transform: uppercase; }
 .molecule-workbench { min-height: 650px; display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(330px, .55fr); border-bottom: 1px solid var(--ink); background: #080b09; color: #e7eee9; }
 .molecule-stage-wrap { position: relative; min-width: 0; border-right: 1px solid #344139; }
 .molecule-toolbar { position: absolute; z-index: 3; top: 0; left: 0; right: 0; min-height: 66px; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 0 20px; border-bottom: 1px solid rgba(139,166,150,.26); background: rgba(8,11,9,.88); }
@@ -77,7 +95,7 @@ h1 { margin: 22px 0 0; font-size: clamp(54px, 6.6vw, 104px); line-height: .91; l
 .best-residue-row > span { color: #75877d; font: 8px var(--mono); }
 .best-residue-row strong { font: 10px var(--mono); font-weight: 560; }
 .best-residue-row small { color: #94aa9f; font: 7px var(--mono); }
-.best-residue-row:hover, .best-residue-row.active { color: #bdf238; }
+.best-residue-row:hover, .best-residue-row.active { color: #bdf238; background: rgba(189,242,56,.055); }
 .best-boundary { margin: auto 0 0; padding-top: 18px; border-top: 1px solid #344139; color: #6f8077; font: 7px/1.55 var(--mono); text-transform: uppercase; }
 .analysis-grid { display: grid; grid-template-columns: 1.3fr .7fr; border-bottom: 1px solid var(--ink); }
 .analysis-grid .analysis-section:first-child { border-right: 1px solid var(--ink); padding-right: 38px; }
@@ -109,6 +127,13 @@ td { padding: 16px 0; border-bottom: 1px solid var(--line); font: 11px var(--mon
 .methods { padding: 58px 0 70px; border-bottom: 1px solid var(--ink); }
 .methods .section-head button { margin-left: auto; border: 0; border-bottom: 1px solid #748078; padding: 0 0 4px; background: transparent; color: var(--green); font: 9px var(--mono); cursor: pointer; }
 .methods > p { max-width: 1120px; margin: 34px 0 0 34px; color: #303733; font: 13px/1.75 var(--mono); }
+.technical-details { border-bottom: 1px solid var(--ink); }
+.technical-details > summary { min-height: 92px; display: flex; justify-content: space-between; align-items: center; gap: 30px; padding: 0 4px; cursor: pointer; list-style: none; }
+.technical-details > summary::-webkit-details-marker { display: none; }
+.technical-details > summary span { font-size: 21px; font-weight: 570; letter-spacing: -.035em; }
+.technical-details > summary span::before { content: "+"; display: inline-block; width: 34px; color: var(--green); font: 16px var(--mono); }
+.technical-details[open] > summary span::before { content: "−"; }
+.technical-details > summary small { color: var(--muted); font: 8px var(--mono); text-transform: uppercase; }
 .receipt { display: grid; grid-template-columns: .85fr 1.15fr; gap: 10vw; padding: 100px 0 120px; }
 .receipt-intro h2 { margin: 18px 0 24px; font-size: clamp(45px, 5vw, 75px); line-height: .94; letter-spacing: -.06em; font-weight: 550; }
 .receipt-intro > p:not(.eyebrow) { max-width: 560px; color: var(--muted); font-size: 14px; line-height: 1.65; }
@@ -127,3 +152,5 @@ footer { min-height: 110px; display: flex; justify-content: space-between; align
 footer a { text-decoration: none; }
 @media (max-width: 900px) { .intro, .receipt { grid-template-columns: 1fr; gap: 48px; } .intro { padding-top: 80px; } .input-workbench { grid-template-columns: 50px 1fr; } .demo-button { grid-column: 2; width: min(100%, 360px); min-height: 132px; justify-self: start; } .molecule-workbench { grid-template-columns: 1fr; } .molecule-stage-wrap { min-height: 560px; border-right: 0; border-bottom: 1px solid #344139; } .best-residues { min-height: 500px; } .analysis-grid { grid-template-columns: 1fr; } .analysis-grid .analysis-section:first-child { border-right: 0; padding-right: 0; } .analysis-grid .analysis-section:last-child { padding-left: 0; border-top: 1px solid var(--ink); } .topology-grid { grid-template-columns: 1fr 1fr; } .topology-row { border-bottom: 1px solid var(--line); } }
 @media (max-width: 620px) { .app-header { grid-template-columns: 1fr auto; padding: 0 16px; } .app-title { display: none; } main { padding: 0 18px; } h1 { font-size: 54px; } .input-workbench { grid-template-columns: 1fr; } .input-number { display: none; } .demo-button { grid-column: auto; width: 100%; } .metric-strip { grid-template-columns: 1fr 1fr; } .metric-strip div { border-bottom: 1px solid var(--line); } .metric-strip div:nth-child(even) { border-right: 0; } .result-head { align-items: start; flex-direction: column; gap: 24px; } .receipt-id { text-align: left; } table { display: block; overflow-x: auto; } .topology-grid { grid-template-columns: 1fr; } .topology-row, .topology-row:not(:first-child) { padding-left: 0; border-right: 0; } .methods > p, .scope-note { margin-left: 0; } footer { flex-direction: column; justify-content: center; gap: 12px; text-align: center; } }
+@media (max-width: 900px) { .guidance-heading { grid-template-columns: 1fr; gap: 28px; } .guidance-summary { grid-template-columns: 1fr 1fr; } .guidance-summary article:nth-child(2) { border-right: 0; } .guidance-summary article { border-bottom: 1px solid #2e4037; } }
+@media (max-width: 620px) { .guidance-heading { padding: 36px 22px 30px; } .guidance-summary, .guidance-grid { grid-template-columns: 1fr; } .guidance-summary article { min-height: 145px; border-right: 0; } .guidance-grid article { min-height: auto; border-right: 0; padding: 28px 22px; } .guidance-note { grid-template-columns: 1fr; padding: 22px; } .technical-details > summary { align-items: flex-start; flex-direction: column; justify-content: center; gap: 8px; padding: 20px 0; } }

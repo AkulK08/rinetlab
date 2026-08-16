@@ -92,6 +92,10 @@ function parseAtom(line) {
 function distance(a, b) { return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z); }
 function median(values) { const s = [...values].sort((a,b) => a-b); return s.length ? (s[Math.floor((s.length-1)/2)] + s[Math.ceil((s.length-1)/2)]) / 2 : null; }
 function esc(value) { return String(value).replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"})[c]); }
+function mutationSuggestion(residue) {
+  const substitutions = { ASP: "D→N", GLU: "E→Q", LYS: "K→Q", ARG: "R→Q", CYS: "C→S", ALA: "A→G", GLY: "G→A", PRO: "P→A" };
+  return substitutions[residue?.name] || `${residue?.name || "Residue"}→Ala`;
+}
 
 function parsePdb(text) {
   const lines = text.replace(/\r/g, "").split("\n");
@@ -140,11 +144,13 @@ function parsePdb(text) {
   const bValues = polymerAtoms.map(a => a.b).filter(Number.isFinite);
   const lowOccupancy = polymerAtoms.filter(a => Number.isFinite(a.occupancy) && a.occupancy < .999).length;
   const missingCa = residues.filter(r => !r.ca).length;
-  const topResidues = residues.map(r => ({ label: `${r.name} ${r.chain}:${r.seq}${r.insertion}`, name: r.name, chain: r.chain, seq: r.seq, insertion: r.insertion, degree: degree.get(r.key) })).sort((a,b) => b.degree - a.degree || a.label.localeCompare(b.label)).slice(0, 5);
+  const rankedResidues = residues.map(r => ({ label: `${r.name} ${r.chain}:${r.seq}${r.insertion}`, name: r.name, chain: r.chain, seq: r.seq, insertion: r.insertion, degree: degree.get(r.key) })).sort((a,b) => b.degree - a.degree || a.label.localeCompare(b.label));
+  const topResidues = rankedResidues.slice(0, 5);
+  const controlResidue = rankedResidues[Math.min(rankedResidues.length - 1, Math.max(5, Math.floor(rankedResidues.length * .65)))] || rankedResidues.at(-1) || null;
   return {
     residues: residues.length, polymerAtoms: polymerAtoms.length, chainReports, contacts, alternateCount, lowOccupancy, missingCa,
     waters: waters.length, hetero: [...hetero.values()].map(group => `${group.name} ${group.chain}:${group.seq}`), metals: metals.map(group => `${group.name} ${group.chain}:${group.seq}`),
-    bMean: bValues.length ? bValues.reduce((sum,v) => sum+v,0)/bValues.length : null, bMedian: median(bValues), topResidues,
+    bMean: bValues.length ? bValues.reduce((sum,v) => sum+v,0)/bValues.length : null, bMedian: median(bValues), topResidues, controlResidue,
     models: lines.filter(line => line.startsWith("MODEL ")).length || 1
   };
 }
@@ -168,6 +174,33 @@ async function analyze(text, sourceName, sourceType) {
   }
 }
 
+function renderGuidance(report) {
+  const candidate = report.topResidues[0];
+  const runnerUp = report.topResidues[1];
+  const control = report.controlResidue;
+  const breakCount = report.chainReports.reduce((sum, chain) => sum + chain.breaks, 0);
+  const coverage = report.residues ? (report.residues - report.missingCa) / report.residues : 0;
+  const occupancyPenalty = report.polymerAtoms ? Math.min(.12, report.lowOccupancy / report.polymerAtoms) : 0;
+  const warningPenalty = Math.min(.28, breakCount * .035 + report.alternateCount / Math.max(report.polymerAtoms, 1) + occupancyPenalty);
+  const completeness = Math.max(.45, Math.min(.99, coverage - warningPenalty));
+  const mutation = mutationSuggestion(candidate);
+  const candidateLabel = candidate?.label || "No ranked residue";
+  const controlLabel = control?.label || "Choose a lower-contact residue";
+  const contrast = runnerUp ? ` ${runnerUp.label} is the next site to examine if the first construct is inconclusive.` : "";
+
+  document.getElementById("guidancePrimary").textContent = candidateLabel;
+  document.getElementById("guidancePrimaryReason").textContent = candidate ? `${candidate.degree} non-local Cα contacts in this coordinate model.` : "The model did not contain a rankable Cα contact graph.";
+  document.getElementById("guidanceMutation").textContent = mutation;
+  document.getElementById("guidanceControl").textContent = controlLabel;
+  document.getElementById("guidanceConfidence").textContent = `${Math.round(completeness * 100)}%`;
+  document.getElementById("guidanceHypothesis").textContent = candidate
+    ? `${candidateLabel} sits in the densest non-local contact neighborhood in this structure. Perturbing it may affect the local structural network more strongly than a lower-contact position.${contrast}`
+    : "This structure did not produce a residue-level contact hypothesis.";
+  document.getElementById("guidanceExperiment").textContent = `Build the ${mutation} candidate and an equivalent perturbation at ${controlLabel}. Test both beside wild type in the same expression background. Measure the protein-specific functional readout, plus expression or abundance and a folding or stability control.`;
+  document.getElementById("guidanceAdvance").textContent = `Advance the hypothesis if the ${candidateLabel} perturbation changes the biological readout more than ${controlLabel}, while expression and folding remain acceptably similar to wild type.`;
+  document.getElementById("guidanceStop").textContent = `Do not interpret the site as specifically informative if candidate and comparison behave similarly, or if the candidate mainly lowers expression or disrupts folding. In that case, test ${runnerUp?.label || "the next-ranked residue"} or revise the assay.`;
+}
+
 function render(data) {
   const r = data.report;
   document.getElementById("structureName").textContent = data.sourceName;
@@ -189,6 +222,7 @@ function render(data) {
   document.getElementById("flagList").innerHTML = flags.map(flag => `<div class="flag ${flag.warn ? "warn" : ""}"><i></i><div><strong>${esc(flag.title)}</strong><span>${esc(flag.note)}</span></div></div>`).join("");
   document.getElementById("topologyRows").innerHTML = r.topResidues.map((residue, i) => `<div class="topology-row"><strong>${String(i+1).padStart(2,"0")} / ${esc(residue.label)}</strong><span>CONTACT DEGREE ${residue.degree}</span></div>`).join("");
   document.getElementById("bestResidueRows").innerHTML = r.topResidues.map((residue, i) => `<button class="best-residue-row" type="button" data-residue-index="${i}"><span>${String(i+1).padStart(2,"0")}</span><strong>${esc(residue.label)}</strong><small>DEG ${residue.degree}</small></button>`).join("");
+  renderGuidance(r);
   const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Brief 1.0 (receipt ${data.receiptId}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} chain${r.chainReports.length === 1 ? "" : "s"}. A descriptive residue-contact graph was constructed between Cα atoms separated by no more than 8.0 Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. Coordinate-record screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} sequence gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}); they were not assumed to represent prediction confidence. Contact degree and flags are geometric descriptors and were not interpreted as causal or functional proof.`;
   document.getElementById("methodsText").textContent = methods;
   els.results.classList.remove("hidden");

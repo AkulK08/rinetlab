@@ -68,12 +68,32 @@
       </div>
 
       <div class="metric-strip">
-        <div><span>Polymer residues</span><strong id="residueMetric">—</strong></div>
-        <div><span>Polymer atoms</span><strong id="atomMetric">—</strong></div>
+        <div><span>Residues</span><strong id="residueMetric">—</strong></div>
+        <div><span>Atoms</span><strong id="atomMetric">—</strong></div>
         <div><span>Chains</span><strong id="chainMetric">—</strong></div>
-        <div><span>Cα contacts</span><strong id="contactMetric">—</strong></div>
-        <div><span>Mean B-factor</span><strong id="bMetric">—</strong></div>
+        <div><span>Structural contacts</span><strong id="contactMetric">—</strong></div>
+        <div><span>Confidence / B field</span><strong id="bMetric">—</strong></div>
       </div>
+
+      <section class="ai-guidance" aria-labelledby="guidance-title">
+        <div class="guidance-heading">
+          <div><p class="eyebrow">RINet AI experiment guide</p><h3 id="guidance-title">What should you test first?</h3></div>
+          <p>Generated locally from explicit structural evidence. The guide turns one PDB into a practical starting hypothesis, comparison and decision rule.</p>
+        </div>
+        <div class="guidance-summary">
+          <article><span>FIRST RESIDUE</span><strong id="guidancePrimary">—</strong><small id="guidancePrimaryReason">Waiting for analysis</small></article>
+          <article><span>FIRST PERTURBATION</span><strong id="guidanceMutation">—</strong><small>Start small; verify expression and folding.</small></article>
+          <article><span>COMPARISON</span><strong id="guidanceControl">—</strong><small>Lower-contact residue chosen from the same structure.</small></article>
+          <article><span>EVIDENCE COMPLETENESS</span><strong id="guidanceConfidence">—</strong><small>Coordinate coverage and warning burden—not biological certainty.</small></article>
+        </div>
+        <div class="guidance-grid">
+          <article><span>01 / HYPOTHESIS</span><p id="guidanceHypothesis">Analyze a structure to generate a residue-level hypothesis.</p></article>
+          <article><span>02 / EXPERIMENT</span><p id="guidanceExperiment">The guide will propose a candidate, comparison and practical measurements.</p></article>
+          <article><span>03 / ADVANCE IF</span><p id="guidanceAdvance">A clear decision rule will appear here.</p></article>
+          <article><span>04 / STOP IF</span><p id="guidanceStop">A falsification rule will appear here.</p></article>
+        </div>
+        <div class="guidance-note"><strong>Use this as experiment design support.</strong><span>RINet does not know the protein's assay, phenotype or biological context unless you supply it. Confirm residue numbering, structural quality and domain knowledge before ordering constructs.</span></div>
+      </section>
 
       <section class="molecule-workbench" aria-label="Interactive structure surface">
         <div class="molecule-stage-wrap">
@@ -91,32 +111,35 @@
         </aside>
       </section>
 
-      <div class="analysis-grid">
-        <section class="analysis-section">
-          <div class="section-head"><span>02</span><h3>Coordinate record</h3></div>
-          <table>
-            <thead><tr><th>Chain</th><th>Residues</th><th>Atoms</th><th>Sequence span</th><th>Gaps / breaks</th></tr></thead>
-            <tbody id="chainRows"></tbody>
-          </table>
-          <div class="inventory" id="inventory"></div>
+      <details class="technical-details">
+        <summary><span>Methods + technical details</span><small>Coordinate record · quality flags · contact table · reproducible methods</small></summary>
+        <div class="analysis-grid">
+          <section class="analysis-section">
+            <div class="section-head"><span>02</span><h3>Coordinate record</h3></div>
+            <table>
+              <thead><tr><th>Chain</th><th>Residues</th><th>Atoms</th><th>Sequence span</th><th>Gaps / breaks</th></tr></thead>
+              <tbody id="chainRows"></tbody>
+            </table>
+            <div class="inventory" id="inventory"></div>
+          </section>
+
+          <section class="analysis-section">
+            <div class="section-head"><span>03</span><h3>Structural flags</h3></div>
+            <div class="flag-list" id="flagList"></div>
+          </section>
+        </div>
+
+        <section class="analysis-section topology">
+          <div class="section-head"><span>04</span><h3>Contact-dense residues</h3><p>Cα ≤ 8.0 Å · adjacent residues excluded</p></div>
+          <div class="topology-grid" id="topologyRows"></div>
+          <p class="scope-note">Contact degree is a geometric descriptor, not proof of functional importance or allosteric causality.</p>
         </section>
 
-        <section class="analysis-section">
-          <div class="section-head"><span>03</span><h3>Structural flags</h3></div>
-          <div class="flag-list" id="flagList"></div>
+        <section class="methods">
+          <div class="section-head"><span>05</span><h3>Methods capsule</h3><button type="button" id="copyMethods">Copy paragraph</button></div>
+          <p id="methodsText"></p>
         </section>
-      </div>
-
-      <section class="analysis-section topology">
-        <div class="section-head"><span>04</span><h3>Contact-dense residues</h3><p>Cα ≤ 8.0 Å · adjacent residues excluded</p></div>
-        <div class="topology-grid" id="topologyRows"></div>
-        <p class="scope-note">Contact degree is a geometric descriptor, not proof of functional importance or allosteric causality.</p>
-      </section>
-
-      <section class="methods">
-        <div class="section-head"><span>05</span><h3>Methods capsule</h3><button type="button" id="copyMethods">Copy paragraph</button></div>
-        <p id="methodsText"></p>
-      </section>
+      </details>
 
       <section class="receipt">
         <div class="receipt-intro">
