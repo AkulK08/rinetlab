@@ -30,7 +30,7 @@ els.fileInput.addEventListener("change", () => { if (els.fileInput.files[0]) rea
 ["dragenter", "dragover"].forEach(event => els.dropzone.addEventListener(event, e => { e.preventDefault(); els.dropzone.classList.add("dragging"); }));
 ["dragleave", "drop"].forEach(event => els.dropzone.addEventListener(event, e => { e.preventDefault(); els.dropzone.classList.remove("dragging"); }));
 els.dropzone.addEventListener("drop", e => { const file = e.dataTransfer.files[0]; if (file) readFile(file); });
-els.demoButton.addEventListener("click", () => fetchPdb("1CRN"));
+els.demoButton.addEventListener("click", loadDemo);
 els.pdbForm.addEventListener("submit", e => { e.preventDefault(); fetchPdb(els.pdbId.value); });
 
 function setStatus(message, error = false) {
@@ -46,6 +46,21 @@ async function readFile(file) {
     await analyze(text, file.name, "local-file");
   } catch (error) {
     setStatus(`Could not read this file: ${error.message}`, true);
+  }
+}
+
+async function loadDemo() {
+  if (els.demoButton.disabled) return;
+  els.demoButton.disabled = true;
+  setStatus("Loading the built-in 1CRN demonstration…");
+  try {
+    const response = await fetch("/brief/demo/1crn.pdb", { cache: "force-cache" });
+    if (!response.ok) throw new Error(`demo asset returned ${response.status}`);
+    await analyze(await response.text(), "1CRN demo", "built-in-demo");
+  } catch (error) {
+    setStatus(`Could not load the instant demo: ${error.message}.`, true);
+  } finally {
+    els.demoButton.disabled = false;
   }
 }
 
@@ -261,3 +276,5 @@ els.receiptForm.addEventListener("submit", event => {
   const url = `https://github.com/AkulK08/rinetlab-studio/issues/new?labels=research-use&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
   window.open(url, "_blank", "noopener,noreferrer");
 });
+
+if (new URLSearchParams(window.location.search).get("demo") === "1") loadDemo();

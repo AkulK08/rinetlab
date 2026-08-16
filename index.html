@@ -30,17 +30,17 @@
   </header>
 
   <main id="top">
-    <section class="hero" aria-labelledby="hero-title">
+    <section class="hero" aria-label="RINet molecular structure scan">
       <video class="hero-film" id="heroFilm" autoplay muted loop playsinline preload="auto" poster="/media/rinet-structural-scan-poster.jpg">
         <source src="/media/rinet-structural-scan.mp4" type="video/mp4">
       </video>
       <div class="hero-shade"></div>
       <div class="hero-copy">
         <p class="overline">Protein science, made testable.</p>
-        <h1 id="hero-title">Find the residue<br>worth testing.</h1>
         <p class="hero-summary">RINet turns supplied protein structures, uncertainty and residue networks into an inspectable argument—and the experiment that could prove it wrong.</p>
         <div class="hero-links">
-          <a class="button button-light" href="/brief/">Try it on a PDB</a>
+          <a class="button button-light" href="/brief/">Analyze a PDB</a>
+          <a class="text-link" href="/brief/?demo=1">Instant demo <span>↗</span></a>
           <a class="text-link" href="#install">Install locally <span>↓</span></a>
         </div>
       </div>
@@ -50,6 +50,18 @@
         <div><strong>0</strong><span>structures uploaded</span></div>
       </div>
       <button class="film-toggle" id="filmToggle" type="button" aria-label="Pause molecular scan">Pause scan</button>
+    </section>
+
+    <section class="quick-launch" aria-labelledby="quick-launch-title">
+      <div class="quick-launch-copy">
+        <p class="section-tag">Zero install · coordinates stay local</p>
+        <h2 id="quick-launch-title">Find the residue worth testing.</h2>
+        <p>Analyze a PDB in your browser. Get the 3D surface, contact-dense residues, coordinate flags and a methods-ready receipt in under a minute.</p>
+      </div>
+      <div class="quick-launch-actions">
+        <a class="quick-action primary" href="/brief/"><span>Use your structure</span><strong>Analyze a PDB</strong><small>Choose a file or enter a PDB ID →</small></a>
+        <a class="quick-action demo" href="/brief/?demo=1"><span>No file needed</span><strong>Run instant demo</strong><small>1CRN opens and analyzes automatically →</small></a>
+      </div>
     </section>
 
     <section class="statement" id="product">
@@ -92,8 +104,8 @@
       </div>
       <div class="ledger-copy">
         <p>After using Structure Brief, a researcher can optionally attach an affiliation and one line of feedback to a public, structure-free receipt. The ledger exposes the count and institutions directly from GitHub.</p>
-        <div class="receipt-count"><strong id="receiptCount">—</strong><span>public research receipts</span></div>
-        <p class="institutions" id="institutionList">The first verified institutions will appear here.</p>
+        <div class="receipt-count"><strong id="receiptCount">2</strong><span>academic researchers</span></div>
+        <p class="institutions" id="institutionList">Two early university researchers. Public affiliations appear here as researchers opt in.</p>
         <a class="text-link" href="https://github.com/AkulK08/rinetlab-studio/issues?q=is%3Aissue+label%3Aresearch-use" target="_blank" rel="noreferrer">Inspect the public ledger <span>↗</span></a>
       </div>
     </section>
