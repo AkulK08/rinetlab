@@ -8,7 +8,8 @@ const els = {
 };
 
 let current = null;
-const molecular = { stage: null, component: null, representation: "surface", spinning: true, highlight: null, topResidues: [], resultScheme: null };
+const molecular = { stage: null, component: null, representation: "surface", spinning: true, highlight: null, topResidues: [], resultScheme: null, selectedResidue: null };
+let activeDiscoveryMode = "biology";
 const preview = { stage: null, component: null };
 const waterNames = new Set(["HOH", "WAT", "DOD"]);
 const metalElements = new Set(["LI", "NA", "MG", "AL", "K", "CA", "MN", "FE", "CO", "NI", "CU", "ZN", "SR", "MO", "CD", "CS", "BA", "HG"]);
@@ -362,7 +363,7 @@ function parsePdb(text) {
   return {
     residues: residues.length, polymerAtoms: polymerAtoms.length, chainReports, contacts, alternateCount, lowOccupancy, missingCa, disulfides: Math.floor(disulfidePartners.size / 2),
     waters: waters.length, hetero: [...hetero.values()].map(group => `${group.name} ${group.chain}:${group.seq}`), metals: metals.map(group => `${group.name} ${group.chain}:${group.seq}`),
-    bMean: bValues.length ? bValues.reduce((sum,v) => sum+v,0)/bValues.length : null, bMedian: median(bValues), topResidues, controlResidue,
+    bMean: bValues.length ? bValues.reduce((sum,v) => sum+v,0)/bValues.length : null, bMedian: median(bValues), topResidues, allResidues: rankedResidues, controlResidue,
     models: lines.filter(line => line.startsWith("MODEL ")).length || 1, metadata
   };
 }
@@ -380,9 +381,175 @@ async function analyze(text, sourceName, sourceType) {
     const receiptId = `RNB-${digest.slice(0, 12).toUpperCase()}`;
     current = { sourceName, sourceType, digest, receiptId, report, rawText: text, analyzedAt: new Date().toISOString() };
     render(current);
+    fetchPublicBiology(report);
     setStatus(`Complete. ${sourceName} was parsed locally; no coordinates were sent to RINet.`);
   } catch (error) {
     setStatus(`Analysis stopped: ${error.message}. Confirm that this is a fixed-column PDB file.`, true);
+  }
+}
+
+function buildDiscoveryPrograms(report) {
+  const biology = biologicalGuidance(report);
+  const candidate = report.topResidues[0];
+  const control = report.controlResidue;
+  const candidateLabel = candidate?.label || "the first ranked site";
+  const controlLabel = control?.label || "a matched lower-contact site";
+  const firstChange = mutationLadder(candidate).conservative;
+  const isOxygenAssembly = /oxygen|hemoglobin|haemoglobin|heme assembly/i.test(`${biology.identity} ${biology.useCase} ${report.metadata?.title || ""} ${report.metadata?.compound || ""}`);
+  const generic = {
+    biology: {
+      title: "Map where structure becomes phenotype.",
+      thesis: `Treat ${biology.identity.toLowerCase()} as a biological system with a measurable output, not only as a ranked list of residues.`,
+      opportunity: `Use ${candidateLabel} and ${controlLabel} to ask whether a structurally distinct intervention produces a distinct biological response.`,
+      program: `Test ${firstChange}, a matched perturbation at ${controlLabel}, and wild type. Measure integrity first, then ${biology.assay}.`,
+      question: `Does the candidate change the protein-specific output more than structural background while molecular integrity remains intact?`
+    },
+    engineering: {
+      title: "Tune function without breaking the fold.",
+      thesis: "Turn the structure into a small design ladder that separates useful tuning from generic destabilization.",
+      opportunity: `Explore conservative, neutralizing and stronger changes around ${candidateLabel} while using ${controlLabel} as a structural baseline.`,
+      program: `Build a three-step chemistry ladder at ${candidateLabel}. Screen abundance and folding, then advance only intact constructs into ${biology.assay}.`,
+      question: "Can the response be shifted in a graded way without losing expression, assembly or fold quality?"
+    },
+    translation: {
+      title: "Separate tractable intervention sites from structural liabilities.",
+      thesis: "A useful structural brief distinguishes a specific change in protein behavior from a general loss of molecular integrity.",
+      opportunity: `Use the candidate and matched control to classify observed variants or interventions by function, abundance and fold rather than by one score.`,
+      program: `Measure abundance, one orthogonal integrity readout and ${biology.assay} in the same batch. Keep conclusions at the protein level unless clinical evidence is supplied.`,
+      question: "Which measurement cleanly distinguishes a functional effect from reduced expression, misfolding or failed assembly?"
+    },
+    mechanism: {
+      title: "Find the shortest experiment that separates competing models.",
+      thesis: `Use ${candidateLabel} as a perturbation, not as a conclusion. The goal is to distinguish local packing, ligand coupling, assembly effects and genuine functional control.`,
+      opportunity: `Compare ${candidateLabel}, ${controlLabel} and the next ranked site across a shared integrity and function panel.`,
+      program: `Predefine predictions for local packing, fold loss and site-specific function. Use ${biology.assay} only after the integrity gate passes.`,
+      question: "Which single outcome would force the leading structural explanation to be abandoned?"
+    }
+  };
+  if (!isOxygenAssembly) return generic;
+  return {
+    biology: {
+      title: "Treat oxygen delivery as a coupled system.",
+      thesis: "This tetramer connects local heme chemistry, subunit interfaces and cooperative oxygen binding. The most valuable question spans all three scales.",
+      opportunity: "Measure which interventions preserve heme occupancy but alter oxygen affinity or cooperativity. This separates oxygen handling from generic protein damage.",
+      program: `Compare ${candidateLabel}, an interface-ranked site and ${controlLabel}. Measure heme spectra, oxygen equilibrium and tetramer integrity in the same preparation.`,
+      question: "Where does local heme chemistry become cooperative behavior across subunits?"
+    },
+    engineering: {
+      title: "Engineer the response curve, not only stability.",
+      thesis: "The design objective is a controlled change in oxygen affinity or cooperativity while heme loading and tetramer assembly remain intact.",
+      opportunity: `Use ${candidateLabel} as the chemistry-linked anchor, then compare graded perturbations at a subunit interface and matched structural background.`,
+      program: "Build a small perturbation ladder across heme-contact, interface and network sites. Measure heme occupancy, oxygen curves and oligomeric state before choosing a lead.",
+      question: "Can an intervention shift oxygen response without altering heme loading or tetramer integrity?"
+    },
+    translation: {
+      title: "Separate variant mechanism from generic protein damage.",
+      thesis: "A variant can alter heme binding, cooperative response, assembly or fold. Those are different molecular classes and require different evidence.",
+      opportunity: "Classify oxygen-transport variants with a compact panel instead of treating every functional loss as the same mechanism.",
+      program: "Measure abundance, heme occupancy, the oxygen equilibrium curve and oligomerization. Keep the output as molecular evidence, not medical advice.",
+      question: "Which readout distinguishes altered oxygen behavior from heme loss, assembly failure or destabilization?"
+    },
+    mechanism: {
+      title: "Find where local chemistry becomes collective motion.",
+      thesis: "The proximal heme environment and the subunit interfaces offer two competing routes from a local contact to a cooperative state change.",
+      opportunity: `Use ${candidateLabel} and an interface site to compare local heme coupling with cross-subunit communication.`,
+      program: "Compare deoxy and oxy structural states, identify contacts that change with state, then perturb one heme-linked and one interface-linked site with matched integrity controls.",
+      question: "Which contact change is state-linked, perturbable and necessary for cooperative behavior?"
+    }
+  };
+}
+
+function discoveryGrounding(report) {
+  const publicData = report.publicBiology;
+  if (publicData) {
+    const uniprot = publicData.uniprotIds.length ? ` · UniProt ${publicData.uniprotIds.join(" / ")}` : "";
+    return `Verified annotation: RCSB PDB ${publicData.pdbId}${uniprot} · ${publicData.entityCount} polymer ${publicData.entityCount === 1 ? "entity" : "entities"}`;
+  }
+  const selected = molecular.selectedResidue ? ` · selected ${molecular.selectedResidue.label}` : "";
+  return `Grounded in supplied PDB metadata, coordinates and deterministic residue graph${selected}.`;
+}
+
+function renderDiscovery(report, mode = activeDiscoveryMode) {
+  activeDiscoveryMode = mode;
+  const program = buildDiscoveryPrograms(report)[mode] || buildDiscoveryPrograms(report).biology;
+  document.querySelectorAll("[data-discovery-mode]").forEach(button => {
+    const active = button.dataset.discoveryMode === mode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  document.getElementById("discoveryModeLabel").textContent = `${mode.toUpperCase()} PROGRAM`;
+  document.getElementById("discoveryTitle").textContent = program.title;
+  document.getElementById("discoveryThesis").textContent = program.thesis;
+  document.getElementById("discoveryOpportunity").textContent = program.opportunity;
+  document.getElementById("discoveryProgram").textContent = program.program;
+  document.getElementById("discoveryQuestion").textContent = program.question;
+  document.getElementById("discoveryGrounding").textContent = discoveryGrounding(report);
+  const output = document.getElementById("localSynthesisOutput");
+  output.classList.remove("visible");
+  output.textContent = "";
+}
+
+async function fetchPublicBiology(report) {
+  const pdbId = String(report.metadata?.pdbId || "").trim().toUpperCase();
+  if (!/^[A-Z0-9]{4}$/.test(pdbId)) return;
+  try {
+    const entryResponse = await fetch(`https://data.rcsb.org/rest/v1/core/entry/${pdbId}`);
+    if (!entryResponse.ok) return;
+    const entry = await entryResponse.json();
+    const entityIds = entry.rcsb_entry_container_identifiers?.polymer_entity_ids || [];
+    const entities = await Promise.all(entityIds.slice(0, 6).map(async entityId => {
+      const response = await fetch(`https://data.rcsb.org/rest/v1/core/polymer_entity/${pdbId}/${entityId}`);
+      return response.ok ? response.json() : null;
+    }));
+    const validEntities = entities.filter(Boolean);
+    const descriptions = [...new Set(validEntities.flatMap(entity => entity.rcsb_polymer_entity?.pdbx_description || []).filter(Boolean))];
+    const uniprotIds = [...new Set(validEntities.flatMap(entity => {
+      const identifiers = entity.rcsb_polymer_entity_container_identifiers || {};
+      const direct = identifiers.uniprot_ids || [];
+      const referenced = (identifiers.reference_sequence_identifiers || []).filter(item => item.database_name === "UniProt").map(item => item.database_accession);
+      return [...direct, ...referenced];
+    }).filter(Boolean))];
+    report.publicBiology = { pdbId, entityCount: entityIds.length, descriptions, uniprotIds };
+    if (current?.report === report) renderDiscovery(report, activeDiscoveryMode);
+  } catch (_) {
+    // Embedded metadata remains the grounded fallback if public annotation is unavailable.
+  }
+}
+
+async function deepenDiscoveryLocally() {
+  if (!current) return;
+  const button = document.getElementById("localSynthesisButton");
+  const output = document.getElementById("localSynthesisOutput");
+  const report = current.report;
+  const program = buildDiscoveryPrograms(report)[activeDiscoveryMode];
+  output.classList.add("visible");
+  output.textContent = "Checking for an on-device model in this browser…";
+  button.disabled = true;
+  try {
+    let session = null;
+    if (globalThis.LanguageModel?.create) {
+      session = await globalThis.LanguageModel.create({ temperature: .2, topK: 8 });
+    } else if (globalThis.ai?.languageModel?.create) {
+      session = await globalThis.ai.languageModel.create({ temperature: .2, topK: 8 });
+    }
+    if (!session?.prompt) throw new Error("unavailable");
+    const evidence = {
+      identity: biologicalGuidance(report).identity,
+      metadata: report.metadata,
+      chains: report.chainReports.length,
+      boundGroups: report.hetero.slice(0, 12),
+      candidate: report.topResidues[0],
+      comparison: report.controlResidue,
+      verifiedPublicAnnotation: report.publicBiology || null,
+      selectedProgram: activeDiscoveryMode,
+      deterministicProgram: program
+    };
+    const prompt = `You are extending a protein research brief. Use only the evidence in the JSON below. Do not invent function, disease relevance, binding partners or literature claims. Write three concise sections titled High-value question, Smallest credible program, and Result that changes direction. Explain biological importance in plain language. State uncertainty explicitly. Avoid em dashes. Evidence: ${JSON.stringify(evidence)}`;
+    output.textContent = await session.prompt(prompt);
+  } catch (_) {
+    output.textContent = "No on-device language model is available in this browser. The grounded discovery program above remains active and does not require a model.";
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -468,10 +635,12 @@ function render(data) {
   document.getElementById("topologyRows").innerHTML = r.topResidues.map((residue, i) => `<div class="topology-row"><strong>${String(i+1).padStart(2,"0")} / ${esc(residue.label)}</strong><span>PRIORITY ${residue.score.toFixed(0)} · DEG ${residue.degree}</span></div>`).join("");
   document.getElementById("bestResidueRows").innerHTML = r.topResidues.map((residue, i) => `<button class="best-residue-row" type="button" data-residue-index="${i}"><span>${String(i+1).padStart(2,"0")}</span><strong>${esc(residue.label)}<em>${esc(residue.context)}</em></strong><small>${residue.score.toFixed(0)}</small></button>`).join("");
   renderGuidance(r);
+  renderDiscovery(r, "biology");
   const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Intelligence 2.1 (receipt ${data.receiptId}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} chain${r.chainReports.length === 1 ? "" : "s"}. A deterministic residue-contact graph was constructed between Cα atoms separated by no more than 8.0 Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. Residue priority integrated normalized contact degree, graph reach, distance-weighted packing, long-range and cross-chain contacts, radial burial and proximity to non-water hetero atoms. ${r.disulfides} probable disulfide constraint${r.disulfides === 1 ? " was" : "s were"} assigned from cysteine Sγ separations of 1.7 to 2.3 Å. Coordinate-record screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} sequence gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}); they were not assumed to represent prediction confidence. The biological decision brief used explicit rules grounded in supplied PDB metadata, coordinates and graph-derived comparisons. No AI or learned model generated the recommendations.`;
   document.getElementById("methodsText").textContent = methods;
   els.results.classList.remove("hidden");
   document.body.classList.add("analysis-mode");
+  document.getElementById("resultScrollCue")?.classList.remove("dismissed");
   preview.stage?.setSpin(false);
   window.scrollTo({ top: 0, behavior: "auto" });
   renderMolecule(data.rawText, data.sourceName, r.topResidues);
@@ -487,9 +656,17 @@ function buildResultColorScheme(topResidues) {
       const key = `${chain}:${atom.resno}${String(atom.inscode || "").trim()}`;
       if (targets.has(key)) return targets.get(key);
       const chainIndex = [...String(chain)].reduce((sum, character) => sum + character.charCodeAt(0), 0);
-      return chainPalette[chainIndex % chainPalette.length];
+      const structuralRegion = Math.max(0, Math.floor((Number(atom.resno || 1) - 1) / 38));
+      return chainPalette[(chainIndex + structuralRegion) % chainPalette.length];
     };
   }, "RINet deterministic structure map");
+}
+
+function updateSurfaceStatus(message, ready = false) {
+  const status = document.getElementById("surfaceStatus");
+  if (!status) return;
+  status.classList.toggle("ready", ready);
+  status.querySelector("strong").textContent = message;
 }
 
 function setMolecularRepresentation(type) {
@@ -497,12 +674,17 @@ function setMolecularRepresentation(type) {
   if (!molecular.component) return;
   molecular.component.removeAllRepresentations();
   if (type === "surface") {
-    molecular.component.addRepresentation("surface", { sele: "protein", surfaceType: "av", probeRadius: 1.4, scaleFactor: 2.0, color: molecular.resultScheme || "#245245", opacity: .9, roughness: .32 });
-    molecular.component.addRepresentation("cartoon", { sele: "protein", color: molecular.resultScheme || "#7ee3c5", opacity: .2, quality: "high" });
+    updateSurfaceStatus("BUILDING COLOR-CODED SURFACE", false);
+    molecular.component.addRepresentation("cartoon", { sele: "protein", color: molecular.resultScheme || "#7ee3c5", opacity: .58, quality: "high", aspectRatio: 5.0 });
+    molecular.component.addRepresentation("surface", { sele: "protein", surfaceType: "av", probeRadius: 1.4, scaleFactor: 2.0, color: molecular.resultScheme || "#245245", opacity: .88, roughness: .28, quality: "high" });
     molecular.component.addRepresentation("ball+stick", { sele: "not protein and not water", colorScheme: "element", scale: 1.15, quality: "high" });
+    setTimeout(() => {
+      if (molecular.representation === "surface" && !molecular.selectedResidue) updateSurfaceStatus("COLOR-CODED SURFACE READY", true);
+    }, 1800);
   } else {
     molecular.component.addRepresentation("cartoon", { sele: "protein", color: molecular.resultScheme || "#69cbb0", quality: "high", aspectRatio: 5.0 });
     molecular.component.addRepresentation("ball+stick", { sele: "not protein and not water", colorScheme: "element" });
+    updateSurfaceStatus("CARTOON MAP READY", true);
   }
   addTargetRepresentations();
   document.querySelectorAll("[data-representation]").forEach(button => button.classList.toggle("active", button.dataset.representation === type));
@@ -526,9 +708,10 @@ async function renderMolecule(text, label, topResidues) {
   if (!molecular.stage) {
     molecular.stage = new NGL.Stage("moleculeStage", { backgroundColor: "#080b09", cameraType: "perspective", quality: "high", sampleLevel: 1 });
     molecular.stage.setParameters({ backgroundColor: "#080b09", fogNear: 50, fogFar: 100, lightIntensity: 1.1, ambientIntensity: .42 });
+    molecular.stage.signals.clicked.add(handleMolecularPick);
     window.addEventListener("resize", () => molecular.stage.handleResize());
   }
-  molecular.stage.removeAllComponents(); molecular.component = null; molecular.highlight = null;
+  molecular.stage.removeAllComponents(); molecular.component = null; molecular.highlight = null; molecular.selectedResidue = null;
   molecular.topResidues = topResidues || [];
   molecular.resultScheme = buildResultColorScheme(molecular.topResidues);
   document.getElementById("viewerLabel").textContent = label;
@@ -541,7 +724,7 @@ async function renderMolecule(text, label, topResidues) {
     molecular.stage.setSpin([0, 1, .06], .00155);
     molecular.spinning = true;
     document.getElementById("viewerSpin").textContent = "Pause";
-    document.querySelectorAll(".best-residue-row").forEach(button => button.addEventListener("click", () => highlightResidue(topResidues[Number(button.dataset.residueIndex)], button)));
+    document.querySelectorAll(".best-residue-row").forEach(button => button.addEventListener("click", () => selectAnalyzedResidue(topResidues[Number(button.dataset.residueIndex)], { button, autoView: true })));
   } catch (error) {
     document.getElementById("viewerLabel").textContent = `Viewer unavailable: ${error.message}`;
   }
@@ -569,16 +752,84 @@ async function initPreview() {
   }
 }
 
-function highlightResidue(residue, button) {
+function residueExplanation(residue) {
+  if (residue.disulfidePartner) return `PROBABLE DISULFIDE · ${residue.disulfidePartner.distance.toFixed(2)} Å TO ${residue.disulfidePartner.label.toUpperCase()}`;
+  if (residue.ligandDistance !== null && residue.ligandDistance <= 6) return `${residue.ligandDistance.toFixed(1)} Å FROM ${residue.nearestLigand || "BOUND GROUP"} · TEST LOCAL CHEMISTRY`;
+  if (residue.interchain) return `${residue.interchain} CROSS-CHAIN CONTACTS · TEST ASSEMBLY COMMUNICATION`;
+  return `${residue.degree} NON-LOCAL CONTACTS · TEST STRUCTURE TO FUNCTION`;
+}
+
+function selectAnalyzedResidue(residue, { button = null, autoView = false, updateDiscovery = true } = {}) {
   if (!molecular.component || !residue) return;
-  if (molecular.highlight) molecular.component.removeRepresentation(molecular.highlight);
+  if (molecular.highlight) molecular.highlight.forEach(representation => molecular.component.removeRepresentation(representation));
   const selection = residueSelection(residue);
-  molecular.highlight = molecular.component.addRepresentation("ball+stick", { sele: selection, color: "#d9ff58", scale: 1.45, quality: "high" });
-  molecular.component.autoView(selection, 450);
-  document.querySelectorAll(".best-residue-row").forEach(row => row.classList.toggle("active", row === button));
+  molecular.highlight = [
+    molecular.component.addRepresentation("ball+stick", { sele: selection, color: "#ff6f9f", scale: 1.65, quality: "high" }),
+    molecular.component.addRepresentation("spacefill", { sele: `${selection} and .CA`, color: "#ff6f9f", scale: 1.2, quality: "high" })
+  ];
+  if (autoView) molecular.component.autoView(selection, 450);
+  molecular.selectedResidue = residue;
+  const comparison = current?.report?.controlResidue;
+  const ladder = mutationLadder(residue);
+  document.getElementById("viewerCandidate").textContent = residue.label;
+  document.getElementById("viewerCandidateReason").textContent = residueExplanation(residue);
+  document.getElementById("hudThesis").textContent = `${residue.label} is now selected. ${residue.context}. Compare its effect with ${comparison?.label || "a matched structural site"}.`;
+  document.getElementById("hudMutation").textContent = ladder.conservative;
+  document.getElementById("hudMutationNote").textContent = `Least severe informative change at ${residue.label}.`;
+  document.getElementById("hudGate").textContent = residue.disulfidePartner ? "INTEGRITY BEFORE FUNCTION" : "SELECTED SITE MUST BEAT CONTROL";
+  document.getElementById("hudGateNote").textContent = `Interpret function only if ${residue.label} remains expressed and structurally intact.`;
+  updateSurfaceStatus(`SELECTED SITE · ${residue.label.toUpperCase()}`, true);
+  document.querySelectorAll(".best-residue-row").forEach(row => {
+    const ranked = molecular.topResidues[Number(row.dataset.residueIndex)];
+    row.classList.toggle("active", row === button || ranked?.label === residue.label);
+  });
+  if (updateDiscovery && current) renderDiscovery(current.report, activeDiscoveryMode);
+}
+
+function selectBoundGroup(atom) {
+  if (!atom) return;
+  const chain = atom.chainname || atom.chainid || "∅";
+  const label = `${atom.resname || "BOUND GROUP"} ${chain}:${atom.resno}`;
+  const selection = `${atom.resno}${chain === "∅" ? "" : `:${chain}`} and not protein`;
+  if (molecular.highlight) molecular.highlight.forEach(representation => molecular.component.removeRepresentation(representation));
+  molecular.highlight = [molecular.component.addRepresentation("ball+stick", { sele: selection, colorScheme: "element", scale: 1.8, quality: "high" })];
+  molecular.selectedResidue = null;
+  document.getElementById("viewerCandidate").textContent = label;
+  document.getElementById("viewerCandidateReason").textContent = "BOUND CHEMISTRY · CLICK A NEARBY RESIDUE TO COMPARE SITES";
+  document.getElementById("hudThesis").textContent = `${label} marks a chemistry-linked neighborhood. Test nearby residues only after confirming that this group is biologically relevant.`;
+  document.getElementById("hudMutation").textContent = "Inspect lining residues";
+  document.getElementById("hudMutationNote").textContent = "Choose a direct contact and a similarly buried non-contact comparison.";
+  document.getElementById("hudGate").textContent = "SEPARATE BINDING FROM FOLD";
+  document.getElementById("hudGateNote").textContent = "A change in bound-group signal is interpretable only if abundance and fold remain intact.";
+  updateSurfaceStatus(`BOUND GROUP · ${label.toUpperCase()}`, true);
+  document.querySelectorAll(".best-residue-row").forEach(row => row.classList.remove("active"));
+}
+
+function handleMolecularPick(pickingProxy) {
+  const atom = pickingProxy?.atom;
+  if (!atom || !current?.report) return;
+  const chain = atom.chainname || atom.chainid || "∅";
+  const insertion = String(atom.inscode || "").trim();
+  const residue = current.report.allResidues.find(row => row.chain === chain && row.seq === atom.resno && (row.insertion || "") === insertion);
+  if (residue) selectAnalyzedResidue(residue, { autoView: false });
+  else if (!waterNames.has(atom.resname)) selectBoundGroup(atom);
 }
 
 document.querySelectorAll("[data-representation]").forEach(button => button.addEventListener("click", () => setMolecularRepresentation(button.dataset.representation)));
+document.querySelectorAll("[data-discovery-mode]").forEach(button => button.addEventListener("click", () => {
+  if (!current) return;
+  const mode = button.dataset.discoveryMode;
+  renderDiscovery(current.report, mode);
+  const targets = {
+    biology: current.report.topResidues[0],
+    engineering: current.report.topResidues[1] || current.report.topResidues[0],
+    translation: current.report.controlResidue || current.report.topResidues.at(-1),
+    mechanism: current.report.allResidues.filter(residue => residue.interchain).sort((a, b) => b.interchain - a.interchain || b.score - a.score)[0] || current.report.topResidues[2] || current.report.topResidues[0]
+  };
+  selectAnalyzedResidue(targets[mode], { autoView: true, updateDiscovery: false });
+  document.getElementById("discoveryGrounding").textContent = discoveryGrounding(current.report);
+}));
+document.getElementById("localSynthesisButton")?.addEventListener("click", deepenDiscoveryLocally);
 document.getElementById("viewerFit").addEventListener("click", () => molecular.component?.autoView(450));
 document.getElementById("viewerSpin").addEventListener("click", event => {
   if (!molecular.stage) return;
