@@ -4,11 +4,12 @@ const els = {
   fileInput: document.getElementById("fileInput"), dropzone: document.getElementById("dropzone"),
   pdbForm: document.getElementById("pdbForm"), pdbId: document.getElementById("pdbId"),
   demoButton: document.getElementById("demoButton"), status: document.getElementById("status"),
-  results: document.getElementById("results"), receiptForm: document.getElementById("receiptForm")
+  analysisStatus: document.getElementById("analysisStatus"), results: document.getElementById("results"), receiptForm: document.getElementById("receiptForm")
 };
 
 let current = null;
-const molecular = { stage: null, component: null, representation: "surface", spinning: true, highlight: null };
+const molecular = { stage: null, component: null, representation: "surface", spinning: true, highlight: null, topResidues: [] };
+const preview = { stage: null, component: null };
 const waterNames = new Set(["HOH", "WAT", "DOD"]);
 const metalElements = new Set(["LI", "NA", "MG", "AL", "K", "CA", "MN", "FE", "CO", "NI", "CU", "ZN", "SR", "MO", "CD", "CS", "BA", "HG"]);
 
@@ -37,6 +38,10 @@ function setStatus(message, error = false) {
   els.status.textContent = message;
   els.status.classList.remove("hidden");
   els.status.classList.toggle("error", error);
+  if (els.analysisStatus) {
+    els.analysisStatus.textContent = message;
+    els.analysisStatus.classList.toggle("error", error);
+  }
 }
 
 async function readFile(file) {
@@ -95,6 +100,18 @@ function esc(value) { return String(value).replace(/[&<>'"]/g, c => ({"&":"&amp;
 function mutationSuggestion(residue) {
   const substitutions = { ASP: "D→N", GLU: "E→Q", LYS: "K→Q", ARG: "R→Q", CYS: "C→S", ALA: "A→G", GLY: "G→A", PRO: "P→A" };
   return substitutions[residue?.name] || `${residue?.name || "Residue"}→Ala`;
+}
+
+function mutationLadder(residue) {
+  const name = residue?.name || "Residue";
+  const conservative = { ARG: "R→K", LYS: "K→R", ASP: "D→E", GLU: "E→D", ASN: "N→Q", GLN: "Q→N", SER: "S→T", THR: "T→S", PHE: "F→Y", TYR: "Y→F", TRP: "W→F", LEU: "L→I", ILE: "I→V", VAL: "V→I", MET: "M→L", CYS: "C→S", HIS: "H→N", ALA: "A→G", GLY: "G→A", PRO: "P→A" };
+  const neutral = { ARG: "R→Q", LYS: "K→Q", ASP: "D→N", GLU: "E→Q", HIS: "H→N", SER: "S→A", THR: "T→A", ASN: "N→A", GLN: "Q→A", CYS: "C→S" };
+  const stress = { ARG: "R→E", LYS: "K→E", ASP: "D→K", GLU: "E→K", HIS: "H→E", GLY: "G→P", PRO: "P→G" };
+  return {
+    conservative: conservative[name] || `${name}→similar residue`,
+    neutral: neutral[name] || `${name}→Ala`,
+    stress: stress[name] || `${name}→Pro`
+  };
 }
 
 function parsePdb(text) {
@@ -184,9 +201,11 @@ function renderGuidance(report) {
   const warningPenalty = Math.min(.28, breakCount * .035 + report.alternateCount / Math.max(report.polymerAtoms, 1) + occupancyPenalty);
   const completeness = Math.max(.45, Math.min(.99, coverage - warningPenalty));
   const mutation = mutationSuggestion(candidate);
+  const ladder = mutationLadder(candidate);
   const candidateLabel = candidate?.label || "No ranked residue";
   const controlLabel = control?.label || "Choose a lower-contact residue";
   const contrast = runnerUp ? ` ${runnerUp.label} is the next site to examine if the first construct is inconclusive.` : "";
+  const contactClass = candidate?.degree >= 8 ? "a highly connected structural hub" : candidate?.degree >= 4 ? "a moderately connected structural junction" : "the strongest available contact signal in this model";
 
   document.getElementById("guidancePrimary").textContent = candidateLabel;
   document.getElementById("guidancePrimaryReason").textContent = candidate ? `${candidate.degree} non-local Cα contacts in this coordinate model.` : "The model did not contain a rankable Cα contact graph.";
@@ -199,6 +218,22 @@ function renderGuidance(report) {
   document.getElementById("guidanceExperiment").textContent = `Build the ${mutation} candidate and an equivalent perturbation at ${controlLabel}. Test both beside wild type in the same expression background. Measure the protein-specific functional readout, plus expression or abundance and a folding or stability control.`;
   document.getElementById("guidanceAdvance").textContent = `Advance the hypothesis if the ${candidateLabel} perturbation changes the biological readout more than ${controlLabel}, while expression and folding remain acceptably similar to wild type.`;
   document.getElementById("guidanceStop").textContent = `Do not interpret the site as specifically informative if candidate and comparison behave similarly, or if the candidate mainly lowers expression or disrupts folding. In that case, test ${runnerUp?.label || "the next-ranked residue"} or revise the assay.`;
+  document.getElementById("mutationConservative").textContent = ladder.conservative;
+  document.getElementById("mutationNeutral").textContent = ladder.neutral;
+  document.getElementById("mutationStress").textContent = ladder.stress;
+  document.getElementById("guidanceIntegrity").textContent = `For ${candidateLabel}, quantify expression or abundance and add one orthogonal folding/stability readout before interpreting function.`;
+  document.getElementById("guidanceFunction").textContent = `Use the assay that is closest to the protein's established biological output; predefine the smallest effect that would be worth following.`;
+  document.getElementById("guidanceSpecificity").textContent = `Run wild type, ${ladder.conservative}, ${ladder.neutral}, and the matched-site perturbation at ${controlLabel} together.`;
+  document.getElementById("diagnosticAdvance").textContent = `${candidateLabel} becomes a stronger site-specific hypothesis if its functional effect exceeds ${controlLabel} without a comparable integrity defect.`;
+  document.getElementById("diagnosticFold").textContent = `Do not call mechanism. Reduce perturbation severity, improve expression controls, or test ${ladder.conservative} first.`;
+  document.getElementById("diagnosticControl").textContent = `The contact ranking has not separated ${candidateLabel} from structural background; deprioritize or redesign the contrast.`;
+  document.getElementById("diagnosticNext").textContent = `Confirm assay sensitivity, then move to ${runnerUp?.label || "the next-ranked structural site"}.`;
+  document.getElementById("alternatePacking").textContent = `${candidateLabel} may report local packing stress because it is ${contactClass}, rather than a specific functional pathway.`;
+  document.getElementById("alternateExpression").textContent = `${ladder.neutral} may change abundance, folding or trafficking; those explanations must be measured before a site-specific interpretation.`;
+  document.getElementById("alternateContext").textContent = `This static coordinate model may omit the assay-relevant state, ligand, partner or membrane context.`;
+  document.getElementById("guidanceNext").textContent = runnerUp?.label || "No second site available";
+  document.getElementById("viewerCandidate").textContent = candidateLabel;
+  document.getElementById("viewerCandidateReason").textContent = candidate ? `${candidate.degree} NON-LOCAL CONTACTS · ${contactClass.toUpperCase()}` : "NO RANKABLE CONTACT SIGNAL";
 }
 
 function render(data) {
@@ -210,6 +245,8 @@ function render(data) {
   document.getElementById("chainMetric").textContent = r.chainReports.length.toLocaleString();
   document.getElementById("contactMetric").textContent = r.contacts.toLocaleString();
   document.getElementById("bMetric").textContent = r.bMean === null ? "N/A" : r.bMean.toFixed(1);
+  document.getElementById("viewerCoverage").textContent = `${Math.round(100 * (r.residues - r.missingCa) / Math.max(r.residues, 1))}%`;
+  document.getElementById("viewerContacts").textContent = r.contacts.toLocaleString();
   document.getElementById("chainRows").innerHTML = r.chainReports.map(chain => `<tr><td>${esc(chain.chain)}</td><td>${chain.residues}</td><td>${chain.atoms}</td><td>${chain.start}–${chain.end}</td><td>${chain.breaks}</td></tr>`).join("");
   document.getElementById("inventory").textContent = `${r.models} model record${r.models === 1 ? "" : "s"} · ${r.hetero.length} non-water hetero group${r.hetero.length === 1 ? "" : "s"} · ${r.waters} water atom${r.waters === 1 ? "" : "s"}${r.hetero.length ? ` · Hetero inventory: ${r.hetero.slice(0,8).join(", ")}${r.hetero.length > 8 ? "…" : ""}` : ""}`;
   const flags = [
@@ -226,8 +263,10 @@ function render(data) {
   const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Brief 1.0 (receipt ${data.receiptId}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} chain${r.chainReports.length === 1 ? "" : "s"}. A descriptive residue-contact graph was constructed between Cα atoms separated by no more than 8.0 Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. Coordinate-record screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} sequence gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}); they were not assumed to represent prediction confidence. Contact degree and flags are geometric descriptors and were not interpreted as causal or functional proof.`;
   document.getElementById("methodsText").textContent = methods;
   els.results.classList.remove("hidden");
+  document.body.classList.add("analysis-mode");
+  preview.stage?.setSpin(false);
+  window.scrollTo({ top: 0, behavior: "auto" });
   renderMolecule(data.rawText, data.sourceName, r.topResidues);
-  els.results.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
 }
 
 function setMolecularRepresentation(type) {
@@ -235,13 +274,27 @@ function setMolecularRepresentation(type) {
   if (!molecular.component) return;
   molecular.component.removeAllRepresentations();
   if (type === "surface") {
-    molecular.component.addRepresentation("surface", { sele: "protein", surfaceType: "av", probeRadius: 1.4, scaleFactor: 2.0, colorScheme: "residueindex", opacity: .9, roughness: .35 });
-    molecular.component.addRepresentation("cartoon", { sele: "protein", color: "#baf6e8", opacity: .28, quality: "high" });
+    molecular.component.addRepresentation("surface", { sele: "protein", surfaceType: "av", probeRadius: 1.4, scaleFactor: 2.0, color: "#245245", opacity: .9, roughness: .32 });
+    molecular.component.addRepresentation("cartoon", { sele: "protein", color: "#7ee3c5", opacity: .22, quality: "high" });
   } else {
-    molecular.component.addRepresentation("cartoon", { sele: "protein", colorScheme: "residueindex", quality: "high", aspectRatio: 5.0 });
+    molecular.component.addRepresentation("cartoon", { sele: "protein", color: "#69cbb0", quality: "high", aspectRatio: 5.0 });
     molecular.component.addRepresentation("ball+stick", { sele: "not protein and not water", colorScheme: "element" });
   }
+  addTargetRepresentations();
   document.querySelectorAll("[data-representation]").forEach(button => button.classList.toggle("active", button.dataset.representation === type));
+}
+
+function residueSelection(residue) {
+  return `${residue.seq}${residue.insertion || ""}${residue.chain === "∅" ? "" : `:${residue.chain}`}`;
+}
+
+function addTargetRepresentations() {
+  if (!molecular.component || !molecular.topResidues.length) return;
+  const candidate = molecular.topResidues[0];
+  const secondary = molecular.topResidues.slice(1, 5);
+  if (secondary.length) molecular.component.addRepresentation("ball+stick", { sele: secondary.map(residueSelection).join(" OR "), color: "#69d7ff", scale: 1.05, opacity: .86, quality: "high" });
+  molecular.component.addRepresentation("ball+stick", { sele: residueSelection(candidate), color: "#d9ff58", scale: 1.55, quality: "high" });
+  molecular.component.addRepresentation("spacefill", { sele: `${residueSelection(candidate)} and .CA`, color: "#d9ff58", scale: 1.15, quality: "high" });
 }
 
 async function renderMolecule(text, label, topResidues) {
@@ -252,6 +305,7 @@ async function renderMolecule(text, label, topResidues) {
     window.addEventListener("resize", () => molecular.stage.handleResize());
   }
   molecular.stage.removeAllComponents(); molecular.component = null; molecular.highlight = null;
+  molecular.topResidues = topResidues || [];
   document.getElementById("viewerLabel").textContent = label;
   const blob = new Blob([text], { type: "text/plain" });
   Object.defineProperty(blob, "name", { value: label });
@@ -259,7 +313,7 @@ async function renderMolecule(text, label, topResidues) {
     molecular.component = await molecular.stage.loadFile(blob, { ext: label.toLowerCase().endsWith(".cif") || label.toLowerCase().endsWith(".mmcif") ? "cif" : "pdb", defaultRepresentation: false });
     setMolecularRepresentation(molecular.representation);
     molecular.component.autoView(500);
-    molecular.stage.setSpin([0, 1, .08], .0022);
+    molecular.stage.setSpin([0, 1, .06], .00155);
     molecular.spinning = true;
     document.getElementById("viewerSpin").textContent = "Pause";
     document.querySelectorAll(".best-residue-row").forEach(button => button.addEventListener("click", () => highlightResidue(topResidues[Number(button.dataset.residueIndex)], button)));
@@ -268,10 +322,32 @@ async function renderMolecule(text, label, topResidues) {
   }
 }
 
+async function initPreview() {
+  if (!window.NGL || !document.getElementById("previewMolecule")) return;
+  try {
+    const response = await fetch("/brief/demo/1crn.pdb", { cache: "force-cache" });
+    if (!response.ok) return;
+    const text = await response.text();
+    const blob = new Blob([text], { type: "text/plain" });
+    Object.defineProperty(blob, "name", { value: "1crn.pdb" });
+    preview.stage = new NGL.Stage("previewMolecule", { backgroundColor: "#070a08", cameraType: "perspective", quality: "high", sampleLevel: 1 });
+    preview.stage.setParameters({ backgroundColor: "#070a08", fogNear: 48, fogFar: 100, lightIntensity: 1.12, ambientIntensity: .46 });
+    preview.component = await preview.stage.loadFile(blob, { ext: "pdb", defaultRepresentation: false });
+    preview.component.addRepresentation("surface", { sele: "protein", surfaceType: "av", probeRadius: 1.4, scaleFactor: 2.0, color: "#285947", opacity: .92, roughness: .3 });
+    preview.component.addRepresentation("cartoon", { sele: "protein", color: "#85efcb", opacity: .2, quality: "high" });
+    preview.component.addRepresentation("ball+stick", { sele: "10:A", color: "#d9ff58", scale: 1.5, quality: "high" });
+    preview.component.autoView(0);
+    preview.stage.setSpin([0, 1, .05], .00125);
+    window.addEventListener("resize", () => preview.stage?.handleResize());
+  } catch (_) {
+    // The launch console remains fully usable if WebGL preview initialization fails.
+  }
+}
+
 function highlightResidue(residue, button) {
   if (!molecular.component || !residue) return;
   if (molecular.highlight) molecular.component.removeRepresentation(molecular.highlight);
-  const selection = `${residue.seq}${residue.insertion || ""}${residue.chain === "∅" ? "" : `:${residue.chain}`}`;
+  const selection = residueSelection(residue);
   molecular.highlight = molecular.component.addRepresentation("ball+stick", { sele: selection, color: "#d9ff58", scale: 1.45, quality: "high" });
   molecular.component.autoView(selection, 450);
   document.querySelectorAll(".best-residue-row").forEach(row => row.classList.toggle("active", row === button));
@@ -282,9 +358,10 @@ document.getElementById("viewerFit").addEventListener("click", () => molecular.c
 document.getElementById("viewerSpin").addEventListener("click", event => {
   if (!molecular.stage) return;
   molecular.spinning = !molecular.spinning;
-  molecular.stage.setSpin(molecular.spinning ? [0, 1, .08] : false, .0022);
+  molecular.stage.setSpin(molecular.spinning ? [0, 1, .06] : false, .00155);
   event.currentTarget.textContent = molecular.spinning ? "Pause" : "Spin";
 });
+document.getElementById("newAnalysis").addEventListener("click", () => { window.location.href = "/brief/"; });
 
 document.getElementById("copyMethods").addEventListener("click", async e => {
   try { await navigator.clipboard.writeText(document.getElementById("methodsText").textContent); e.currentTarget.textContent = "Copied"; setTimeout(() => e.currentTarget.textContent = "Copy paragraph", 1500); }
@@ -304,12 +381,13 @@ els.receiptForm.addEventListener("submit", event => {
   event.preventDefault(); if (!current || !els.receiptForm.reportValidity()) return;
   const affiliation = document.getElementById("affiliation").value.trim();
   const researcher = document.getElementById("researcher").value.trim() || "Not provided";
-  const field = document.getElementById("field").value.trim() || "Not provided";
   const feedback = document.getElementById("feedback").value.trim();
   const title = `Research receipt · ${affiliation} · ${current.receiptId}`;
-  const body = `## RINet Structure Brief research-use receipt\n\n**Affiliation**: ${affiliation}\n**Researcher / lab**: ${researcher}\n**Research area**: ${field}\n**Receipt**: ${current.receiptId}\n**Input label**: ${current.sourceName}\n**Structure SHA-256**: \`${current.digest}\`\n\n### One-line feedback\n${feedback}\n\n### Analysis summary\n- ${current.report.residues} polymer residues across ${current.report.chainReports.length} chain(s)\n- ${current.report.polymerAtoms} polymer atoms\n- ${current.report.contacts} descriptive Cα contacts at 8.0 Å\n- ${current.report.chainReports.reduce((s,c)=>s+c.breaks,0)} sequence gap / backbone break flags\n\n> Coordinates were analyzed locally and are not attached. This public receipt documents use of the utility; it is not an endorsement of scientific conclusions.\n\n<!-- Keep the research-use label so this receipt appears in the public ledger. -->`;
+  const body = `## RINet Structure Brief institutional-use receipt\n\n**Affiliation**: ${affiliation}\n**Researcher / lab**: ${researcher}\n**Receipt**: ${current.receiptId}\n**Input label**: ${current.sourceName}\n**Structure SHA-256**: \`${current.digest}\`\n\n### One-line feedback\n${feedback}\n\n### Analysis summary\n- ${current.report.residues} polymer residues across ${current.report.chainReports.length} chain(s)\n- ${current.report.polymerAtoms} polymer atoms\n- ${current.report.contacts} descriptive Cα contacts at 8.0 Å\n- ${current.report.chainReports.reduce((s,c)=>s+c.breaks,0)} sequence gap / backbone break flags\n\n> Coordinates were analyzed locally and are not attached. This receipt documents use of the utility; it is not an endorsement of scientific conclusions.`;
   const url = `https://github.com/AkulK08/rinetlab-studio/issues/new?labels=research-use&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
   window.open(url, "_blank", "noopener,noreferrer");
 });
 
+switchSource("id");
+initPreview();
 if (new URLSearchParams(window.location.search).get("demo") === "1") loadDemo();

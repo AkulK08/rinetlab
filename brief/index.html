@@ -17,55 +17,79 @@
   </header>
 
   <main>
-    <section class="intro">
-      <div>
-        <p class="eyebrow">Zero-install structure utility</p>
-        <h1>Know what is actually<br>in your PDB.</h1>
+    <section class="launch-screen" id="launchScreen" aria-labelledby="input-title">
+      <div class="launch-visual" aria-label="Animated preview of the RINet structure analysis">
+        <div class="preview-toolbar"><span>LIVE STRUCTURE / 1CRN</span><strong>ROTATING SURFACE + RESIDUE TARGETING</strong></div>
+        <div id="previewMolecule" aria-label="Rotating protein structure preview"></div>
+        <div class="preview-reticle" aria-hidden="true"><i></i><i></i></div>
+        <div class="preview-callout"><span>PRIMARY STRUCTURAL SIGNAL</span><strong>CONTACT-DENSE RESIDUE</strong><small>CLICK DEMO TO CALCULATE THE FULL EXPERIMENT GUIDE</small></div>
+        <div class="preview-footer"><span>SUPPLIED COORDINATES</span><span>LOCAL ANALYSIS · NO ACCOUNT</span></div>
       </div>
-      <div class="intro-copy">
-        <p>Generate a coordinate inventory, structural flags, Cα contact summary, methods-ready paragraph and reproducible receipt in under a minute.</p>
-        <p class="boundary">Files are parsed on this device. They are never uploaded to RINet. Fetching a public PDB ID contacts RCSB PDB.</p>
+
+      <div class="launch-console">
+        <p class="eyebrow">RINet / one-structure experiment guide</p>
+        <h1 id="input-title">See the structure.<br>Know what to test.</h1>
+        <p class="launch-summary">A rotating 3D surface first, then residue priorities, perturbation strategy, assay gates, controls and explicit stop rules.</p>
+
+        <button class="demo-button" id="demoButton" type="button">
+          <span>Fastest path · no file required</span>
+          <strong>Run the complete demo</strong>
+          <small>1CRN · interactive 3D · experiment blueprint <b>→</b></small>
+        </button>
+
+        <div class="input-main">
+          <div class="source-tabs" role="tablist" aria-label="Coordinate source">
+            <button class="source-tab active" id="idTab" type="button" role="tab" aria-selected="true">Enter PDB ID</button>
+            <button class="source-tab" id="fileTab" type="button" role="tab" aria-selected="false">Upload local file</button>
+          </div>
+          <div class="source-panel" id="idPanel">
+            <form class="id-form" id="pdbForm">
+              <label for="pdbId">Analyze any public structure</label>
+              <div><input id="pdbId" name="pdbId" maxlength="4" autocomplete="off" spellcheck="false" placeholder="1CRN" aria-describedby="pdbHint"><button type="submit">Analyze</button></div>
+              <small id="pdbHint">Four-character PDB ID · fetched directly from RCSB PDB.</small>
+            </form>
+          </div>
+          <div class="source-panel hidden" id="filePanel">
+            <input id="fileInput" type="file" accept=".pdb,.ent,text/plain" hidden>
+            <button class="dropzone" id="dropzone" type="button">
+              <span class="drop-icon">+</span>
+              <strong>Choose or drop a .pdb file</strong>
+              <small>Coordinates stay in this tab · 25 MB recommended maximum</small>
+            </button>
+          </div>
+        </div>
+
+        <div class="status hidden" id="status" role="status"></div>
+        <p class="boundary">Files are parsed on this device and never uploaded to RINet. Public PDB lookup contacts RCSB PDB.</p>
       </div>
     </section>
-
-    <section class="input-workbench" aria-labelledby="input-title">
-      <div class="input-number">01</div>
-      <div class="input-main">
-        <h2 id="input-title">Supply coordinates</h2>
-        <div class="source-tabs" role="tablist" aria-label="Coordinate source">
-          <button class="source-tab active" id="fileTab" type="button" role="tab" aria-selected="true">Local file</button>
-          <button class="source-tab" id="idTab" type="button" role="tab" aria-selected="false">PDB ID</button>
-        </div>
-        <div class="source-panel" id="filePanel">
-          <input id="fileInput" type="file" accept=".pdb,.ent,text/plain" hidden>
-          <button class="dropzone" id="dropzone" type="button">
-            <span class="drop-icon">+</span>
-            <strong>Choose or drop a .pdb file</strong>
-            <small>Parsed in this tab · maximum recommended size 25 MB</small>
-          </button>
-        </div>
-        <div class="source-panel hidden" id="idPanel">
-          <form class="id-form" id="pdbForm">
-            <label for="pdbId">RCSB PDB identifier</label>
-            <div><input id="pdbId" name="pdbId" maxlength="4" autocomplete="off" spellcheck="false" placeholder="1CRN" aria-describedby="pdbHint"><button type="submit">Fetch + analyze</button></div>
-            <small id="pdbHint">Public coordinates are requested directly from files.rcsb.org.</small>
-          </form>
-        </div>
-      </div>
-      <button class="demo-button" id="demoButton" type="button">
-        <span>No file needed</span>
-        <strong>Run instant demo</strong>
-        <small>Load 1CRN · counts as one demo download →</small>
-      </button>
-    </section>
-
-    <div class="status hidden" id="status" role="status"></div>
 
     <section class="results hidden" id="results" aria-live="polite">
       <div class="result-head">
-        <div><p class="eyebrow">Structure inventory</p><h2 id="structureName">—</h2></div>
-        <div class="receipt-id"><span>RECEIPT</span><strong id="receiptId">—</strong></div>
+        <div><p class="eyebrow">RINet analysis / supplied structure</p><h2 id="structureName">—</h2></div>
+        <div class="result-actions"><div class="receipt-id"><span>REPRODUCIBLE RECEIPT</span><strong id="receiptId">—</strong></div><button type="button" id="newAnalysis">Analyze another structure</button></div>
       </div>
+
+      <section class="molecule-workbench" aria-label="Interactive structure surface">
+        <div class="molecule-stage-wrap">
+          <div class="molecule-toolbar">
+            <div><span>INTERACTIVE STRUCTURE</span><strong id="viewerLabel">Supplied coordinates</strong></div>
+            <div class="viewer-controls"><button type="button" class="active" data-representation="surface">Surface</button><button type="button" data-representation="cartoon">Cartoon</button><button type="button" id="viewerSpin">Pause</button><button type="button" id="viewerFit">Fit</button></div>
+          </div>
+          <div id="moleculeStage" aria-label="Rotatable molecular structure"></div>
+          <div class="analysis-reticle" aria-hidden="true"><i></i><i></i></div>
+          <div class="structure-callout"><span>PRIMARY SITE</span><strong id="viewerCandidate">—</strong><small id="viewerCandidateReason">CALCULATING CONTACT TOPOLOGY</small></div>
+          <div class="viewer-readout"><span><b id="viewerCoverage">—</b> coordinate coverage</span><span><b id="viewerContacts">—</b> non-local contacts</span></div>
+          <div class="viewer-boundary">SUPPLIED COORDINATES · STATIC STRUCTURE · NOT A TRAJECTORY</div>
+        </div>
+        <aside class="best-residues">
+          <div><p class="eyebrow">Contact topology</p><h3>Best residues to inspect first.</h3><p>Ranked by descriptive Cα contact degree. Click a residue to locate it on the surface.</p></div>
+          <div id="bestResidueRows"></div>
+          <p class="best-boundary">“Best” means contact-dense in this coordinate model—not biologically validated.</p>
+        </aside>
+      </section>
+
+      <div class="analysis-status" id="analysisStatus" role="status">Analysis ready · coordinates remained on this device.</div>
 
       <div class="metric-strip">
         <div><span>Residues</span><strong id="residueMetric">—</strong></div>
@@ -77,38 +101,33 @@
 
       <section class="ai-guidance" aria-labelledby="guidance-title">
         <div class="guidance-heading">
-          <div><p class="eyebrow">RINet AI experiment guide</p><h3 id="guidance-title">What should you test first?</h3></div>
-          <p>Generated locally from explicit structural evidence. The guide turns one PDB into a practical starting hypothesis, comparison and decision rule.</p>
+          <div><p class="eyebrow">RINet experiment intelligence</p><h3 id="guidance-title">A decision system—not a residue list.</h3></div>
+          <p>Every recommendation is tied to supplied coordinates, an explicit comparison and a result that would weaken the idea.</p>
         </div>
         <div class="guidance-summary">
           <article><span>FIRST RESIDUE</span><strong id="guidancePrimary">—</strong><small id="guidancePrimaryReason">Waiting for analysis</small></article>
-          <article><span>FIRST PERTURBATION</span><strong id="guidanceMutation">—</strong><small>Start small; verify expression and folding.</small></article>
-          <article><span>COMPARISON</span><strong id="guidanceControl">—</strong><small>Lower-contact residue chosen from the same structure.</small></article>
-          <article><span>EVIDENCE COMPLETENESS</span><strong id="guidanceConfidence">—</strong><small>Coordinate coverage and warning burden—not biological certainty.</small></article>
+          <article><span>FIRST PERTURBATION</span><strong id="guidanceMutation">—</strong><small>Start with interpretable chemistry.</small></article>
+          <article><span>MATCHED COMPARISON</span><strong id="guidanceControl">—</strong><small>Lower-contact residue from the same structure.</small></article>
+          <article><span>EVIDENCE COMPLETENESS</span><strong id="guidanceConfidence">—</strong><small>Coordinate coverage—not biological certainty.</small></article>
         </div>
         <div class="guidance-grid">
-          <article><span>01 / HYPOTHESIS</span><p id="guidanceHypothesis">Analyze a structure to generate a residue-level hypothesis.</p></article>
-          <article><span>02 / EXPERIMENT</span><p id="guidanceExperiment">The guide will propose a candidate, comparison and practical measurements.</p></article>
+          <article><span>01 / STRUCTURAL HYPOTHESIS</span><p id="guidanceHypothesis">Analyze a structure to generate a residue-level hypothesis.</p></article>
+          <article><span>02 / MINIMUM FAIR EXPERIMENT</span><p id="guidanceExperiment">The guide will propose a candidate, comparison and practical measurements.</p></article>
           <article><span>03 / ADVANCE IF</span><p id="guidanceAdvance">A clear decision rule will appear here.</p></article>
-          <article><span>04 / STOP IF</span><p id="guidanceStop">A falsification rule will appear here.</p></article>
+          <article><span>04 / STOP OR REDIRECT IF</span><p id="guidanceStop">A falsification rule will appear here.</p></article>
         </div>
-        <div class="guidance-note"><strong>Use this as experiment design support.</strong><span>RINet does not know the protein's assay, phenotype or biological context unless you supply it. Confirm residue numbering, structural quality and domain knowledge before ordering constructs.</span></div>
-      </section>
 
-      <section class="molecule-workbench" aria-label="Interactive structure surface">
-        <div class="molecule-stage-wrap">
-          <div class="molecule-toolbar">
-            <div><span>INTERACTIVE STRUCTURE</span><strong id="viewerLabel">Supplied coordinates</strong></div>
-            <div class="viewer-controls"><button type="button" class="active" data-representation="surface">Surface</button><button type="button" data-representation="cartoon">Cartoon</button><button type="button" id="viewerSpin">Pause</button><button type="button" id="viewerFit">Fit</button></div>
+        <section class="experiment-blueprint" aria-labelledby="blueprint-title">
+          <div class="blueprint-head"><span>EXPERIMENT BLUEPRINT / GENERATED LOCALLY</span><h4 id="blueprint-title">From construct design to interpretation.</h4><p>Use the sequence as a staged plan. Earlier gates prevent a folding defect from being mislabeled as mechanism.</p></div>
+          <div class="blueprint-grid">
+            <article class="mutation-ladder"><span>A / PERTURBATION LADDER</span><h5>Change chemistry in interpretable steps.</h5><ol><li><b>Conservative</b><strong id="mutationConservative">—</strong><small>Tests whether subtle side-chain chemistry matters.</small></li><li><b>Neutralizing</b><strong id="mutationNeutral">—</strong><small>Reduces the dominant chemical feature.</small></li><li><b>Structural stress test</b><strong id="mutationStress">—</strong><small>Use only after the gentler construct is interpretable.</small></li></ol></article>
+            <article class="assay-gates"><span>B / MEASUREMENT GATES</span><h5>Measure in this order.</h5><ol><li><b>Gate 0</b><p>Confirm numbering, construct sequence and assay dynamic range.</p></li><li><b>Gate 1</b><p id="guidanceIntegrity">Check abundance plus one folding or stability readout.</p></li><li><b>Gate 2</b><p id="guidanceFunction">Measure the protein-specific functional output.</p></li><li><b>Gate 3</b><p id="guidanceSpecificity">Compare candidate, matched residue and wild type in the same batch.</p></li></ol></article>
+            <article class="diagnostic-matrix"><span>C / RESULT INTERPRETER</span><h5>What the pattern would mean.</h5><div><b>Function changes; integrity holds</b><p id="diagnosticAdvance">Structural hypothesis survives the first specificity gate.</p></div><div><b>Function and integrity both fall</b><p id="diagnosticFold">Treat as a stability or expression explanation first.</p></div><div><b>Candidate equals comparison</b><p id="diagnosticControl">The site is not more informative than structural background.</p></div><div><b>No measurable effect</b><p id="diagnosticNext">Move to the next-ranked residue or improve assay sensitivity.</p></div></article>
+            <article class="alternative-models"><span>D / COMPETING EXPLANATIONS</span><h5>Keep these alive until the data separate them.</h5><ul><li id="alternatePacking">Local packing change rather than a specific functional pathway.</li><li id="alternateExpression">Expression, trafficking or folding loss rather than site-specific biology.</li><li id="alternateContext">The supplied static state may not represent the assay-relevant conformation.</li></ul><div class="next-site"><span>NEXT SITE IF INCONCLUSIVE</span><strong id="guidanceNext">—</strong></div></article>
           </div>
-          <div id="moleculeStage" aria-label="Rotatable molecular structure"></div>
-          <div class="viewer-boundary">SUPPLIED COORDINATES · STATIC STRUCTURE · NOT A TRAJECTORY</div>
-        </div>
-        <aside class="best-residues">
-          <div><p class="eyebrow">Contact topology</p><h3>Best residues to inspect first.</h3><p>Ranked by descriptive Cα contact degree. Click a residue to locate it on the surface.</p></div>
-          <div id="bestResidueRows"></div>
-          <p class="best-boundary">“Best” means contact-dense in this coordinate model—not biologically validated.</p>
-        </aside>
+        </section>
+
+        <div class="guidance-note"><strong>Experiment design support, not biological proof.</strong><span>RINet does not know the protein-specific assay, phenotype or cellular context unless you supply it. Confirm numbering, structure quality and domain knowledge before ordering constructs.</span></div>
       </section>
 
       <details class="technical-details">
@@ -143,15 +162,14 @@
 
       <section class="receipt">
         <div class="receipt-intro">
-          <p class="eyebrow">Optional public receipt</p>
+          <p class="eyebrow">Optional institution receipt</p>
           <h2>Used it? Leave one useful line.</h2>
-          <p>This creates a public GitHub issue containing only the summary, your affiliation and feedback—not the structure. It gives you a citable receipt and helps document real academic use.</p>
+          <p>This opens a reviewable GitHub issue containing only the summary, your institution and feedback—not the structure.</p>
           <button class="download-button" id="downloadReceipt" type="button">Download private JSON receipt</button>
         </div>
         <form id="receiptForm">
           <label>Institution / affiliation <input id="affiliation" required maxlength="120" placeholder="e.g. Department of Biology, University of …"></label>
           <label>Name or lab <span>optional</span><input id="researcher" maxlength="100" placeholder="e.g. Smith Lab"></label>
-          <label>Research area <input id="field" maxlength="100" placeholder="e.g. membrane protein biophysics"></label>
           <label>One line of feedback <textarea id="feedback" required maxlength="500" rows="3" placeholder="What did you check, and what would make this more useful?"></textarea></label>
           <label class="consent"><input id="consent" type="checkbox" required> I understand this will open a public GitHub issue for my review before submission.</label>
           <button class="publish-button" type="submit">Review public receipt on GitHub ↗</button>
