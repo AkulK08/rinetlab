@@ -12,6 +12,7 @@ let current = null;
 const molecular = { stage: null, component: null, representation: "surface", spinning: true, highlight: null, topResidues: [], resultScheme: null, selectedResidue: null };
 let activeDiscoveryMode = "biology";
 const preview = { stage: null, component: null };
+const demoAutoScroll = { timer: null, frame: null, active: false };
 const waterNames = new Set(["HOH", "WAT", "DOD"]);
 const metalElements = new Set(["LI", "NA", "MG", "AL", "K", "CA", "MN", "FE", "CO", "NI", "CU", "ZN", "SR", "MO", "CD", "CS", "BA", "HG"]);
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
@@ -47,6 +48,37 @@ function setStatus(message, error = false) {
     els.analysisStatus.classList.toggle("error", error);
   }
 }
+
+function stopDemoAutoScroll() {
+  if (demoAutoScroll.timer) window.clearTimeout(demoAutoScroll.timer);
+  if (demoAutoScroll.frame) window.cancelAnimationFrame(demoAutoScroll.frame);
+  demoAutoScroll.timer = null;
+  demoAutoScroll.frame = null;
+  demoAutoScroll.active = false;
+}
+
+function scheduleDemoAutoScroll() {
+  stopDemoAutoScroll();
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  demoAutoScroll.active = true;
+  demoAutoScroll.timer = window.setTimeout(() => {
+    demoAutoScroll.timer = null;
+    let previous = performance.now();
+    const advance = now => {
+      if (!demoAutoScroll.active || !document.body.classList.contains("demo-mode")) return stopDemoAutoScroll();
+      const guidance = document.getElementById("decisionBrief");
+      if (!guidance || guidance.getBoundingClientRect().top <= window.innerHeight * .78) return stopDemoAutoScroll();
+      const elapsed = Math.min(now - previous, 40);
+      previous = now;
+      window.scrollBy(0, elapsed * .045);
+      demoAutoScroll.frame = window.requestAnimationFrame(advance);
+    };
+    demoAutoScroll.frame = window.requestAnimationFrame(advance);
+  }, 1800);
+}
+
+["wheel", "touchstart", "pointerdown"].forEach(eventName => window.addEventListener(eventName, stopDemoAutoScroll, { passive: true }));
+window.addEventListener("keydown", stopDemoAutoScroll);
 
 async function readFile(file) {
   if (file.size > 25 * 1024 * 1024) setStatus("Large file detected. Analysis may take a moment on this device.");
@@ -642,11 +674,14 @@ function render(data) {
   document.getElementById("methodsText").textContent = methods;
   els.results.classList.remove("hidden");
   document.body.classList.add("analysis-mode");
+  document.body.classList.toggle("demo-mode", data.sourceType === "built-in-demo");
   document.getElementById("resultScrollCue")?.classList.remove("dismissed");
   preview.stage?.setSpin(false);
   window.scrollTo({ top: 0, behavior: "auto" });
   requestAnimationFrame(updateResultScrollCue);
   renderMolecule(data.rawText, data.sourceName, r.topResidues);
+  if (data.sourceType === "built-in-demo") scheduleDemoAutoScroll();
+  else stopDemoAutoScroll();
 }
 
 function buildResultColorScheme(topResidues) {

@@ -251,6 +251,7 @@ body.analysis-mode main { width: 100%; }
 .result-scroll-banner span { max-width: 225px; }
 .result-scroll-banner i { width: 11px; height: 11px; display: block; border-right: 1px solid #c9fb3c; border-bottom: 1px solid #c9fb3c; transform: rotate(45deg); }
 .result-scroll-banner:hover { border-color: var(--acid); color: #efffc1; }
+body.demo-mode .result-scroll-banner { display: none; }
 .molecule-workbench { min-height: min(720px, calc(100svh - 82px)); grid-template-columns: minmax(0, 1.52fr) minmax(320px, .48fr); border-bottom-color: #344139; }
 .molecule-stage-wrap { background: radial-gradient(circle at 50% 44%, #10241b 0, #09110d 48%, #050706 100%); }
 #moleculeStage { background: transparent; }
