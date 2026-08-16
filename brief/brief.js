@@ -12,7 +12,7 @@ let current = null;
 const molecular = { stage: null, component: null, representation: "surface", spinning: true, highlight: null, topResidues: [], resultScheme: null, selectedResidue: null };
 let activeDiscoveryMode = "biology";
 const preview = { stage: null, component: null };
-const demoTour = { timer: null, settleTimer: null, active: false };
+const demoTour = { timer: null, frame: null, active: false };
 const waterNames = new Set(["HOH", "WAT", "DOD"]);
 const metalElements = new Set(["LI", "NA", "MG", "AL", "K", "CA", "MN", "FE", "CO", "NI", "CU", "ZN", "SR", "MO", "CD", "CS", "BA", "HG"]);
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
@@ -51,9 +51,9 @@ function setStatus(message, error = false) {
 
 function stopDemoTour() {
   if (demoTour.timer) window.clearTimeout(demoTour.timer);
-  if (demoTour.settleTimer) window.clearTimeout(demoTour.settleTimer);
+  if (demoTour.frame) window.cancelAnimationFrame(demoTour.frame);
   demoTour.timer = null;
-  demoTour.settleTimer = null;
+  demoTour.frame = null;
   demoTour.active = false;
   document.getElementById("demoSkipStatus")?.classList.remove("active");
 }
@@ -61,8 +61,6 @@ function stopDemoTour() {
 function demoTourStops() {
   return [
     document.querySelector(".guidance-heading"),
-    document.querySelector(".guidance-summary"),
-    document.querySelector(".guidance-grid"),
     document.querySelector(".discovery-radar"),
     document.querySelector(".experiment-blueprint"),
     document.querySelector(".technical-details"),
@@ -74,7 +72,7 @@ function atPageBottom() {
   return window.scrollY >= Math.max(0, document.documentElement.scrollHeight - window.innerHeight) - 2;
 }
 
-function scheduleDemoTour(delay = 3000) {
+function scheduleDemoTour(delay = 3600) {
   stopDemoTour();
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || atPageBottom()) return updateResultScrollCue();
   const status = document.getElementById("demoSkipStatus");
@@ -85,18 +83,39 @@ function scheduleDemoTour(delay = 3000) {
   demoTour.timer = window.setTimeout(advanceDemoTour, delay);
 }
 
+function glideDemoTo(targetY, duration = 1350) {
+  const startY = window.scrollY;
+  const pageBottom = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  const destination = Math.max(0, Math.min(targetY, pageBottom));
+  const distance = destination - startY;
+  const startedAt = performance.now();
+  demoTour.active = true;
+  const step = now => {
+    if (!demoTour.active) return;
+    const progress = Math.min(1, (now - startedAt) / duration);
+    const eased = progress < .5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+    window.scrollTo(0, startY + distance * eased);
+    if (progress < 1) return void (demoTour.frame = window.requestAnimationFrame(step));
+    demoTour.frame = null;
+    demoTour.active = false;
+    updateResultScrollCue();
+    if (!atPageBottom()) scheduleDemoTour();
+  };
+  demoTour.frame = window.requestAnimationFrame(step);
+}
+
 function advanceDemoTour() {
   stopDemoTour();
   if (!document.body.classList.contains("demo-mode") || atPageBottom()) return updateResultScrollCue();
   const next = demoTourStops().find(section => section.getBoundingClientRect().top + window.scrollY > window.scrollY + 28);
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (next) next.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
-  else window.scrollTo({ top: document.documentElement.scrollHeight, behavior: reducedMotion ? "auto" : "smooth" });
-  demoTour.settleTimer = window.setTimeout(() => {
-    demoTour.settleTimer = null;
+  const destination = next ? next.getBoundingClientRect().top + window.scrollY : document.documentElement.scrollHeight;
+  if (reducedMotion) {
+    window.scrollTo(0, destination);
     updateResultScrollCue();
-    if (!atPageBottom()) scheduleDemoTour();
-  }, reducedMotion ? 0 : 750);
+    return;
+  }
+  glideDemoTo(destination);
 }
 
 ["wheel", "touchstart", "pointerdown"].forEach(eventName => window.addEventListener(eventName, stopDemoTour, { passive: true }));

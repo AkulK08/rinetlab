@@ -285,7 +285,7 @@ body.demo-mode.analysis-mode .demo-skip-status.active { display: grid; animation
 .demo-skip-status span { color: #66d7ff; font: 7px var(--mono); letter-spacing: .15em; text-transform: uppercase; }
 .demo-skip-status strong { font: 500 10px var(--mono); letter-spacing: .04em; text-transform: uppercase; }
 .demo-skip-status > i { position: relative; height: 1px; overflow: hidden; margin-top: 5px; background: #25372f; }
-.demo-skip-status > i::after { content: ""; position: absolute; inset: 0 auto 0 0; width: 100%; background: #66d7ff; box-shadow: 0 0 10px rgba(102,215,255,.58); transform-origin: left; animation: demoSkipLoad 3s linear both; }
+.demo-skip-status > i::after { content: ""; position: absolute; inset: 0 auto 0 0; width: 100%; background: #66d7ff; box-shadow: 0 0 10px rgba(102,215,255,.58); transform-origin: left; animation: demoSkipLoad 3.6s linear both; }
 .demo-skip-status:hover { border-color: #66d7ff; color: #fff; }
 @keyframes demoSkipIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } }
 @keyframes demoSkipLoad { from { transform: scaleX(0); } to { transform: scaleX(1); } }
