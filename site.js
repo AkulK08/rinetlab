@@ -6,25 +6,11 @@ const demoDownloadAssetName = "rinet-structure-brief-demo.txt";
 const downloadBaseline = 1658;
 const downloadMetricsUrl = "https://raw.githubusercontent.com/AkulK08/rinetlab/main/metrics/downloads.json";
 const feedbackDialog = document.getElementById("feedbackDialog");
-const contactRoute = `https://formsubmit.co/${atob("YWt1bGt1bWFyMDIwMDhAZ21haWwuY29t")}`;
-
-document.querySelectorAll("[data-rinet-contact]").forEach(form => {
-  form.action = contactRoute;
-});
 
 document.getElementById("year").textContent = new Date().getFullYear();
 film.defaultPlaybackRate = 0.4;
 film.playbackRate = 0.4;
 film.addEventListener("loadedmetadata", () => { film.playbackRate = 0.4; }, { once: true });
-
-const pageParams = new URLSearchParams(window.location.search);
-if (pageParams.get("contact") === "sent") {
-  const contact = document.getElementById("contact");
-  const status = document.getElementById("contactStatus");
-  contact?.classList.add("sent");
-  if (status) status.textContent = "Message sent. Thank you.";
-  window.history.replaceState({}, "", `${window.location.pathname}#contact`);
-}
 
 document.querySelectorAll("[data-open-feedback]").forEach(button => button.addEventListener("click", () => {
   if (typeof feedbackDialog.showModal === "function") feedbackDialog.showModal();

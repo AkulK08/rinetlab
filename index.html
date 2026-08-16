@@ -58,7 +58,7 @@
       </div>
       <div class="hero-proof" aria-label="RINet facts">
         <div><strong id="downloadCount">1,658</strong><span>downloads</span></div>
-        <div><strong id="institutionCount">2</strong><span>institutions</span></div>
+        <div><strong id="institutionCount" data-institution-count>2</strong><span>institutions</span></div>
         <div><strong>Local</strong><span>runs on your device</span></div>
       </div>
       <button class="film-toggle" id="filmToggle" type="button" aria-label="Pause molecular scan">Pause scan</button>
@@ -146,7 +146,7 @@
         <label><span>Email <em>optional</em></span><input type="email" name="email" maxlength="160" placeholder="If you would like a reply"></label>
         <label><span>Message</span><textarea name="message" required maxlength="1000" rows="4" placeholder="Question, feedback, problem, idea, anything useful."></textarea></label>
         <button type="submit">Send message <span>↗</span></button>
-        <p class="contact-status" id="contactStatus" aria-live="polite">Sent privately to the RINet team.</p>
+        <p class="contact-status" id="contactStatus" data-contact-status aria-live="polite">Sent privately to the RINet team.</p>
       </form>
     </section>
   </main>
@@ -181,6 +181,7 @@
     <p>Structure-first. Local. Falsifiable.</p>
     <p>© <span id="year"></span> RINet</p>
   </footer>
-  <script src="/site.js?v=2"></script>
+  <script src="/contact.js?v=1"></script>
+  <script src="/site.js?v=3"></script>
 </body>
 </html>

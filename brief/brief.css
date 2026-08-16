@@ -166,7 +166,7 @@ footer a { text-decoration: none; }
 :root { color-scheme: dark; --paper: #070a08; --ink: #edf3ef; --muted: #829088; --line: #2c3731; --green: #c9fb3c; --acid: #c9fb3c; }
 html { background: #070a08; }
 body { background: #070a08; color: var(--ink); }
-body:not(.analysis-mode) { overflow: hidden; }
+body:not(.analysis-mode) { overflow: auto; }
 .app-header { height: 62px; position: relative; z-index: 20; border-bottom: 1px solid #303a34; background: #090c0a; }
 .app-title { color: #cbd4ce; }
 .privacy { color: #7f8c85; }
@@ -437,6 +437,21 @@ footer { border-color: #344139; }
 .receipt::before { content: ""; position: absolute; inset: 0; opacity: .12; pointer-events: none; background-image: linear-gradient(rgba(137,174,154,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(137,174,154,.07) 1px, transparent 1px); background-size: 68px 68px; mask-image: linear-gradient(90deg, #000, transparent 70%); }
 .receipt > * { position: relative; z-index: 1; }
 .download-button { border-color: #667a6f; color: #dce5df; }
+.research-contact { display: grid; grid-template-columns: .86fr 1.14fr; gap: 9vw; padding: 105px 30px 116px; border-top: 1px solid #31433a; background: radial-gradient(circle at 12% 22%, rgba(201,251,60,.08), transparent 25%), #080c0a; color: #dce5df; }
+.research-contact h2 { margin: 22px 0 0; font-size: clamp(46px, 5.2vw, 78px); line-height: .94; letter-spacing: -.06em; font-weight: 550; }
+.research-contact-copy > p:not(.eyebrow) { max-width: 540px; margin: 28px 0 0; color: #84958c; font-size: 14px; line-height: 1.7; }
+.research-contact-form { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 26px; align-self: start; padding: 28px; border: 1px solid #35483e; background: rgba(5,9,7,.8); box-shadow: inset 3px 0 0 rgba(201,251,60,.6), 0 24px 70px rgba(0,0,0,.28); }
+.research-contact-form label { color: #899991; font: 8px var(--mono); text-transform: uppercase; }
+.research-contact-form label:nth-of-type(4), .research-contact-form > button, .research-contact-form > p { grid-column: 1 / -1; }
+.research-contact-form label span, .research-contact-form input, .research-contact-form textarea { display: block; }
+.research-contact-form label em { color: #637168; font-style: normal; text-transform: none; }
+.research-contact-form input:not(.contact-honey), .research-contact-form textarea { width: 100%; margin-top: 8px; border: 1px solid #33443b; padding: 13px 14px; outline: 0; resize: vertical; background: #050705; color: #edf3ef; font: 13px var(--sans); text-transform: none; }
+.research-contact-form input:focus, .research-contact-form textarea:focus { border-color: var(--acid); }
+.research-contact-form > button { min-height: 54px; display: flex; justify-content: space-between; align-items: center; border: 0; padding: 0 18px; background: var(--acid); color: #090b09; font: 700 9px var(--mono); text-transform: uppercase; cursor: pointer; }
+.research-contact-form > button:disabled { opacity: .72; cursor: wait; }
+.research-contact-form > p { margin: 0; color: #718178; font: 8px var(--mono); text-transform: uppercase; }
+.research-contact.sent .research-contact-form > p { color: var(--acid); }
+.contact-honey { position: absolute !important; left: -10000px !important; width: 1px !important; height: 1px !important; opacity: 0 !important; }
 
 @media (max-width: 1080px) {
   body:not(.analysis-mode) { overflow: auto; }
@@ -450,10 +465,11 @@ footer { border-color: #344139; }
   .discovery-console { grid-template-columns: 1fr; }
   .discovery-thesis { border-right: 0; border-bottom: 1px solid #2b3d33; }
   .guidance-heading, .blueprint-head { min-height: 0; }
+  .research-contact { grid-template-columns: 1fr; gap: 48px; }
 }
 @media (max-width: 700px) {
   .app-header { padding: 0 16px; }
-  body:not(.analysis-mode) { overflow: hidden; }
+  body:not(.analysis-mode) { overflow: auto; }
   .launch-screen { height: calc(100svh - 62px); min-height: 0; grid-template-rows: 43% 57%; overflow: hidden; }
   .launch-visual { min-height: 0; }
   .preview-toolbar strong { display: none; }
@@ -500,6 +516,9 @@ footer { border-color: #344139; }
   .discovery-modes, .discovery-console, .local-synthesis { margin-left: 8px; margin-right: 8px; }
   .blueprint-head { padding: 44px 22px 34px; }
   .blueprint-grid { gap: 8px; padding: 8px; }
+  .research-contact { padding: 76px 18px 86px; }
+  .research-contact-form { grid-template-columns: 1fr; padding: 22px 18px; }
+  .research-contact-form label:nth-of-type(4), .research-contact-form > button, .research-contact-form > p { grid-column: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) { .result-scroll-cue i { animation: none; } }
