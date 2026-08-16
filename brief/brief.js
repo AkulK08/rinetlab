@@ -72,7 +72,7 @@ function atPageBottom() {
   return window.scrollY >= Math.max(0, document.documentElement.scrollHeight - window.innerHeight) - 2;
 }
 
-function scheduleDemoTour(delay = 3600) {
+function scheduleDemoTour(delay = 6500) {
   stopDemoTour();
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || atPageBottom()) return updateResultScrollCue();
   const status = document.getElementById("demoSkipStatus");
