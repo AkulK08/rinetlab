@@ -326,10 +326,10 @@ body.analysis-mode main { width: 100%; }
 .discovery-panels article:nth-child(3) { background: linear-gradient(155deg, rgba(201,251,60,.06), transparent 52%); }
 .discovery-panels span { color: #788a80; font: 8px var(--mono); letter-spacing: .12em; }
 .discovery-panels p { margin: 0; color: #c4d0c9; font-size: 15px; line-height: 1.68; }
-.local-synthesis { display: grid; grid-template-columns: 1fr auto; gap: 22px; align-items: center; padding: 24px 34px; border-top: 1px solid #2b3d33; background: rgba(12,20,15,.72); }
-.local-synthesis span { color: #b98cff; font: 8px var(--mono); letter-spacing: .12em; }
-.local-synthesis div p { margin: 7px 0 0; color: #75867c; font: 8px/1.55 var(--mono); }
-.local-synthesis button { border: 1px solid rgba(185,140,255,.52); padding: 12px 16px; background: rgba(185,140,255,.06); color: #d5beff; font: 8px var(--mono); text-transform: uppercase; cursor: pointer; }
+.local-synthesis { display: grid; grid-template-columns: 1fr auto; gap: 26px; align-items: center; padding: 30px 38px; border-top: 1px solid #2b3d33; background: rgba(12,20,15,.72); }
+.local-synthesis span { color: #b98cff; font: 10px var(--mono); letter-spacing: .12em; }
+.local-synthesis div p { margin: 9px 0 0; color: #75867c; font: 10px/1.6 var(--mono); }
+.local-synthesis button { border: 1px solid rgba(185,140,255,.52); padding: 15px 20px; background: rgba(185,140,255,.06); color: #d5beff; font: 9px var(--mono); text-transform: uppercase; cursor: pointer; }
 .local-synthesis button:hover { background: #b98cff; color: #080b09; }
 .local-synthesis > p { grid-column: 1/-1; display: none; margin: 0; border-top: 1px solid #34413a; padding-top: 20px; color: #bbc8c0; font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
 .local-synthesis > p.visible { display: block; }
