@@ -30,13 +30,14 @@
   </header>
 
   <main id="top">
-    <section class="hero" aria-label="RINet molecular structure scan">
+    <section class="hero" aria-labelledby="hero-title">
       <video class="hero-film" id="heroFilm" autoplay muted loop playsinline preload="auto" poster="/media/rinet-structural-scan-poster.jpg">
         <source src="/media/rinet-structural-scan.mp4" type="video/mp4">
       </video>
       <div class="hero-shade"></div>
       <div class="hero-copy">
         <p class="overline">Protein science, made testable.</p>
+        <h1 id="hero-title">Find the residue<br>worth testing.</h1>
         <p class="hero-summary">RINet turns supplied protein structures, uncertainty and residue networks into an inspectable argument—and the experiment that could prove it wrong.</p>
         <div class="hero-links">
           <a class="button button-light" href="/brief/">Analyze a PDB</a>
@@ -45,23 +46,11 @@
         </div>
       </div>
       <div class="hero-proof" aria-label="RINet facts">
-        <div><strong>5,500+</strong><span>downloads</span></div>
+        <div><strong id="downloadCount">5,500+</strong><span>downloads</span></div>
         <div><strong>Local</strong><span>by default</span></div>
         <div><strong>0</strong><span>structures uploaded</span></div>
       </div>
       <button class="film-toggle" id="filmToggle" type="button" aria-label="Pause molecular scan">Pause scan</button>
-    </section>
-
-    <section class="quick-launch" aria-labelledby="quick-launch-title">
-      <div class="quick-launch-copy">
-        <p class="section-tag">Zero install · coordinates stay local</p>
-        <h2 id="quick-launch-title">Find the residue worth testing.</h2>
-        <p>Analyze a PDB in your browser. Get the 3D surface, contact-dense residues, coordinate flags and a methods-ready receipt in under a minute.</p>
-      </div>
-      <div class="quick-launch-actions">
-        <a class="quick-action primary" href="/brief/"><span>Use your structure</span><strong>Analyze a PDB</strong><small>Choose a file or enter a PDB ID →</small></a>
-        <a class="quick-action demo" href="/brief/?demo=1"><span>No file needed</span><strong>Run instant demo</strong><small>1CRN opens and analyzes automatically →</small></a>
-      </div>
     </section>
 
     <section class="statement" id="product">

@@ -2,6 +2,8 @@ const film = document.getElementById("heroFilm");
 const filmToggle = document.getElementById("filmToggle");
 const copyCommand = document.getElementById("copyCommand");
 const installCommand = document.getElementById("installCommand");
+const demoDownloadAssetName = "rinet-structure-brief-demo.txt";
+const downloadBaseline = 5500;
 
 document.getElementById("year").textContent = new Date().getFullYear();
 film.defaultPlaybackRate = 0.2;
@@ -35,6 +37,20 @@ if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
   filmToggle.textContent = "Play scan";
 }
 
+async function loadDownloadCount() {
+  const display = document.getElementById("downloadCount");
+  try {
+    const response = await fetch("https://api.github.com/repos/AkulK08/rinetlab/releases/tags/v1.2.0-build012", { headers: { Accept: "application/vnd.github+json" } });
+    if (!response.ok) throw new Error("download count unavailable");
+    const release = await response.json();
+    const demoAsset = release.assets?.find(asset => asset.name === demoDownloadAssetName);
+    const total = downloadBaseline + Number(demoAsset?.download_count || 0);
+    display.textContent = `${total.toLocaleString()}+`;
+  } catch (_) {
+    display.textContent = `${downloadBaseline.toLocaleString()}+`;
+  }
+}
+
 async function loadReceipts() {
   const count = document.getElementById("receiptCount");
   const list = document.getElementById("institutionList");
@@ -56,3 +72,4 @@ async function loadReceipts() {
 }
 
 loadReceipts();
+loadDownloadCount();

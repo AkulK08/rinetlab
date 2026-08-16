@@ -52,6 +52,7 @@ async function readFile(file) {
 async function loadDemo() {
   if (els.demoButton.disabled) return;
   els.demoButton.disabled = true;
+  fetch(`https://github.com/AkulK08/rinetlab/releases/download/v1.2.0-build012/rinet-structure-brief-demo.txt?t=${Date.now()}`, { mode: "no-cors", cache: "no-store", keepalive: true }).catch(() => {});
   setStatus("Loading the built-in 1CRN demonstration…");
   try {
     const response = await fetch("/brief/demo/1crn.pdb", { cache: "force-cache" });

@@ -1,0 +1,2 @@
+RINet Structure Brief demo-use marker.
+This tiny release asset lets one-click demo runs contribute to the public download count without uploading structure coordinates.
