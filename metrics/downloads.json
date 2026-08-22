@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-08-22T17:13:02Z",
+  "updated_at": "2026-08-22T18:55:09Z",
   "source_repository": "AkulK08/rinetlab",
   "source_release": "v1.2.0-build012",
   "historical_baseline": 1863,
   "installer_and_zip": {
     "asset_id": 516816321,
     "asset_name": "RINet_Build_012_Research_Utility_Studio_2026-08-16.zip",
-    "raw_download_count": 38350,
-    "lifetime_since_tracking": 38350
+    "raw_download_count": 38351,
+    "lifetime_since_tracking": 38351
   },
   "instant_demo": {
     "asset_id": 516553413,
@@ -16,5 +16,5 @@
     "raw_download_count": 591,
     "lifetime_since_tracking": 527
   },
-  "website_total": 40740
+  "website_total": 40741
 }
