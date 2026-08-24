@@ -968,6 +968,14 @@ function loadAdaptiveExample(report=current?.report) {
   analyzeAdaptiveResults(report);
 }
 
+function fillBuiltInDemoResults(report=current?.report) {
+  const builtIn = current?.sourceType === "built-in-demo";
+  document.getElementById("adaptiveDemoNote")?.classList.toggle("hidden", !builtIn);
+  const exampleButton = document.getElementById("loadAdaptiveExample");
+  if (exampleButton) exampleButton.textContent = builtIn ? "Reload synthetic demo results" : "Fill clearly labeled example data";
+  if (builtIn && report) loadAdaptiveExample(report);
+}
+
 function adaptiveCsvCell(value) {
   return `"${String(value??"").replaceAll('"','""')}"`;
 }
@@ -1583,6 +1591,7 @@ function render(data) {
   renderDiscovery(r, "biology");
   renderScientificPanels(r,r.topResidues[0]);
   renderAdaptivePanel(r,{rebuild:true,clearResults:true});
+  fillBuiltInDemoResults(r);
   const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Intelligence 3.0 (receipt ${data.receiptId}; ${r.format}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} author chain${r.chainReports.length === 1 ? "" : "s"}. A deterministic residue-contact graph was constructed between Cα atoms separated by no more than ${r.contactCutoff.toFixed(1)} Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. ${scoreEquationText(r.scoringLens)} Closeness was ${r.residues <= 1500 ? "calculated on reachable graph components" : "omitted because this very large structure exceeds the interactive all-pairs path limit"}; betweenness was ${r.betweennessCalculated ? "calculated with the unweighted Brandes algorithm" : "omitted because the structure exceeds the 900-residue interactive path limit"}. Known benchmark labels, when available, were evaluated only after ranking and contributed no score. Cysteines received no score bonus; ${r.disulfides} probable disulfide constraint${r.disulfides === 1 ? " was" : "s were"} assigned solely from Sγ separations of 1.7–2.3 Å. Detected disulfide residues were excluded from automatic panels because breaking a covalent constraint strongly confounds protein-quality measurements. Coordinate screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} numbering gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}) and were not interpreted as prediction confidence. The first panel contains wild type, structurally prioritized candidates, and lower-score controls matched on residue class, burial, B-factor field, and chain. Candidate selection is greedy and deterministic: 36% disagreement among five hand-set reference patterns, 34% diversity in the ten displayed structural features, and 30% structural rank. The reference patterns emphasize long-range graph position, direct local contact, protein-quality sensitivity, packing, and mixed structural features. They map normalized features to provisional function, abundance, and fold/assembly changes solely to diversify experiments; they are not fitted predictions or physical mechanisms. After result entry, candidate-minus-control patterns are compared by mean squared error and converted to relative comparison weights using exp(-8 × MSE). Follow-up sites maximize weighted disagreement among the reference patterns while avoiding structural duplicates. The weights are not calibrated probabilities and do not establish mechanism. A Cα contact graph is treated here as one geometric description, not as evidence of information flow, free-energy transfer, or causality. This static analysis does not calculate all-atom energetics, conformational dynamics, evolution, or cellular phenotype.`;
   document.getElementById("methodsText").textContent = methods;
   els.results.classList.remove("hidden");
@@ -1884,6 +1893,7 @@ document.querySelectorAll("[data-scoring-lens]").forEach(button=>button.addEvent
   rerankReport(current.report,activeScoringLens);
   refreshRankedOutputs(current.report);
   renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});
+  fillBuiltInDemoResults(current.report);
   document.getElementById("methodsText").textContent=document.getElementById("methodsText").textContent.replace(/score = 100 × \[[^\]]+\]; each feature is normalized to the maximum observed in this structure\./,scoreEquationText(activeScoringLens));
   setLocalActionStatus(`Structural ranking recalculated for the “${scoreLenses[activeScoringLens].label}” question. ${current.report.topResidues[0].label} is now rank 1.`, true);
 }));
@@ -1891,10 +1901,11 @@ document.querySelectorAll("[data-scoring-lens]").forEach(button=>button.addEvent
 document.getElementById("rebuildAdaptivePanel")?.addEventListener("click",()=>{
   if(!current)return;
   renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});
+  fillBuiltInDemoResults(current.report);
 });
 document.getElementById("adaptivePanelSize")?.addEventListener("change",event=>{
   adaptiveRound.panelSize=Number(event.currentTarget.value);
-  if(current)renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});
+  if(current){renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});fillBuiltInDemoResults(current.report);}
 });
 document.getElementById("downloadAdaptiveTemplate")?.addEventListener("click",downloadAdaptiveTemplate);
 document.getElementById("adaptiveResultsFile")?.addEventListener("change",async event=>{

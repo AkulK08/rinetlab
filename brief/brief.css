@@ -94,6 +94,8 @@ h1 { margin: 22px 0 0; font-size: clamp(54px, 6.6vw, 104px); line-height: .91; l
 .best-residues { display: flex; flex-direction: column; padding: 30px 26px 22px; background: radial-gradient(circle at 20% 0, rgba(201,251,60,.065), transparent 30%), #0b100d; }
 .best-residues h3 { margin: 15px 0 14px; font-size: 32px; line-height: 1.02; font-weight: 540; letter-spacing: -.05em; }
 .best-residues > div:first-child > p:not(.eyebrow) { margin: 0; color: #84958c; font-size: 11px; line-height: 1.55; }
+.best-residues .hud-definition { padding-bottom: 12px; border-bottom: 1px solid #2f3d35; color: #b2beb7; }
+.best-residues #hudThesis { margin-top: 12px; }
 .intel-cards { display: grid; grid-template-columns: 1fr 1fr; margin-top: 22px; border-top: 1px solid #344139; border-left: 1px solid #344139; }
 .intel-cards article { min-height: 112px; padding: 14px; border-right: 1px solid #344139; border-bottom: 1px solid #344139; background: rgba(4,8,5,.5); }
 .intel-cards article:last-child { grid-column: 1 / -1; min-height: 94px; }
@@ -235,6 +237,11 @@ footer a { text-decoration: none; }
 .adaptive-cycle-head > div:first-child > span { color: #66d7ff; font: 8px var(--mono); letter-spacing: .1em; }
 .adaptive-cycle-head h4 { max-width: 850px; margin: 13px 0 0; color: #eef5f1; font-size: clamp(25px, 2.5vw, 38px); line-height: 1.05; letter-spacing: -.04em; font-weight: 560; }
 .adaptive-cycle-head p { max-width: 820px; margin: 13px 0 0; color: #9eada4; font-size: 12px; line-height: 1.65; }
+.demo-data-note { display: grid; grid-template-columns: 150px 300px 1fr; gap: 22px; align-items: center; padding: 16px 18px; border-bottom: 1px solid #536b5e; background: rgba(201,251,60,.085); }
+.demo-data-note.hidden { display: none; }
+.demo-data-note span { color: var(--acid); font: 8px var(--mono); letter-spacing: .1em; }
+.demo-data-note strong { color: #eff6f1; font-size: 14px; font-weight: 600; }
+.demo-data-note p { margin: 0; color: #a6b5ac; font-size: 10px; line-height: 1.55; }
 .adaptive-cycle-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .adaptive-cycle-actions label, .adaptive-cycle-actions button { min-height: 43px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #52645a; padding: 0 13px; background: #0e1511; color: #c1cec6; font: 8px var(--mono); letter-spacing: .04em; text-transform: uppercase; cursor: pointer; }
 .adaptive-cycle-actions select { border: 0; outline: 0; background: transparent; color: var(--acid); font: 650 10px var(--mono); }
@@ -443,6 +450,7 @@ footer a { text-decoration: none; }
   .experiment-spine a:nth-child(3n) { border-right: 0; }
   .experiment-spine a:nth-child(-n+3) { border-bottom: 1px solid #344139; }
   .measurement-intro { grid-template-columns: 160px 250px 1fr; }
+  .demo-data-note { grid-template-columns: 130px 240px 1fr; }
   .validation-grid { grid-template-columns: 1fr; }
   .limitations-grid { grid-template-columns: 1fr 1fr; }
 }
@@ -881,6 +889,7 @@ footer { border-color: #344139; }
   .adaptive-cycle-head { grid-template-columns: 1fr; min-height: 0; padding: 24px 18px; }
   .adaptive-cycle-actions { grid-template-columns: 1fr; }
   .measurement-intro { grid-template-columns: 1fr; gap: 8px; }
+  .demo-data-note { grid-template-columns: 1fr; gap: 7px; }
   .mechanism-intro { grid-template-columns: 1fr; gap: 8px; }
   .adaptive-metrics, .mechanism-hypotheses { grid-template-columns: 1fr; }
   .adaptive-metrics article, .mechanism-hypotheses article { min-height: 0; border-right: 0; border-bottom: 1px solid #344139; }

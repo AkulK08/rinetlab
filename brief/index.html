@@ -8,7 +8,7 @@
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=20260816">
   <link rel="image_src" href="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <link rel="stylesheet" href="/contact.css?v=1">
-  <link rel="stylesheet" href="/brief/brief.css?v=26">
+  <link rel="stylesheet" href="/brief/brief.css?v=27">
   <title>Structure Brief | RINet</title>
   <meta name="description" content="Rank residues from a protein structure, inspect every score term, and design a controlled experiment.">
   <meta property="og:type" content="website">
@@ -49,7 +49,7 @@
       <div class="launch-console">
         <p class="eyebrow">Protein structure analysis</p>
         <h1 id="input-title">Analyze a protein<br>structure.</h1>
-        <p class="launch-summary">Load a PDB or mmCIF file. RINet builds a residue-contact graph, ranks residues, and shows how each score was calculated.</p>
+        <p class="launch-summary">Load a PDB or mmCIF file. RINet ranks residues from simple structural features, then turns selected residues into a candidate mutation, a matched control, and a measurement plan.</p>
 
         <button class="demo-button" id="demoButton" type="button">
           <span>Built-in example · no file required</span>
@@ -127,15 +127,15 @@
           <div class="viewer-boundary">SUPPLIED COORDINATES · STATIC STRUCTURE · NOT A TRAJECTORY</div>
         </div>
         <aside class="best-residues">
-          <div class="intel-intro"><p class="eyebrow">Residue ranking</p><h3>Ranked residues</h3><p id="hudThesis">Select a residue to inspect its score and proposed control.</p></div>
+          <div class="intel-intro"><p class="eyebrow">What RINet does</p><h3>Find residues. Plan the test.</h3><p class="hud-definition">The list below shows which residues rank highest from the supplied structure. Select one to see a mutation, a comparable lower-ranked control, and the measurements needed to interpret the result.</p><p id="hudThesis">Select a residue to inspect its score and proposed control.</p></div>
           <div class="intel-cards">
             <article><span>PROPOSED SUBSTITUTION</span><strong id="hudMutation">Pending</strong><small id="hudMutationNote">Waiting for coordinates</small></article>
             <article><span>MATCHED CONTROL</span><strong id="hudControl">Pending</strong><small>Separates a site effect from structural background.</small></article>
             <article class="intel-risk"><span>RESULT REQUIRED</span><strong id="hudGate">Pending</strong><small id="hudGateNote">Protein quality must hold before function is interpreted.</small></article>
           </div>
-          <div class="ranked-title"><span>TOP 10 RESIDUES</span><small>Click to inspect the score</small></div>
+          <div class="ranked-title"><span>TOP 10 STRUCTURAL CANDIDATES</span><small>Click one to build its experiment</small></div>
           <div id="bestResidueRows"></div>
-          <p class="best-boundary">The ranking identifies structural priority, not biological proof.</p>
+          <p class="best-boundary">These are the highest-scoring residues under the selected structural question. They are candidates to test—not proven functional residues.</p>
         </aside>
       </section>
 
@@ -154,7 +154,7 @@
 
       <section class="evidence-lab" id="scoringSection" data-demo-section="Panel" aria-labelledby="evidence-lab-title">
         <div class="evidence-lab-head">
-          <div><p class="eyebrow">Experiment design</p><h3 id="evidence-lab-title">Start with the experiment, not the score.</h3><p>Choose the structural question. RINet proposes a candidate, a lower-ranked control, and three measurements. The result is interpreted only after protein quantity and molecular integrity are checked.</p></div>
+          <div><p class="eyebrow">Residue finding + experiment planning</p><h3 id="evidence-lab-title">Find a residue, then plan how to test it.</h3><p>RINet uses the supplied 3D coordinates to rank residues for a structural question. It then proposes a mutation, pairs it with a comparable lower-ranked residue, and specifies the measurements needed to tell a specific functional effect from damaged or missing protein.</p></div>
           <div class="lens-picker-wrap"><span>QUESTION TO TEST</span><div class="lens-picker" role="tablist" aria-label="Structural question">
             <button class="active" type="button" role="tab" aria-selected="true" data-scoring-lens="general">Broad screen</button>
             <button type="button" role="tab" aria-selected="false" data-scoring-lens="ligand">Bound ligand</button>
@@ -192,6 +192,7 @@
               <label class="adaptive-import" for="adaptiveResultsFile">Import completed CSV<input id="adaptiveResultsFile" type="file" accept=".csv,text/csv" hidden></label>
             </div>
           </div>
+          <div class="demo-data-note hidden" id="adaptiveDemoNote"><span>BUILT-IN DEMO</span><strong>Synthetic results are already filled.</strong><p>The % WT values below are not published 4HHB measurements. They are included only to demonstrate result classification and next-experiment selection.</p></div>
           <div class="adaptive-table-wrap">
             <table class="adaptive-table">
               <thead><tr><th>Construct</th><th>Why it is included</th><th>Residue / mutation</th><th>Structural rationale</th><th>Function<br><small>% WT</small></th><th>Abundance<br><small>% WT</small></th><th>Fold / assembly<br><small>% WT</small></th><th>Interpretation</th></tr></thead>
@@ -447,6 +448,6 @@
   <footer><a href="/">← RINet home</a><span>Structure Brief 3.0 · transparent residue-network analysis</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
   <script src="/contact.js?v=5"></script>
-  <script src="/brief/brief.js?v=24"></script>
+  <script src="/brief/brief.js?v=25"></script>
 </body>
 </html>
