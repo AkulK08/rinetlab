@@ -8,7 +8,7 @@
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=20260816">
   <link rel="image_src" href="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <link rel="stylesheet" href="/contact.css?v=1">
-  <link rel="stylesheet" href="/brief/brief.css?v=20">
+  <link rel="stylesheet" href="/brief/brief.css?v=21">
   <title>Structure Brief | RINet</title>
   <meta name="description" content="Rank residues from a protein structure, inspect every score term, and design a controlled experiment.">
   <meta property="og:type" content="website">
@@ -105,8 +105,6 @@
         </ol>
       </nav>
 
-      <a class="result-scroll-banner" data-scroll-guidance href="#scoringSection" aria-label="Continue to the next analysis section"><b>SCROLL</b><span>Five sections: structure, scoring, sequence, checks, experiment</span><i></i></a>
-
       <section class="molecule-workbench" id="structureSection" data-demo-section="Structure" aria-label="Interactive structure surface">
         <div class="molecule-stage-wrap">
           <div class="molecule-toolbar">
@@ -141,7 +139,7 @@
         </aside>
       </section>
 
-      <a class="result-scroll-cue" id="resultScrollCue" href="#analysisEnd" aria-label="Continue scrolling through the analysis"><span>Continue through the analysis</span><i></i></a>
+      <a class="result-scroll-cue" id="resultScrollCue" href="#scoringSection" aria-label="Continue to residue scoring"><b>SCROLL</b><span id="scrollCueLabel">Next: why this residue ranks here</span><i></i></a>
       <button class="demo-skip-status" id="demoSkipStatus" type="button" aria-label="Stop the automatic tour"><span>Auto tour</span><strong>Scrolling… · click to stop</strong><i></i></button>
 
       <div class="analysis-status" id="analysisStatus" role="status">Analysis ready · coordinates remained on this device.</div>
@@ -154,24 +152,10 @@
         <div><span>Confidence / B field</span><strong id="bMetric">Pending</strong></div>
       </div>
 
-      <section class="scientific-contract" id="scoringSection" data-demo-section="Scoring" aria-labelledby="scientific-contract-title">
-        <div class="contract-copy">
-          <p class="eyebrow">What this analysis adds</p>
-          <h3 id="scientific-contract-title">From a structure to a controlled residue test.</h3>
-          <p>A structure viewer shows coordinates. RINet adds a reproducible ranking, a matched lower-score control, the contribution of each score term, cutoff sensitivity, mutation chemistry, and criteria for interpreting the experiment. It complements PyMOL, ChimeraX, evolutionary analysis and simulation.</p>
-        </div>
-        <div class="contract-grid">
-          <article><span>INPUT</span><strong>Structure</strong><p>One coordinate model with author chain IDs, residue numbering, ligands, missing atoms and quality fields.</p></article>
-          <article><span>METHOD</span><strong>Ranking</strong><p>Ten residues, a matched lower-score control, and explicit weights for every score term.</p></article>
-          <article><span>OUTPUT</span><strong>Experiment</strong><p>Candidate and control mutations, integrity checks, a functional readout and a stopping rule.</p></article>
-          <article><span>LIMIT</span><strong>Structure-derived evidence</strong><p>Energy, dynamics, evolution and causal biology require separate data.</p></article>
-        </div>
-      </section>
-
-      <section class="evidence-lab" aria-labelledby="evidence-lab-title">
+      <section class="evidence-lab" id="scoringSection" data-demo-section="Scoring" aria-labelledby="evidence-lab-title">
         <div class="evidence-lab-head">
-          <div><p class="eyebrow">Residue scoring</p><h3 id="evidence-lab-title">Why does this residue rank here?</h3></div>
-          <div class="lens-picker" role="tablist" aria-label="Scientific ranking lens">
+          <div><p class="eyebrow">Start here after inspecting the structure</p><h3 id="evidence-lab-title">Why does this residue rank here?</h3><p>Choose a residue. Its score terms, mutation rationale, matched control and experiment update together.</p></div>
+          <div class="lens-picker" role="tablist" aria-label="Ranking model">
             <button class="active" type="button" role="tab" aria-selected="true" data-scoring-lens="general">General</button>
             <button type="button" role="tab" aria-selected="false" data-scoring-lens="ligand">Ligand</button>
             <button type="button" role="tab" aria-selected="false" data-scoring-lens="interface">Interface</button>
@@ -180,12 +164,27 @@
             <button type="button" role="tab" aria-selected="false" data-scoring-lens="antibody">Antibody / CDR</button>
           </div>
         </div>
+        <div class="evidence-steps" aria-label="How to use residue scoring"><span><b>1</b> Choose a ranking model</span><span><b>2</b> Select a residue</span><span><b>3</b> Inspect score terms</span><span><b>4</b> Copy a controlled test</span></div>
         <div class="lens-context">
-          <label for="hypothesisInput">Biological question <span>changes wording only; scores remain fixed</span></label>
-          <div><input id="hypothesisInput" maxlength="240" placeholder="Example: Does this interface transmit the deoxy-to-oxy state change?"><button id="applyHypothesis" type="button">Apply framing</button></div>
+          <label for="hypothesisInput">Experiment question <span>optional; this never changes the residue score</span></label>
+          <div><input id="hypothesisInput" maxlength="240" placeholder="Example: Does this interface transmit the deoxy-to-oxy state change?"><button id="suggestHypothesis" class="secondary" type="button">Use suggested question</button><button id="applyHypothesis" type="button">Set experiment question</button></div>
+          <div class="hypothesis-feedback" id="hypothesisFeedback" role="status">No question set. The structural ranking is unchanged.</div>
           <p id="lensDescription">Balanced structure-first ranking. No single metric is treated as function.</p>
           <code id="scoreEquation">Loading exact score equation…</code>
         </div>
+        <div class="evidence-residue-picker" id="evidenceResiduePicker" aria-label="Top ten ranked residues"></div>
+        <article class="selected-action" aria-labelledby="selected-action-title">
+          <div class="selected-action-head"><div><span>SELECTED RESIDUE</span><h4 id="selected-action-title"><strong id="selectedActionResidue">Pending</strong><em id="selectedActionScore">—</em></h4></div><p id="selectedActionBoundary">Structure-derived ranking; not a probability of function.</p></div>
+          <div class="selected-action-buttons"><button type="button" id="actionFocusStructure">Show in 3D</button><button type="button" id="actionOpenSequence">Show in sequence</button><button type="button" id="copySelectedTest">Open copyable test</button><button type="button" id="actionOpenExperiment">Full experiment plan</button></div>
+          <div class="selected-action-grid">
+            <div><span>WHY IT RANKS</span><p id="selectedActionReason">Pending</p></div>
+            <div><span>FIRST MUTATION</span><p id="selectedActionMutation">Pending</p></div>
+            <div><span>MATCHED CONTROL</span><p id="selectedActionControl">Pending</p></div>
+            <div><span>MEASURE IN THE SAME BATCH</span><p id="selectedActionAssay">Pending</p></div>
+          </div>
+          <div class="selected-action-rule"><span>RESULT REQUIRED TO SUPPORT THE SITE</span><p id="selectedActionRule">Pending</p></div>
+          <p class="selected-action-status" id="selectedActionStatus" role="status">Click any ranked residue or graph node to update this test.</p>
+        </article>
         <div class="evidence-lab-grid">
           <article class="residue-audit">
             <div class="panel-head"><span>01 / SCORE BREAKDOWN</span><strong id="auditResidue">Pending</strong></div>
@@ -197,15 +196,29 @@
           <article class="network-panel">
             <div class="panel-head"><span>02 / CONTACT GRAPH</span><strong>Force-directed layout</strong></div>
             <svg id="networkMap" viewBox="0 0 620 420" role="img" aria-label="Residue interaction network projection linked to the selected residue"></svg>
-            <p>Each edge is a Cα contact under the active cutoff. The 2D positions are a graph layout, not a physical trajectory.</p>
+            <p>Each edge is a Cα contact under the active cutoff. Click any node to select that residue. The 2D positions are a graph layout, not a physical trajectory.</p>
           </article>
+        </div>
+      </section>
+
+      <section class="scientific-contract" aria-labelledby="scientific-contract-title">
+        <div class="contract-copy">
+          <p class="eyebrow">What RINet adds to a structure viewer</p>
+          <h3 id="scientific-contract-title">A ranked residue test with an explicit control.</h3>
+          <p>RINet turns one coordinate model into a reproducible residue ranking, shows every score term, selects a lower-score control matched on chemistry and structural context, tests cutoff sensitivity, and defines the result needed to support or reject the site. Use PyMOL or ChimeraX for general inspection; use RINet when you need to decide which residue contrast to test first.</p>
+        </div>
+        <div class="contract-grid">
+          <article><span>INPUT</span><strong>Structure</strong><p>Author chain IDs, residue numbering, ligands, missing atoms and quality fields remain visible.</p></article>
+          <article><span>CALCULATION</span><strong>Rank and compare</strong><p>Ten residues, every weighted term, and a matched lower-score control.</p></article>
+          <article><span>LAB OUTPUT</span><strong>Candidate + control</strong><p>Mutation chemistry, integrity checks, functional readout and a stopping rule.</p></article>
+          <article><span>NOT INCLUDED</span><strong>Evidence you must add</strong><p>Evolution, dynamics, energetics, phenotype and causal mechanism require separate data.</p></article>
         </div>
       </section>
 
       <section class="sequence-workbench" id="sequenceSection" data-demo-section="Sequence" aria-labelledby="sequence-title">
         <div class="sequence-head">
           <div><p class="eyebrow">Sequence and coordinates</p><h3 id="sequence-title">Map scores to the supplied residue numbering.</h3></div>
-          <div class="sequence-actions"><button type="button" id="copyFasta">Copy FASTA</button><button type="button" id="openBlast">Open BLAST with sequence</button></div>
+          <div class="sequence-actions"><button type="button" id="copyFasta">View / copy FASTA</button><a id="openBlast" href="https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastp&amp;PAGE_TYPE=BlastSearch" target="_blank" rel="noreferrer">Open BLAST with sequence</a></div>
         </div>
         <div class="sequence-note" id="specialRegionNote">Author chain IDs and residue numbers are preserved. Missing coordinates and insertion codes remain explicit.</div>
         <div class="chain-tabs" id="sequenceChainTabs" role="tablist" aria-label="Sequence chain"></div>
@@ -221,7 +234,7 @@
         <div class="validation-grid">
           <article><span>A / KNOWN-SITE RECOVERY</span><h4 id="benchmarkStatus">Checking benchmark manifest…</h4><div id="benchmarkRows"></div><p id="benchmarkBoundary"></p></article>
           <article><span>B / CONTACT-CUTOFF SENSITIVITY</span><h4>Rank stability across 7–9 Å</h4><div id="sensitivityRows"></div><p>Stable ranks are more credible than a single-cutoff winner; instability is evidence to inspect, not an error to hide.</p></article>
-          <article><span>C / SECOND CONFORMATION</span><h4>Compare the same protein in another state</h4><input id="stateFileInput" type="file" accept=".pdb,.ent,.cif,.mmcif,text/plain" hidden><button type="button" id="stateFileButton">Choose second PDB/mmCIF</button><div id="stateComparison">No second state loaded. RINet will compare matched chain/residue identifiers, contact changes and rank shifts.</div></article>
+          <article><span>C / SECOND CONFORMATION</span><h4>Compare the same protein in another state</h4><input id="stateFileInput" type="file" accept=".pdb,.ent,.cif,.mmcif,text/plain" hidden><label id="stateFileButton" for="stateFileInput">Choose second PDB/mmCIF</label><div id="stateComparison">No second state loaded. RINet will compare matched chain/residue identifiers, contact changes and rank shifts.</div></article>
           <article><span>D / SCOPE OF THIS CHECK</span><h4>Reference check, not general validation</h4><p>The built-in known sites test whether the ranking recovers established structural anchors in selected examples. It is not a substitute for blinded multi-protein benchmarking against mutational, allosteric, evolutionary or MD datasets.</p></article>
         </div>
       </section>
@@ -246,13 +259,13 @@
 
         <section class="discovery-radar" aria-labelledby="discovery-title">
           <div class="discovery-head">
-            <div><p class="eyebrow">Analysis modes</p><h4 id="discovery-title">Frame the ranking around the biological question.</h4></div>
-            <p>The selected mode changes the weighting and experiment wording. It does not add evidence beyond the supplied structure and residue graph.</p>
+            <div><p class="eyebrow">Experiment type</p><h4 id="discovery-title">Choose the question you are actually testing.</h4></div>
+            <p>This changes the proposed experiment, not the structural evidence. Ranking weights change only in the scoring section above.</p>
           </div>
-          <div class="discovery-modes" role="tablist" aria-label="Discovery program">
-            <button class="active" type="button" role="tab" aria-selected="true" data-discovery-mode="biology"><span>01</span>BIOLOGY</button>
+          <div class="discovery-modes" role="tablist" aria-label="Experiment type">
+            <button class="active" type="button" role="tab" aria-selected="true" data-discovery-mode="biology"><span>01</span>STRUCTURE–FUNCTION</button>
             <button type="button" role="tab" aria-selected="false" data-discovery-mode="engineering"><span>02</span>ENGINEERING</button>
-            <button type="button" role="tab" aria-selected="false" data-discovery-mode="translation"><span>03</span>TRANSLATION</button>
+            <button type="button" role="tab" aria-selected="false" data-discovery-mode="translation"><span>03</span>VARIANT</button>
             <button type="button" role="tab" aria-selected="false" data-discovery-mode="mechanism"><span>04</span>MECHANISM</button>
           </div>
           <div class="discovery-console">
@@ -263,7 +276,7 @@
               <div class="discovery-grounding"><i></i><span id="discoveryGrounding">Grounded in supplied PDB metadata, coordinates and residue graph.</span></div>
             </div>
             <div class="discovery-panels">
-              <article><span>TEST</span><p id="discoveryOpportunity">Compare a prioritized intervention with a matched structural background.</p></article>
+              <article><span>TEST</span><p id="discoveryOpportunity">Compare the selected mutation with the matched lower-score control.</p></article>
               <article><span>MEASURE</span><p id="discoveryProgram">Measure molecular integrity before the protein-specific functional readout.</p></article>
               <article><span>DECISION</span><p id="discoveryQuestion">Does the candidate alter function more than the matched comparison while the fold remains intact?</p></article>
             </div>
@@ -315,7 +328,7 @@
         </section>
 
         <section class="methods">
-          <div class="section-head"><span>06</span><h3>Methods capsule</h3><button type="button" id="copyMethods">Copy paragraph</button></div>
+          <div class="section-head"><span>06</span><h3>Methods capsule</h3><button type="button" id="copyMethods">View / copy methods</button></div>
           <p id="methodsText"></p>
         </section>
 
@@ -343,6 +356,12 @@
     </section>
   </main>
 
+  <dialog class="copy-dialog" id="copyDialog" aria-labelledby="copyDialogTitle">
+    <div class="copy-dialog-head"><div><p class="eyebrow">Copyable text</p><h2 id="copyDialogTitle">Controlled test</h2></div><button type="button" id="closeCopyDialog" aria-label="Close copyable text">Close</button></div>
+    <p id="copyDialogNote">The text below is selected. Press Command+C or Ctrl+C to copy it.</p>
+    <textarea id="copyDialogText" readonly rows="18" aria-label="Copyable analysis text"></textarea>
+  </dialog>
+
   <section class="research-contact" id="contact">
     <div class="research-contact-copy">
       <p class="eyebrow">Feedback / contact</p>
@@ -363,6 +382,6 @@
   <footer><a href="/">← RINet home</a><span>Structure Brief 3.0 · transparent residue-network analysis</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
   <script src="/contact.js?v=5"></script>
-  <script src="/brief/brief.js?v=18"></script>
+  <script src="/brief/brief.js?v=19"></script>
 </body>
 </html>

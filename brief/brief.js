@@ -14,6 +14,7 @@ let activeDiscoveryMode = "biology";
 let activeScoringLens = "general";
 let activeSequenceChain = null;
 let userHypothesis = "";
+let suggestedHypothesisActive = false;
 const preview = { stage: null, component: null };
 const demoTour = { timer: null, frame: null, active: false };
 const waterNames = new Set(["HOH", "WAT", "DOD"]);
@@ -21,12 +22,12 @@ const metalElements = new Set(["LI", "NA", "MG", "AL", "K", "CA", "MN", "FE", "C
 const aminoAcidOneLetter = { ALA:"A", ARG:"R", ASN:"N", ASP:"D", CYS:"C", GLN:"Q", GLU:"E", GLY:"G", HIS:"H", ILE:"I", LEU:"L", LYS:"K", MET:"M", PHE:"F", PRO:"P", SER:"S", THR:"T", TRP:"W", TYR:"Y", VAL:"V", SEC:"U", PYL:"O" };
 const featureLabels = { degree:"Contact degree", weighted:"Distance-weighted packing", longRange:"Long-range contacts", interchain:"Cross-chain contacts", closeness:"Closeness centrality", betweenness:"Betweenness centrality", burial:"Radial burial", ligand:"Ligand proximity", coordination:"Direct metal coordination", cdr:"CDR-region evidence" };
 const scoreLenses = {
-  general: { label:"General", description:"Balanced structure-first ranking. Direct metal coordination is distinct from generic ligand proximity; no single metric is treated as function.", weights:{ degree:.15, weighted:.10, longRange:.10, interchain:.12, closeness:.10, betweenness:.08, burial:.05, ligand:.15, coordination:.15, cdr:0 } },
-  ligand: { label:"Ligand", description:"Prioritizes direct bound-group neighborhoods and metal coordination while retaining network reach and burial controls.", weights:{ degree:.08, weighted:.08, longRange:.05, interchain:.04, closeness:.07, betweenness:.06, burial:.06, ligand:.36, coordination:.20, cdr:0 } },
-  interface: { label:"Interface", description:"Prioritizes cross-chain contacts and graph bottlenecks. Crystal contacts and assembly choice must be checked.", weights:{ degree:.14, weighted:.10, longRange:.09, interchain:.38, closeness:.09, betweenness:.12, burial:.08, ligand:0, coordination:0, cdr:0 } },
-  allostery: { label:"Allostery", description:"Emphasizes long-range and shortest-path structure. This is an allosteric hypothesis lens, not proof of coupling.", weights:{ degree:.10, weighted:.07, longRange:.22, interchain:.13, closeness:.15, betweenness:.25, burial:.04, ligand:.04, coordination:0, cdr:0 } },
-  stability: { label:"Stability", description:"Emphasizes packing and burial to find structural liabilities; functional interpretation comes only after integrity testing.", weights:{ degree:.18, weighted:.22, longRange:.10, interchain:.10, closeness:.10, betweenness:.08, burial:.20, ligand:.02, coordination:0, cdr:0 } },
-  antibody: { label:"Antibody / CDR", description:"Adds antibody-variable-loop evidence when antibody-like sequence context is detected; CDR ranges remain a visible heuristic unless externally annotated.", weights:{ degree:.10, weighted:.06, longRange:.05, interchain:.25, closeness:.08, betweenness:.08, burial:.02, ligand:.10, coordination:0, cdr:.26 } }
+  general: { label:"General", description:"General model: contacts, centrality, burial, ligand distance and direct metal coordination use the displayed weights.", weights:{ degree:.15, weighted:.10, longRange:.10, interchain:.12, closeness:.10, betweenness:.08, burial:.05, ligand:.15, coordination:.15, cdr:0 } },
+  ligand: { label:"Ligand", description:"Ligand model: increases the weights for bound-group distance and direct metal coordination.", weights:{ degree:.08, weighted:.08, longRange:.05, interchain:.04, closeness:.07, betweenness:.06, burial:.06, ligand:.36, coordination:.20, cdr:0 } },
+  interface: { label:"Interface", description:"Interface model: increases the weights for cross-chain contacts and graph bottlenecks. Check the biological assembly and crystal contacts.", weights:{ degree:.14, weighted:.10, longRange:.09, interchain:.38, closeness:.09, betweenness:.12, burial:.08, ligand:0, coordination:0, cdr:0 } },
+  allostery: { label:"Allostery", description:"Allostery model: increases the weights for long-range contacts, closeness and betweenness. It does not prove energetic coupling.", weights:{ degree:.10, weighted:.07, longRange:.22, interchain:.13, closeness:.15, betweenness:.25, burial:.04, ligand:.04, coordination:0, cdr:0 } },
+  stability: { label:"Stability", description:"Stability model: increases the weights for contact packing and burial. Test expression and fold before interpreting function.", weights:{ degree:.18, weighted:.22, longRange:.10, interchain:.10, closeness:.10, betweenness:.08, burial:.20, ligand:.02, coordination:0, cdr:0 } },
+  antibody: { label:"Antibody / CDR", description:"Antibody model: adds variable-loop evidence when antibody-like sequence context is detected. Verify CDR numbering and antigen contacts externally.", weights:{ degree:.10, weighted:.06, longRange:.05, interchain:.25, closeness:.08, betweenness:.08, burial:.02, ligand:.10, coordination:0, cdr:.26 } }
 };
 const benchmarkManifest = {
   "4HHB": { status:"Curated structural-anchor sanity check", source:"https://www.rcsb.org/structure/4HHB", citation:"4HHB primary structure and heme coordination", sites:["HIS A:87","HIS B:92","HIS C:87","HIS D:92"], note:"Proximal F8 histidines coordinate heme iron. Labels are evaluated after ranking and contribute no score." },
@@ -39,6 +40,7 @@ const sectionTargets = sectionLinks.map(link => document.querySelector(link.getA
 
 function setActiveSection(index) {
   const bounded = Math.max(0, Math.min(index, sectionLinks.length - 1));
+  document.body.dataset.activeSection = String(bounded);
   sectionLinks.forEach((link, linkIndex) => {
     const active = linkIndex === bounded;
     link.classList.toggle("active", active);
@@ -51,14 +53,19 @@ function setActiveSection(index) {
   if (labelElement) labelElement.textContent = sectionLinks[bounded]?.dataset.sectionLabel || "Structure";
 }
 
-function updateSectionRail() {
-  if (!document.body.classList.contains("analysis-mode") || !sectionTargets.length) return;
+function activeSectionIndex() {
+  if (!sectionTargets.length) return 0;
   const marker = window.scrollY + Math.min(window.innerHeight * .34, 300);
   let active = 0;
   sectionTargets.forEach((section, index) => {
     if (section.offsetTop <= marker) active = index;
   });
-  setActiveSection(active);
+  return active;
+}
+
+function updateSectionRail() {
+  if (!document.body.classList.contains("analysis-mode") || !sectionTargets.length) return;
+  setActiveSection(activeSectionIndex());
 }
 
 sectionLinks.forEach((link, index) => link.addEventListener("click", event => {
@@ -564,10 +571,10 @@ function parseCoordinateFile(text, sourceName = "", options = {}) {
   return parsePdb(text, options);
 }
 
-function biologicalGuidance(report) {
+function biologicalGuidance(report, candidateOverride = report.topResidues[0], controlOverride = null) {
   const metadata = report.metadata || {};
-  const candidate = report.topResidues[0];
-  const control = report.controlResidue;
+  const candidate = candidateOverride;
+  const control = controlOverride || pickMatchedControl(report.allResidues, candidate) || report.controlResidue;
   const mutation = mutationLadder(candidate).conservative;
   const proteinLabel = metadata.compound || metadata.title || metadata.classification || "Supplied protein structure";
   const context = [metadata.title, metadata.compound, metadata.classification, metadata.keywords, report.hetero.join(" ")].join(" ").toLowerCase();
@@ -827,21 +834,21 @@ function buildDiscoveryPrograms(report) {
     biology: {
       title: "Structure–function test",
       thesis: `Compare ${candidateLabel} with ${controlLabel} using a protein-specific functional readout.`,
-      opportunity: `Test whether ${candidateLabel} produces a larger functional effect than the matched lower-score residue ${controlLabel}.`,
+      opportunity: `Test whether the mutation at ${candidateLabel} produces a larger functional effect than the matched lower-score residue ${controlLabel}.`,
       program: `Test ${firstChange}, a matched perturbation at ${controlLabel}, and wild type. Measure integrity first, then ${biology.assay}.`,
       question: `Does the candidate change the protein-specific output more than structural background while molecular integrity remains intact?`
     },
     engineering: {
       title: "Protein engineering screen",
       thesis: `Test a graded mutation series at ${candidateLabel} and remove constructs that lose expression or fold.`,
-      opportunity: `Explore conservative, neutralizing and stronger changes around ${candidateLabel} while using ${controlLabel} as a structural baseline.`,
+      opportunity: `Compare conservative, neutralizing and stronger mutations at ${candidateLabel}, using ${controlLabel} as the structural control.`,
       program: `Build a three-step chemistry ladder at ${candidateLabel}. Screen abundance and folding, then advance only intact constructs into ${biology.assay}.`,
       question: "Can the response be shifted in a graded way without losing expression, assembly or fold quality?"
     },
     translation: {
       title: "Variant classification",
       thesis: "Classify each effect as functional, expression-related, folding-related, or unresolved.",
-      opportunity: `Use the candidate and matched control to classify observed variants or interventions by function, abundance and fold rather than by one score.`,
+      opportunity: `Use the candidate and matched control to classify a variant by function, abundance and fold rather than by one score.`,
       program: `Measure abundance, one orthogonal integrity readout and ${biology.assay} in the same batch. Keep conclusions at the protein level unless clinical evidence is supplied.`,
       question: "Which measurement cleanly distinguishes a functional effect from reduced expression, misfolding or failed assembly?"
     },
@@ -940,10 +947,10 @@ async function fetchPublicBiology(report) {
   }
 }
 
-function renderGuidance(report) {
-  const candidate = report.topResidues[0];
-  const runnerUp = report.topResidues[1];
-  const control = report.controlResidue;
+function renderGuidance(report, candidateOverride = report.topResidues[0]) {
+  const candidate = candidateOverride;
+  const runnerUp = report.topResidues.find(row => row.label !== candidate?.label);
+  const control = pickMatchedControl(report.allResidues, candidate) || report.controlResidue;
   const breakCount = report.chainReports.reduce((sum, chain) => sum + chain.breaks, 0);
   const coverage = report.residues ? (report.residues - report.missingCa) / report.residues : 0;
   const occupancyPenalty = report.polymerAtoms ? Math.min(.12, report.lowOccupancy / report.polymerAtoms) : 0;
@@ -956,7 +963,7 @@ function renderGuidance(report) {
   const contrast = runnerUp ? ` ${runnerUp.label} is the next site to examine if the first construct is inconclusive.` : "";
   const contactClass = candidate?.degree >= 8 ? "a highly connected structural hub" : candidate?.degree >= 4 ? "a moderately connected structural junction" : "the strongest available contact signal in this model";
   const disulfide = candidate?.disulfidePartner;
-  const biology = biologicalGuidance(report);
+  const biology = biologicalGuidance(report, candidate, control);
   const structuralThesis = disulfide
     ? `${candidateLabel} forms a ${disulfide.distance.toFixed(2)} Å sulfur–sulfur contact with ${disulfide.label}, consistent with a disulfide constraint. The decisive question is whether function changes beyond any loss of structural integrity.`
     : `${candidateLabel} is the strongest multi-signal structural contrast in this coordinate model. Test it against ${controlLabel} while holding expression and folding accountable.`;
@@ -1010,6 +1017,64 @@ function mutationLabelForResidue(residue) {
   return `${mutationRationale(residue,ladder.conservative)} Stronger follow-up: ${ladder.neutral}. These are property probes, not predictions of benefit.`;
 }
 
+function matchedControlForResidue(report, residue) {
+  return pickMatchedControl(report.allResidues, residue) || report.controlResidue || null;
+}
+
+function selectedExperimentQuestion(report, residue) {
+  const control = matchedControlForResidue(report, residue);
+  const candidateMutation = mutationLadder(residue).conservative;
+  const controlMutation = control ? mutationLadder(control).conservative : "the matched-site perturbation";
+  const biology = biologicalGuidance(report, residue, control);
+  return `Does ${candidateMutation} at ${residue.label} change the result in ${biology.assay} more than ${control ? `${controlMutation} at ${control.label}` : "a matched lower-score control"}, while expression and folding remain comparable to wild type?`;
+}
+
+function selectedTestText(report, residue) {
+  const control = matchedControlForResidue(report, residue);
+  const candidateMutation = mutationLadder(residue).conservative;
+  const controlMutation = control ? mutationLadder(control).conservative : "matched perturbation";
+  const biology = biologicalGuidance(report, residue, control);
+  const question = userHypothesis || selectedExperimentQuestion(report, residue);
+  return [
+    `RINet controlled residue test — ${current?.sourceName || report.metadata?.pdbId || "structure"}`,
+    `Question: ${question}`,
+    `Candidate: ${residue.label} (rank ${residue.rank}/${report.allResidues.length}; score ${residue.score.toFixed(1)} under the ${scoreLenses[report.scoringLens].label} model).`,
+    `Structural basis: ${residue.rationale}`,
+    `Candidate mutation: ${mutationRationale(residue, candidateMutation)}`,
+    control ? `Matched control: ${control.label}, ${controlMutation} (match ${control.matchQuality.toFixed(0)}/100). ${control.controlRationale}` : "Matched control: none could be constructed from this coordinate record.",
+    `Measure in the same batch: ${biology.assay}; expression or abundance; one orthogonal folding or stability readout. Include wild type, candidate and matched control.`,
+    `Supporting result: the candidate changes the functional readout more than the control while expression and folding remain acceptably similar to wild type.`,
+    `Stop or reinterpret: candidate and control behave similarly, or the candidate primarily lowers expression or disrupts folding.`,
+    `Boundary: structure-derived hypothesis only; confirm numbering, assembly, assay context and external evolutionary or dynamic evidence before assigning mechanism.`
+  ].join("\n");
+}
+
+function renderEvidenceResiduePicker(report, selected = report.topResidues[0]) {
+  const picker = document.getElementById("evidenceResiduePicker");
+  if (!picker) return;
+  picker.innerHTML = report.topResidues.map(residue => `<button class="evidence-residue-button ${residue.label === selected?.label ? "active" : ""}" type="button" data-evidence-label="${esc(residue.label)}"><span>${String(residue.rank).padStart(2,"0")}</span><strong>${esc(residue.label)}</strong><b>${residue.score.toFixed(1)}</b><small>${esc(residue.context)}</small></button>`).join("");
+  picker.querySelectorAll("[data-evidence-label]").forEach(button => button.addEventListener("click", () => {
+    const residue = report.allResidues.find(row => row.label === button.dataset.evidenceLabel);
+    selectAnalyzedResidue(residue, { autoView:false });
+  }));
+}
+
+function renderSelectedAction(residue, report = current?.report) {
+  if (!residue || !report) return;
+  const control = matchedControlForResidue(report, residue);
+  const ladder = mutationLadder(residue);
+  const biology = biologicalGuidance(report, residue, control);
+  document.getElementById("selectedActionResidue").textContent = residue.label;
+  document.getElementById("selectedActionScore").textContent = `rank ${residue.rank}/${report.allResidues.length} · score ${residue.score.toFixed(1)} · ${scoreLenses[report.scoringLens].label} model`;
+  document.getElementById("selectedActionBoundary").textContent = `${residue.percentile.toFixed(1)}th score percentile in this structure. This is not a probability of function.`;
+  document.getElementById("selectedActionReason").textContent = residue.rationale;
+  document.getElementById("selectedActionMutation").textContent = mutationRationale(residue, ladder.conservative);
+  document.getElementById("selectedActionControl").textContent = control ? `${control.label} · ${mutationLadder(control).conservative} · match ${control.matchQuality.toFixed(0)}/100. ${control.controlRationale}` : "No credible matched control could be constructed from this structure.";
+  document.getElementById("selectedActionAssay").textContent = `${biology.assay}; expression or abundance; one folding or stability readout. Run wild type, candidate and control in the same batch.`;
+  document.getElementById("selectedActionRule").textContent = `${residue.label} changes the functional readout more than ${control?.label || "the matched control"}, while expression and folding remain acceptably similar to wild type.`;
+  renderEvidenceResiduePicker(report, residue);
+}
+
 function renderContributionAudit(residue, report = current?.report) {
   if (!residue || !report) return;
   document.getElementById("auditResidue").textContent = `${residue.label} · rank ${residue.rank}/${report.allResidues.length} · ${residue.score.toFixed(1)}`;
@@ -1018,9 +1083,10 @@ function renderContributionAudit(residue, report = current?.report) {
   const maximum = Math.max(...entries.map(([,value])=>value),1);
   document.getElementById("contributionChart").innerHTML = entries.map(([feature,value],index)=>`<div class="contribution-row"><span>${esc(featureLabels[feature]||feature)}</span><div><i style="width:${(100*value/maximum).toFixed(1)}%;--bar:${["#c9fb3c","#66d7ff","#b98cff","#ffa95b","#62e3bb"][index%5]}"></i></div><b>${value.toFixed(1)} pts</b></div>`).join("");
   document.getElementById("auditMutation").textContent = mutationLabelForResidue(residue);
-  const control = report.controlResidue;
+  const control = matchedControlForResidue(report, residue);
   document.getElementById("auditControl").textContent = control ? `${control.label} · match quality ${control.matchQuality.toFixed(0)}/100. ${control.controlRationale}` : "No credible matched control could be constructed from this coordinate record.";
   document.querySelectorAll(".sequence-residue").forEach(element => element.classList.toggle("selected", element.dataset.label === residue.label));
+  renderSelectedAction(residue, report);
   renderNetworkMap(report,residue);
 }
 
@@ -1034,6 +1100,9 @@ function renderSequence(report, requestedChain = activeSequenceChain) {
   document.getElementById("sequenceStrip").innerHTML = residues.map(row=>`<button class="sequence-residue ${rankedLabels.has(row.label)?"ranked":""} ${row.label===primary?"rank-one":""} ${row.cdrHeuristic?"cdr-heuristic":""}" type="button" data-label="${esc(row.label)}" title="${esc(row.label)} · score ${row.score.toFixed(1)}"><span>${aminoAcidOneLetter[row.name]||"X"}</span><small>${esc(`${row.seq}${row.insertion||""}`)}</small></button>`).join("");
   document.querySelectorAll("[data-sequence-chain]").forEach(button=>button.addEventListener("click",()=>renderSequence(report,button.dataset.sequenceChain)));
   document.querySelectorAll(".sequence-residue").forEach(button=>button.addEventListener("click",()=>selectAnalyzedResidue(report.allResidues.find(row=>row.label===button.dataset.label),{autoView:true})));
+  const blastChain = report.chainReports.find(row=>row.chain===activeSequenceChain)||report.chainReports[0];
+  const blastQuery = new URLSearchParams({PROGRAM:"blastp",PAGE_TYPE:"BlastSearch",QUERY:blastChain.sequence,JOB_TITLE:`${report.metadata?.pdbId||current?.sourceName||"RINet"} chain ${blastChain.chain}`});
+  document.getElementById("openBlast").href=`https://blast.ncbi.nlm.nih.gov/Blast.cgi?${blastQuery.toString()}`;
   const special = document.getElementById("specialRegionNote");
   special.textContent = report.antibodyContext ? `Antibody-like annotation detected. Chains ${report.antibodyChains.join(", ")||"not confidently assigned"} show CDR-range heuristics based on variable-domain sequence positions 24–35, 50–65 and 89–102. These are prioritization aids, not IMGT/Kabat annotation; verify numbering and antigen contacts before design.` : "Author chain IDs and residue numbers are preserved. Missing coordinates and insertion codes remain explicit. Conservation is not inferred from structure; use FASTA/BLAST when evolutionary evidence matters.";
 }
@@ -1323,7 +1392,7 @@ function selectAnalyzedResidue(residue, { button = null, autoView = false, updat
   ];
   if (autoView) molecular.component.autoView(selection, 450);
   molecular.selectedResidue = residue;
-  const comparison = current?.report?.controlResidue;
+  const comparison = current?.report ? matchedControlForResidue(current.report, residue) : null;
   const ladder = mutationLadder(residue);
   document.getElementById("viewerCandidate").textContent = residue.label;
   document.getElementById("viewerCandidateReason").textContent = residueExplanation(residue);
@@ -1338,7 +1407,20 @@ function selectAnalyzedResidue(residue, { button = null, autoView = false, updat
     row.classList.toggle("active", row === button || ranked?.label === residue.label);
   });
   renderContributionAudit(residue,current?.report);
+  if (current && suggestedHypothesisActive) {
+    userHypothesis = selectedExperimentQuestion(current.report, residue);
+    document.getElementById("hypothesisInput").value = userHypothesis;
+    const feedback = document.getElementById("hypothesisFeedback");
+    feedback.textContent = `Suggested question updated for ${residue.label}. Scores and ranks are unchanged.`;
+    feedback.classList.add("applied");
+  }
+  if (current) renderGuidance(current.report, residue);
   if (updateDiscovery && current) renderDiscovery(current.report, activeDiscoveryMode);
+  const actionStatus = document.getElementById("selectedActionStatus");
+  if (actionStatus) {
+    actionStatus.textContent = `${residue.label} selected. Score breakdown, control and experiment updated.`;
+    actionStatus.classList.add("success");
+  }
 }
 
 function selectBoundGroup(atom) {
@@ -1402,6 +1484,10 @@ document.getElementById("viewerFit").addEventListener("click", () => {
   setMolecularRepresentation(molecular.representation);
   fitStructureWithPadding(molecular.stage, molecular.component, 450, 1.32);
   document.querySelectorAll(".best-residue-row,.sequence-residue").forEach(element=>element.classList.remove("active","selected"));
+  if (current?.report?.topResidues[0]) {
+    renderContributionAudit(current.report.topResidues[0], current.report);
+    renderGuidance(current.report, current.report.topResidues[0]);
+  }
   updateSurfaceStatus("FULL STRUCTURE RESTORED",true);
 });
 document.getElementById("viewerSpin").addEventListener("click", event => {
@@ -1411,21 +1497,18 @@ document.getElementById("viewerSpin").addEventListener("click", event => {
   event.currentTarget.textContent = molecular.spinning ? "Stop rotation" : "Start rotation";
 });
 document.getElementById("newAnalysis").addEventListener("click", () => { window.location.href = "/brief/"; });
-document.querySelector("[data-scroll-guidance]")?.addEventListener("click", event => {
-  event.preventDefault();
-  document.getElementById("scoringSection")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
-});
 document.getElementById("resultScrollCue")?.addEventListener("click", event => {
   event.preventDefault();
-  if (document.body.classList.contains("demo-mode")) advanceDemoTour();
-  else document.getElementById("decisionBrief")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  stopDemoTour();
+  event.currentTarget.classList.add("dismissed");
+  document.getElementById("scoringSection")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
 });
 document.getElementById("demoSkipStatus")?.addEventListener("click", stopDemoTour);
 function updateResultScrollCue() {
   const cue = document.getElementById("resultScrollCue");
   if (!cue || !document.body.classList.contains("analysis-mode")) return;
   const pageBottom = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-  cue.classList.toggle("dismissed", window.scrollY >= pageBottom - 2);
+  cue.classList.toggle("dismissed", activeSectionIndex() > 0 || window.scrollY >= pageBottom - 2);
 }
 window.addEventListener("scroll", () => { updateResultScrollCue(); updateSectionRail(); }, { passive: true });
 window.addEventListener("resize", () => { updateResultScrollCue(); updateSectionRail(); }, { passive: true });
@@ -1437,14 +1520,83 @@ document.querySelectorAll("[data-scoring-lens]").forEach(button=>button.addEvent
   rerankReport(current.report,activeScoringLens);
   refreshRankedOutputs(current.report);
   document.getElementById("methodsText").textContent=document.getElementById("methodsText").textContent.replace(/score = 100 × \[[^\]]+\]; each feature is normalized to the maximum observed in this structure\./,scoreEquationText(activeScoringLens));
+  setLocalActionStatus(`Ranking recalculated with the ${scoreLenses[activeScoringLens].label} model. ${current.report.topResidues[0].label} is now rank 1.`, true);
 }));
+
+function currentEvidenceResidue() {
+  return molecular.selectedResidue || current?.report?.topResidues?.[0] || null;
+}
+
+function setLocalActionStatus(message, success = false) {
+  const status = document.getElementById("selectedActionStatus");
+  if (!status) return;
+  status.textContent = message;
+  status.classList.toggle("success", success);
+}
+
+function openCopyDialog(title, text) {
+  const dialog = document.getElementById("copyDialog");
+  const field = document.getElementById("copyDialogText");
+  document.getElementById("copyDialogTitle").textContent = title;
+  field.value = text;
+  if (!dialog.open) dialog.showModal();
+  window.requestAnimationFrame(() => { field.focus(); field.select(); });
+}
 
 document.getElementById("applyHypothesis")?.addEventListener("click",()=>{
   userHypothesis=document.getElementById("hypothesisInput").value.trim();
   if(!current)return;
-  renderGuidance(current.report);
+  const residue = currentEvidenceResidue();
+  renderGuidance(current.report, residue || current.report.topResidues[0]);
+  if (residue) renderSelectedAction(residue, current.report);
+  const feedback = document.getElementById("hypothesisFeedback");
+  feedback.textContent=userHypothesis?`Question set: “${userHypothesis}” Scores and ranks are unchanged.`:"Question cleared. Scores and ranks are unchanged.";
+  feedback.classList.toggle("applied", Boolean(userHypothesis));
+  const button = document.getElementById("applyHypothesis");
+  button.textContent=userHypothesis?"Question set":"Question cleared";
+  window.setTimeout(()=>button.textContent="Set experiment question",1500);
   const status=document.getElementById("analysisStatus");
-  status.textContent=userHypothesis?"Hypothesis framing applied. Scores are unchanged; only the experiment question was updated.":"Hypothesis framing cleared. Scores were unchanged.";
+  status.textContent=userHypothesis?"Experiment question set. Structural scores are unchanged.":"Experiment question cleared. Structural scores are unchanged.";
+  setLocalActionStatus(userHypothesis?"Experiment question updated. Open the copyable test to export it with the residue evidence.":"Experiment question cleared.",Boolean(userHypothesis));
+});
+
+document.getElementById("suggestHypothesis")?.addEventListener("click",()=>{
+  if(!current)return;
+  const residue=currentEvidenceResidue()||current.report.topResidues[0];
+  suggestedHypothesisActive=true;
+  document.getElementById("hypothesisInput").value=selectedExperimentQuestion(current.report,residue);
+  document.getElementById("applyHypothesis").click();
+});
+document.getElementById("hypothesisInput")?.addEventListener("input",()=>{suggestedHypothesisActive=false;});
+
+document.getElementById("actionFocusStructure")?.addEventListener("click",()=>{
+  const residue=currentEvidenceResidue();
+  if(!residue)return;
+  selectAnalyzedResidue(residue,{autoView:true});
+  document.getElementById("structureSection")?.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
+});
+
+document.getElementById("actionOpenSequence")?.addEventListener("click",()=>{
+  const residue=currentEvidenceResidue();
+  if(!current||!residue)return;
+  renderSequence(current.report,residue.chain);
+  document.querySelectorAll(".sequence-residue").forEach(element=>element.classList.toggle("selected",element.dataset.label===residue.label));
+  document.getElementById("sequenceSection")?.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
+});
+
+const copySelectedTestButton = document.getElementById("copySelectedTest");
+if (copySelectedTestButton) copySelectedTestButton.onclick = () => {
+  const residue=currentEvidenceResidue();
+  if(!current||!residue)return;
+  openCopyDialog(`${residue.label} controlled test`, selectedTestText(current.report,residue));
+  setLocalActionStatus("Controlled test opened with candidate, matched control, assay, decision rule and limitations.",true);
+};
+
+document.getElementById("actionOpenExperiment")?.addEventListener("click",()=>{
+  const residue=currentEvidenceResidue();
+  if(!current||!residue)return;
+  renderGuidance(current.report,residue);
+  document.getElementById("decisionBrief")?.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
 });
 
 document.getElementById("rankingFilter")?.addEventListener("input",event=>{if(current)renderExpertRanking(current.report,event.currentTarget.value);});
@@ -1453,19 +1605,7 @@ function activeFasta(report=current?.report){
   if(!report)return"";
   return report.chainReports.map(chain=>`>${report.metadata?.pdbId||current.sourceName}|chain_${chain.chain}|author_numbering_${chain.start}-${chain.end}\n${chain.sequence.match(/.{1,70}/g)?.join("\n")||chain.sequence}`).join("\n");
 }
-document.getElementById("copyFasta")?.addEventListener("click",async event=>{
-  try{await navigator.clipboard.writeText(activeFasta());event.currentTarget.textContent="FASTA copied";setTimeout(()=>event.currentTarget.textContent="Copy FASTA",1400);}catch(_){event.currentTarget.textContent="Copy unavailable";}
-});
-document.getElementById("openBlast")?.addEventListener("click",()=>{
-  if(!current)return;
-  const chain=current.report.chainReports.find(row=>row.chain===activeSequenceChain)||current.report.chainReports[0];
-  const form=document.createElement("form");form.method="post";form.action="https://blast.ncbi.nlm.nih.gov/Blast.cgi";form.target="_blank";
-  const values={PROGRAM:"blastp",PAGE_TYPE:"BlastSearch",QUERY:chain.sequence,JOB_TITLE:`${current.report.metadata?.pdbId||current.sourceName} chain ${chain.chain}`};
-  Object.entries(values).forEach(([name,value])=>{const input=document.createElement("input");input.type="hidden";input.name=name;input.value=value;form.appendChild(input);});
-  document.body.appendChild(form);form.submit();form.remove();
-});
-
-document.getElementById("stateFileButton")?.addEventListener("click",()=>document.getElementById("stateFileInput")?.click());
+document.getElementById("copyFasta")?.addEventListener("click",()=>openCopyDialog(`FASTA · ${activeSequenceChain || "selected chain"}`,activeFasta()));
 document.getElementById("stateFileInput")?.addEventListener("change",async event=>{
   const file=event.currentTarget.files?.[0];if(!file||!current)return;
   const target=document.getElementById("stateComparison");target.textContent=`Comparing ${file.name} with ${current.sourceName}…`;
@@ -1478,10 +1618,9 @@ document.getElementById("stateFileInput")?.addEventListener("change",async event
   }catch(error){target.textContent=`State comparison stopped: ${error.message}.`;}
 });
 
-document.getElementById("copyMethods").addEventListener("click", async e => {
-  try { await navigator.clipboard.writeText(document.getElementById("methodsText").textContent); e.currentTarget.textContent = "Copied"; setTimeout(() => e.currentTarget.textContent = "Copy paragraph", 1500); }
-  catch (_) { e.currentTarget.textContent = "Select + copy"; }
-});
+document.getElementById("copyMethods").addEventListener("click",()=>openCopyDialog("Reproducible methods",document.getElementById("methodsText").textContent));
+document.getElementById("closeCopyDialog")?.addEventListener("click",()=>document.getElementById("copyDialog")?.close());
+document.getElementById("copyDialog")?.addEventListener("click",event=>{if(event.target===event.currentTarget)event.currentTarget.close();});
 
 function receiptPayload() {
   return { tool: "RINet Structure Intelligence", version: "3.0", receiptId: current.receiptId, analyzedAt: current.analyzedAt, sourceLabel: current.sourceName, sourceType: current.sourceType, structureSha256: current.digest, userHypothesis:userHypothesis||null, scoringLens:current.report.scoringLens, exactScoreWeights:current.report.scoreWeights, contactCutoffAngstrom:current.report.contactCutoff, benchmarkManifest:benchmarkManifest[current.report.metadata?.pdbId]||null, summary: current.report, scientificBoundary: "Static, descriptive coordinate and Cα contact analysis; not an all-atom potential, evolutionary analysis, dynamics calculation, functional proof or causal claim." };
