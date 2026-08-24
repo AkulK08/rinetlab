@@ -21,29 +21,29 @@ const demoTour = { timer: null, frame: null, active: false };
 const waterNames = new Set(["HOH", "WAT", "DOD"]);
 const metalElements = new Set(["LI", "NA", "MG", "AL", "K", "CA", "MN", "FE", "CO", "NI", "CU", "ZN", "SR", "MO", "CD", "CS", "BA", "HG"]);
 const aminoAcidOneLetter = { ALA:"A", ARG:"R", ASN:"N", ASP:"D", CYS:"C", GLN:"Q", GLU:"E", GLY:"G", HIS:"H", ILE:"I", LEU:"L", LYS:"K", MET:"M", PHE:"F", PRO:"P", SER:"S", THR:"T", TRP:"W", TYR:"Y", VAL:"V", SEC:"U", PYL:"O" };
-const featureLabels = { mechanical:"Target-compliance sensitivity", robustness:"Sensitivity stability across cutoffs", perturbation:"Mutation constraint leverage", degree:"Cα contact degree", weighted:"Cα distance-weighted packing", longRange:"Cα long-range contacts", interchain:"Cα cross-chain contacts", closeness:"Cα closeness centrality", betweenness:"Cα betweenness centrality", burial:"Radial burial", ligand:"Nearest bound-group distance", coordination:"Direct metal coordination", cdr:"CDR-region evidence", atomic:"Typed atomic partners", polar:"Polar-contact geometry", ionic:"Ionic-contact geometry", ligandAtomic:"Direct ligand / metal contacts" };
+const featureLabels = { mechanical:"Predicted effect on selected site", robustness:"Ranking stability across cutoffs", perturbation:"Contacts changed by mutation", degree:"Cα contact degree", weighted:"Cα distance-weighted packing", longRange:"Cα long-range contacts", interchain:"Cα cross-chain contacts", closeness:"Cα closeness centrality", betweenness:"Cα betweenness centrality", burial:"Radial burial", ligand:"Nearest bound-group distance", coordination:"Direct metal coordination", cdr:"CDR-region evidence", atomic:"Typed atomic partners", polar:"Polar-contact geometry", ionic:"Ionic-contact geometry", ligandAtomic:"Direct ligand / metal contacts" };
 const graphFeatureNames = ["degree","weighted","longRange","interchain","closeness","betweenness"];
 const localFeatureNames = ["atomic","polar","ionic","ligandAtomic","coordination","ligand","burial"];
 const scoreLenses = {
-  general: { label:"Target sensitivity", description:"Target-sensitivity question: ranks mutations outside the selected functional site by the first-order change in target compliance expected when local springs are weakened, stability across three network cutoffs, and the side-chain constraints the proposed substitution can change.", weights:{ mechanical:.58, robustness:.17, perturbation:.10, interchain:.03, longRange:.03, burial:.02, atomic:.03, polar:.02, ionic:.01, ligandAtomic:.01 } },
-  ligand: { label:"Direct pocket", description:"Direct-pocket question: ranks residues that touch the selected bound group, combining target response with explicit ligand/metal geometry and mutation constraint leverage.", weights:{ mechanical:.30, robustness:.10, perturbation:.15, ligandAtomic:.20, coordination:.10, ligand:.05, atomic:.04, polar:.03, ionic:.03 } },
-  interface: { label:"Interface sensitivity", description:"Interface question: asks which mutation should most change compliance of the selected chain interface while retaining explicit cross-chain contact evidence. Confirm that the interface belongs to the biological assembly.", weights:{ mechanical:.50, robustness:.15, perturbation:.10, interchain:.15, atomic:.05, polar:.03, ionic:.02 } },
-  allostery: { label:"Remote sensitivity", description:"Remote-sensitivity question: excludes the selected site and residues within 10 Å, then ranks remote residues by target-compliance sensitivity and cutoff robustness. This is the clearest candidate-versus-control test of long-range mechanical leverage.", weights:{ mechanical:.64, robustness:.19, perturbation:.10, longRange:.03, betweenness:.02, atomic:.02 } },
-  stability: { label:"Mechanical integrity", description:"Mechanical-integrity question: combines target-compliance sensitivity with packing, burial and mutation leverage. Protein quantity and fold/assembly remain mandatory measurements.", weights:{ mechanical:.34, robustness:.11, perturbation:.15, weighted:.12, burial:.12, degree:.06, atomic:.10 } },
-  antibody: { label:"Antibody interface", description:"Antibody-interface question: combines target-compliance sensitivity at the selected interface with cross-chain contacts and a variable-loop heuristic. Verify IMGT/Kabat numbering and antigen identity before ordering constructs.", weights:{ mechanical:.38, robustness:.12, perturbation:.10, interchain:.16, cdr:.14, atomic:.05, polar:.03, ionic:.02 } }
+  general: { label:"Best residue to test", description:"Ranks residues outside the selected functional site by how much weakening their local contacts is predicted to change that site. The calculation is repeated with three contact cutoffs, then adjusted for the contacts the proposed substitution can actually remove or alter.", weights:{ mechanical:.58, robustness:.17, perturbation:.10, interchain:.03, longRange:.03, burial:.02, atomic:.03, polar:.02, ionic:.01, ligandAtomic:.01 } },
+  ligand: { label:"Ligand-pocket residue", description:"Ranks residues that touch the selected ligand or metal using the predicted effect at the chosen site, direct ligand or metal contacts, and the contacts the proposed substitution can change.", weights:{ mechanical:.30, robustness:.10, perturbation:.15, ligandAtomic:.20, coordination:.10, ligand:.05, atomic:.04, polar:.03, ionic:.03 } },
+  interface: { label:"Interface residue", description:"Ranks residues predicted to affect the selected chain interface and gives extra weight to observed cross-chain contacts. Confirm that the interface belongs to the biological assembly.", weights:{ mechanical:.50, robustness:.15, perturbation:.10, interchain:.15, atomic:.05, polar:.03, ionic:.02 } },
+  allostery: { label:"Distant residue", description:"Excludes the selected site and every residue within 10 Å, then ranks distant residues by their predicted effect on the chosen functional site. Use the paired comparison mutation to test whether the distant effect is specific.", weights:{ mechanical:.64, robustness:.19, perturbation:.10, longRange:.03, betweenness:.02, atomic:.02 } },
+  stability: { label:"Protein stability", description:"Ranks residues using their predicted effect at the chosen site, local packing, burial, and the contacts the mutation can change. Measure abundance and fold or assembly before interpreting function.", weights:{ mechanical:.34, robustness:.11, perturbation:.15, weighted:.12, burial:.12, degree:.06, atomic:.10 } },
+  antibody: { label:"Antibody binding", description:"Ranks residues at the selected antibody–antigen interface using predicted site effect, cross-chain contacts, and a variable-loop check. Verify IMGT or Kabat numbering and antigen identity before ordering constructs.", weights:{ mechanical:.38, robustness:.12, perturbation:.10, interchain:.16, cdr:.14, atomic:.05, polar:.03, ionic:.02 } }
 };
 const workflowQuestions = {
-  general:"Which mutation should most change the mechanical compliance of the functional site?",
-  ligand:"Which residue most directly perturbs bound ligand or metal chemistry?",
-  interface:"Which residue most clearly tests a chain or partner interface?",
-  allostery:"Which distant mutation should most change the mechanical compliance of the functional site?",
-  stability:"Which residue provides a clean test of packing or structural tolerance?",
-  antibody:"Which residue most clearly tests antigen-contact or CDR-region function?"
+  general:"Which mutation is most likely to affect the chosen functional site?",
+  ligand:"Which mutation should directly alter the selected ligand or metal pocket?",
+  interface:"Which mutation should most affect the selected chain or partner interface?",
+  allostery:"Which distant mutation is most likely to affect the chosen functional site?",
+  stability:"Which mutation best tests protein stability at this site?",
+  antibody:"Which mutation should most affect antibody–antigen binding?"
 };
 const benchmarkManifest = {
   "4HHB": {
     status:"Three independent 4HHB anchors · evaluated after ranking",
-    note:"These labels never enter the target-compliance score. Recovery in one protein is a retrospective sanity check, not general validation.",
+    note:"These labels never enter the residue ranking. Recovery in one protein is a retrospective check, not general validation.",
     groups:[
       { label:"αArg141 · C-terminal T-state contact", sites:["ARG A:141","ARG C:141"], perturbation:"R141S", outcome:"Raised oxygen affinity and reduced cooperativity; implicated in T-state stabilization and the Bohr effect.", source:"https://pubmed.ncbi.nlm.nih.gov/7338473/", citation:"Experimental α141 Arg→Ser hemoglobin" },
       { label:"βAsp99 · α1β2 allosteric interface", sites:["ASP B:99","ASP D:99"], perturbation:"D99N (Hb Kempsey)", outcome:"High oxygen affinity with markedly reduced cooperativity; disrupts a T-state interface contact.", source:"https://pubmed.ncbi.nlm.nih.gov/1427427/", citation:"Functional study of Hb Kempsey β99 Asp→Asn" },
@@ -713,7 +713,7 @@ function scoreResidues(metrics, lensName = "general") {
     if(lensName==="ligand"&&row.targetDistance>7)eligibility=.35;
     const score = eligibility*Object.values(contributions).reduce((sum, value) => sum + value, 0);
     const signals = [];
-    if(Number.isFinite(row.targetDistance)) signals.push(`${row.targetDistance.toFixed(1)} Å from the selected target; compliance-sensitivity percentile ${(100*(row.mechanicalPercentile||0)).toFixed(0)}; ${(100*(row.mechanicalRobustness||0)).toFixed(0)}/100 cutoff robustness`);
+    if(Number.isFinite(row.targetDistance)) signals.push(`${row.targetDistance.toFixed(1)} Å from the selected site; predicted site-effect percentile ${(100*(row.mechanicalPercentile||0)).toFixed(0)}; ranking stability ${(100*(row.mechanicalRobustness||0)).toFixed(0)}/100`);
     if (row.directMetalCoordination) signals.push(`${row.ligandDistance.toFixed(1)} Å direct ${row.nearestLigandElement} coordination in ${row.nearestLigand}`);
     else if (row.ligandDistance !== null && row.ligandDistance <= 6) signals.push(`${row.ligandDistance.toFixed(1)} Å from ${row.nearestLigand || "a bound group"}`);
     if (row.atomicPartners) signals.push(`${row.atomicPartners} atom-level partner${row.atomicPartners === 1 ? "" : "s"}`);
@@ -726,7 +726,7 @@ function scoreResidues(metrics, lensName = "general") {
     if (row.disulfidePartner) signals.push(`probable disulfide to ${row.disulfidePartner.label} (${row.disulfidePartner.distance.toFixed(2)} Å; no score bonus)`);
     if (row.burial >= .58) signals.push("buried structural context");
     if (!signals.length) signals.push("strongest available contact context");
-    return { ...row, normalized, contributions, score, context:signals[0], rationale:`Target-directed response: ${signals.join("; ")}. The proposed substitution changes an estimated ${(100*(row.mutationLeverage||0)).toFixed(0)}% of the tracked local constraint capacity. Wider Cα graph: ${row.degree} non-local contacts.` };
+    return { ...row, normalized, contributions, score, context:signals[0], rationale:`Why it ranks here: ${signals.join("; ")}. The proposed substitution is expected to remove or alter ${(100*(row.mutationLeverage||0)).toFixed(0)}% of the tracked local side-chain contacts. The residue has ${row.degree} non-local Cα contacts.` };
   }).sort((a,b) => Number(b.constructRepresentative!==false)-Number(a.constructRepresentative!==false) || b.score - a.score || b.degree - a.degree || a.label.localeCompare(b.label));
   const rankable=ranked.filter(row=>row.constructRepresentative!==false);rankable.forEach((row,index)=>{row.rank=index+1;row.percentile=rankable.length>1?100*(rankable.length-index-1)/(rankable.length-1):100;});ranked.filter(row=>row.constructRepresentative===false).forEach(row=>{row.rank=null;row.percentile=0;});
   return ranked;
@@ -755,7 +755,7 @@ function pickMatchedControl(ranked, candidate, excluded = new Set()) {
   const controlGraph=contributionSum(control,graphFeatureNames);
   const candidateLocal=contributionSum(candidate,localFeatureNames),controlLocal=contributionSum(control,localFeatureNames);
   const leverageRatio=control.mechanicalLeverage/Math.max(candidate.mechanicalLeverage,1e-18);
-  return { ...control, matchQuality:quality, leverageRatio, graphContrast:candidateGraph-controlGraph, candidateGraphScore:candidateGraph, controlGraphScore:controlGraph, candidateLocalScore:candidateLocal, controlLocalScore:controlLocal, controlRationale:`Local-environment match ${quality.toFixed(0)}/100: ${control.name===candidate.name?"same wild-type residue and substitution":"nearest available residue chemistry"}; side-chain atomic partners ${control.atomicPartners} vs ${candidate.atomicPartners}; polar contacts ${control.polarContacts} vs ${candidate.polarContacts}; bound-group contacts ${control.ligandAtomicContacts} vs ${candidate.ligandAtomicContacts}; burial ${control.burial.toFixed(2)} vs ${candidate.burial.toFixed(2)}. In the same target-loaded network, the control has ${(100*leverageRatio).toFixed(0)}% of the candidate's first-order target-compliance sensitivity. If candidate and control behave alike, the mechanical-sensitivity hypothesis is not supported.` };
+  return { ...control, matchQuality:quality, leverageRatio, graphContrast:candidateGraph-controlGraph, candidateGraphScore:candidateGraph, controlGraphScore:controlGraph, candidateLocalScore:candidateLocal, controlLocalScore:controlLocal, controlRationale:`Structural match ${quality.toFixed(0)}/100: ${control.name===candidate.name?"same wild-type residue and substitution":"nearest available residue chemistry"}; side-chain atomic partners ${control.atomicPartners} vs ${candidate.atomicPartners}; polar contacts ${control.polarContacts} vs ${candidate.polarContacts}; bound-group contacts ${control.ligandAtomicContacts} vs ${candidate.ligandAtomicContacts}; burial ${control.burial.toFixed(2)} vs ${candidate.burial.toFixed(2)}. It is predicted to have ${(100*leverageRatio).toFixed(0)}% as much effect on the chosen site. If the two mutations behave alike, do not claim a specific effect for the higher-ranked residue.` };
 }
 
 function rerankReport(report, lensName = activeScoringLens) {
@@ -958,13 +958,13 @@ function biologicalGuidance(report, candidateOverride = report.topResidues[0], c
   };
   const identityNote = `${proteinLabel}${metadata.organism ? ` · ${metadata.organism}` : ""}. ${assembly}${ligandContext}.`;
   const siteReason = candidate
-    ? `${candidate.label} is ${candidate.targetDistance.toFixed(1)} Å from ${report.activeTarget?.label||"the selected target"}, at target-compliance-sensitivity percentile ${(100*(candidate.mechanicalPercentile||0)).toFixed(0)} with ${(100*(candidate.mechanicalRobustness||0)).toFixed(0)}/100 cutoff robustness.${candidate.directMetalCoordination?` It also makes a ${candidate.ligandDistance.toFixed(1)} Å direct ${candidate.nearestLigandElement} contact.`:candidate.interchain?` It has ${candidate.interchain} cross-chain contact${candidate.interchain===1?"":"s"}.`:candidate.ligandDistance!==null&&candidate.ligandDistance<=6?` It is ${candidate.ligandDistance.toFixed(1)} Å from ${candidate.nearestLigand||"a bound group"}.`:""}`
+    ? `${candidate.label} is ${candidate.targetDistance.toFixed(1)} Å from ${report.activeTarget?.label||"the selected site"}, in the ${(100*(candidate.mechanicalPercentile||0)).toFixed(0)}th percentile for predicted effect on that site, with a ${(100*(candidate.mechanicalRobustness||0)).toFixed(0)}/100 stable rank across the three contact cutoffs.${candidate.directMetalCoordination?` It also makes a ${candidate.ligandDistance.toFixed(1)} Å direct ${candidate.nearestLigandElement} contact.`:candidate.interchain?` It has ${candidate.interchain} cross-chain contact${candidate.interchain===1?"":"s"}.`:candidate.ligandDistance!==null&&candidate.ligandDistance<=6?` It is ${candidate.ligandDistance.toFixed(1)} Å from ${candidate.nearestLigand||"a bound group"}.`:""}`
     : "No rankable residue was resolved.";
   return {
     ...category,
     identityNote,
     siteReason,
-    firstMove: `${mutation} at ${candidate?.label || "the first ranked site"}`,
+    firstMove: `${candidate?.label || "the first ranked site"} ${mutation}`,
     experiment: `Build ${mutation} and the equivalent perturbation at ${control?.label || "a matched lower-contact site"}. Run both beside wild type. Measure ${category.assay}, then abundance and one folding or stability readout in the same batch.`,
   };
 }
@@ -978,12 +978,12 @@ function experimentConstructs(report, residue) {
   const candidate = mutationLadder(residue);
   const comparison = control ? mutationLadder(control) : null;
   return [
-    { construct: "Wild type", site: "—", substitution: "—", purpose: "same-batch baseline" },
-    { construct: "Candidate first probe", site: residue.label, substitution: candidate.conservative, purpose: "least severe interpretable change" },
-    { construct: "Candidate stronger probe", site: residue.label, substitution: candidate.neutral, purpose: "removes more of the original side-chain chemistry" },
+    { construct: "Wild type", site: "—", substitution: "—", purpose: "run in the same batch as the baseline" },
+    { construct: "First mutation", site: residue.label, substitution: candidate.conservative, purpose: "build and test this first" },
+    { construct: "Stronger mutation at the same residue", site: residue.label, substitution: candidate.neutral, purpose: "build next only if the first mutation can be interpreted" },
     control
-      ? { construct: "Matched structural control", site: control.label, substitution: comparison.conservative, purpose: `controls for chemistry and structural context; match ${control.matchQuality.toFixed(0)}/100` }
-      : { construct: "Matched structural control", site: "not available", substitution: "choose manually", purpose: "no credible automatic match in this coordinate record" }
+      ? { construct: "Comparison mutation", site: control.label, substitution: comparison.conservative, purpose: `run beside the first mutation and wild type; structural match ${control.matchQuality.toFixed(0)}/100` }
+      : { construct: "Comparison mutation", site: "not available", substitution: "choose manually", purpose: "choose a lower-ranking residue with similar chemistry and local structure" }
   ];
 }
 
@@ -1046,13 +1046,13 @@ function buildAdaptivePanel(report, requestedSize = adaptiveRound.panelSize) {
     const control = adaptiveControlFor(report,candidate,excluded);
     if (control) { excluded.add(control.label); controls.push({ residue:control, candidate }); }
   });
-  const entries = [{ type:"wt", key:"WT", role:"WT reference", residue:null, mutation:"—", why:"Same-batch normalization for every assay channel." }];
+  const entries = [{ type:"wt", key:"WT", role:"Wild type", residue:null, mutation:"—", why:"Run wild type in the same batch so every measurement can be reported as % WT." }];
   selected.forEach(residue => {
-    entries.push({ type:"candidate", key:residue.label, role:"High-leverage candidate", residue, mutation:mutationLadder(residue).conservative, why:`Target-compliance-sensitivity percentile ${(100*(residue.mechanicalPercentile||0)).toFixed(0)} for ${report.activeTarget.label}; ${residue.targetDistance.toFixed(1)} Å from the target; ${(100*(residue.mechanicalRobustness||0)).toFixed(0)}/100 cutoff robustness.` });
+    entries.push({ type:"candidate", key:residue.label, role:"Mutation to test", residue, mutation:mutationLadder(residue).conservative, why:`Build this because it ranks in the ${(100*(residue.mechanicalPercentile||0)).toFixed(0)}th percentile for predicted effect on ${report.activeTarget.label}. It is ${residue.targetDistance.toFixed(1)} Å from the site, and its rank is ${(100*(residue.mechanicalRobustness||0)).toFixed(0)}/100 stable across the three contact cutoffs.` });
     const pair = controls.find(item => item.candidate.label === residue.label);
-    if (pair) entries.push({ type:"control", key:pair.residue.label, role:"Matched low-leverage control", residue:pair.residue, mutation:mutationLadder(pair.residue).conservative, candidateFor:residue, why:`Local match ${pair.residue.matchQuality.toFixed(0)}/100 to ${residue.label}; retains ${(100*pair.residue.leverageRatio).toFixed(0)}% of its target-compliance sensitivity. This is the falsification control.` });
+    if (pair) entries.push({ type:"control", key:pair.residue.label, role:"Comparison mutation", residue:pair.residue, mutation:mutationLadder(pair.residue).conservative, candidateFor:residue, why:`Build this beside ${residue.label}. Its chemistry and local structure match ${pair.residue.matchQuality.toFixed(0)}/100, but it is predicted to have only ${(100*pair.residue.leverageRatio).toFixed(0)}% as much effect on the chosen site. If both mutations behave alike, do not claim a specific effect for ${residue.label}.` });
   });
-  while(entries.length<panelSize){const extra=pool.find(row=>!entries.some(entry=>entry.residue?.label===row.label));if(!extra)break;entries.push({type:"candidate",key:extra.label,role:"Independent high-sensitivity site",residue:extra,mutation:mutationLadder(extra).conservative,why:`Adds an independent high-sensitivity site at ${extra.targetDistance.toFixed(1)} Å to test whether the target response repeats beyond one residue.`});}
+  while(entries.length<panelSize){const extra=pool.find(row=>!entries.some(entry=>entry.residue?.label===row.label));if(!extra)break;entries.push({type:"candidate",key:extra.label,role:"Next-ranked mutation",residue:extra,mutation:mutationLadder(extra).conservative,why:`Build this as another test of the same functional site. It is the next untested high-ranking residue and lies ${extra.targetDistance.toFixed(1)} Å from the site.`});}
   adaptiveRound.panel = entries.slice(0,panelSize);
   return adaptiveRound.panel;
 }
@@ -1061,18 +1061,18 @@ function resetAdaptiveAnalysisUI() {
   const status = document.getElementById("adaptiveStatus");
   if (status) {
     status.className="adaptive-status";
-    status.innerHTML="<strong>Panel generated.</strong><span>Enter normalized measurements in the table, or export and re-import the CSV template.</span>";
+    status.innerHTML="<strong>Construct list ready.</strong><span>Enter function, abundance, and fold/assembly for each construct, or use the CSV template.</span>";
   }
   const summary = document.getElementById("adaptivePosteriorSummary");
-  if (summary) summary.textContent="Complete function, abundance and fold/assembly for at least two candidates and one of their matched controls.";
+  if (summary) summary.textContent="Complete function, abundance, and fold/assembly for at least two proposed mutations and one comparison mutation.";
   const posterior = document.getElementById("adaptivePosterior");
   if (posterior) posterior.innerHTML="<span>No measurements entered</span>";
   const nextRows = document.getElementById("adaptiveNextRows");
-  if (nextRows) nextRows.innerHTML="<p>Follow-up sites will appear here after the result table is analyzed.</p>";
+  if (nextRows) nextRows.innerHTML="<p>Enter the measurements above. RINet will then state which construct to build next and why.</p>";
   const interpretation = document.getElementById("workflowInterpretation");
   if (interpretation) interpretation.textContent="Awaiting measurements";
   const next = document.getElementById("workflowNext");
-  if (next) next.textContent="Available after round 1";
+  if (next) next.textContent="Enter the measurements to choose the next construct";
 }
 
 function adaptiveResultClass(result) {
@@ -1081,10 +1081,10 @@ function adaptiveResultClass(result) {
   const integrityFloor = bounded(document.getElementById("adaptiveIntegrityFloor")?.value || 75,1,100);
   const shifted = Math.abs(result.function-100) >= functionalThreshold;
   const intact = result.abundance >= integrityFloor && result.integrity >= integrityFloor;
-  if (shifted && intact) return { label:"Specific functional effect", className:"signal" };
-  if (shifted && !intact) return { label:"Confounded by protein quality", className:"confound" };
-  if (!shifted && intact) return { label:"No resolved effect", className:"negative" };
-  return { label:"Protein-quality defect", className:"confound" };
+  if (shifted && intact) return { label:"Function changed; protein quality held", className:"signal" };
+  if (shifted && !intact) return { label:"Function changed, but protein quality fell", className:"confound" };
+  if (!shifted && intact) return { label:"No clear functional change", className:"negative" };
+  return { label:"Protein quality failed", className:"confound" };
 }
 
 function renderAdaptivePanel(report, { rebuild = true, clearResults = false } = {}) {
@@ -1131,10 +1131,10 @@ function adaptivePosteriorAnalysis(report) {
   if(!pairs.some(row=>row.controlEntry))return null;
   const tested=new Set(adaptiveRound.panel.filter(entry=>entry.residue).map(entry=>entry.residue.label));
   const completedPairs=pairs.filter(row=>row.controlEntry),supported=completedPairs.filter(row=>row.classification==="supported"),confounded=completedPairs.filter(row=>row.classification==="confounded"),next=[];
-  supported.slice(0,2).forEach(row=>next.push({residue:row.entry.residue,mutation:mutationLadder(row.entry.residue).neutral,reason:`The first probe produced a ${row.specificContrast.toFixed(0)}-point candidate-minus-control functional contrast with protein quality retained. A stronger substitution tests dose dependence at the same site.`,kind:"severity series"}));
+  supported.slice(0,2).forEach(row=>next.push({residue:row.entry.residue,mutation:mutationLadder(row.entry.residue).neutral,reason:`Build the stronger substitution at this same residue. The first mutation changed function ${row.specificContrast.toFixed(0)} percentage points more than its comparison while protein quality held; the stronger mutation tests whether the effect increases at the same site.`,kind:"BUILD NEXT"}));
   const pool=report.allResidues.filter(row=>!tested.has(row.label)&&!row.disulfidePartner&&!row.inTarget&&row.score>0).sort((a,b)=>b.score-a.score);
-  if(next.length<4&&pool[0])next.push({residue:pool[0],mutation:mutationLadder(pool[0]).conservative,reason:supported.length?`Independent high-sensitivity site for replication of the target response; ${(100*pool[0].mechanicalRobustness).toFixed(0)}/100 cutoff robustness.`:confounded.length?`The first sites were limited by protein quality. This site retains high target-compliance sensitivity with a different local environment and may give a cleaner perturbation.`:`No completed pair cleared the candidate-minus-control threshold. Test the next high-sensitivity site before rejecting the target response.`,kind:"independent site"});
-  if(next.length<4&&pool[1])next.push({residue:pool[1],mutation:mutationLadder(pool[1]).conservative,reason:`Samples a second untested high-sensitivity residue at ${pool[1].targetDistance.toFixed(1)} Å from the same target.`,kind:"replication site"});
+  if(next.length<4&&pool[0])next.push({residue:pool[0],mutation:mutationLadder(pool[0]).conservative,reason:supported.length?`Build this next-ranked mutation and repeat the same function, abundance, and fold/assembly measurements. It tests whether a second residue produces the same kind of site-specific result; its cutoff stability is ${(100*pool[0].mechanicalRobustness).toFixed(0)}/100.`:confounded.length?`Build this mutation next because the first mutations damaged protein quality. It ranks highly but has a different local environment, so it may perturb the chosen site without the same production or folding defect.`:`Build this next-ranked mutation before deciding the chosen functional site cannot be perturbed. Run it beside its comparison mutation and wild type with the same three measurements.`,kind:"BUILD NEXT"});
+  if(next.length<4&&pool[1])next.push({residue:pool[1],mutation:mutationLadder(pool[1]).conservative,reason:`Build this second untested residue and run the same measurements. It is ${pool[1].targetDistance.toFixed(1)} Å from the chosen site and provides another independent test of the ranking.`,kind:"ALSO TEST"});
   return { measured, completed, pairs, completedPairs, supported, confounded, next:next.slice(0,4),functionalThreshold,integrityFloor };
 }
 
@@ -1147,21 +1147,21 @@ function analyzeAdaptiveResults(report=current?.report) {
   renderAdaptivePanel(report,{rebuild:false});
   const status=document.getElementById("adaptiveStatus");
   if (!analysis) {
-    status.className="adaptive-status"; status.innerHTML="<strong>Insufficient results.</strong><span>Complete all three measurements for at least two candidates and at least one of their matched controls.</span>";
+    status.className="adaptive-status"; status.innerHTML="<strong>More measurements are needed.</strong><span>Enter function, abundance, and fold/assembly for at least two proposed mutations and at least one comparison mutation.</span>";
     const interpretation=document.getElementById("workflowInterpretation");
     if(interpretation)interpretation.textContent="More complete measurements required";
     return;
   }
   status.className=`adaptive-status ${adaptiveRound.example?"example":""}`;
   const paired=analysis.completedPairs.length;
-  status.innerHTML=adaptiveRound.example?"<strong>Synthetic example values loaded.</strong><span>These are for interface demonstration only; they are not measured 4HHB data.</span>":`<strong>${analysis.completed.size} constructs interpreted.</strong><span>The comparison used ${paired} complete candidate-control pair${paired===1?"":"s"}.</span>`;
-  document.getElementById("adaptivePosteriorSummary").textContent=`${analysis.supported.length} of ${analysis.completedPairs.length} completed candidate-control pairs cleared the ${analysis.functionalThreshold}-point functional-contrast threshold while protein quantity and fold/assembly remained at or above ${analysis.integrityFloor}% WT. ${analysis.confounded.length} pair${analysis.confounded.length===1?" was":"s were"} limited by protein quality.`;
-  document.getElementById("adaptivePosterior").innerHTML=analysis.pairs.map(row=>{const label=row.classification==="supported"?"mechanical-sensitivity contrast supported":row.classification==="confounded"?"protein-quality confound":row.classification==="unpaired"?"no completed paired control":"contrast not resolved";const width=Math.max(0,Math.min(100,Math.abs(row.specificContrast)));return `<div class="posterior-row"><span>${esc(row.entry.residue.label)} · ${esc(label)}</span><i><b style="width:${width.toFixed(1)}%"></b></i><strong>${row.classification==="unpaired"?"—":`${row.specificContrast>=0?"+":""}${row.specificContrast.toFixed(0)} pts`}</strong></div>`;}).join("");
-  document.getElementById("adaptiveNextRows").innerHTML=analysis.next.map(({residue,mutation,reason,kind})=>`<div class="next-experiment-row"><button type="button" data-next-site="${esc(residue.label)}">${esc(residue.label)}<br>${esc(mutation)}</button><span>${esc(reason)}</span><strong>${esc(kind)}</strong></div>`).join("");
+  status.innerHTML=adaptiveRound.example?"<strong>Example measurements loaded.</strong><span>These values only demonstrate the workflow; they are not measured 4HHB data.</span>":`<strong>${analysis.completed.size} constructs analyzed.</strong><span>${paired} proposed-mutation/comparison pair${paired===1?"":"s"} had all three measurements.</span>`;
+  document.getElementById("adaptivePosteriorSummary").textContent=`${analysis.supported.length} of ${analysis.completedPairs.length} proposed mutations changed function at least ${analysis.functionalThreshold} percentage points more than their comparison mutation while abundance and fold/assembly stayed at or above ${analysis.integrityFloor}% WT. ${analysis.confounded.length} pair${analysis.confounded.length===1?" cannot":"s cannot"} be interpreted because protein quality fell.`;
+  document.getElementById("adaptivePosterior").innerHTML=analysis.pairs.map(row=>{const label=row.classification==="supported"?"candidate changed function more than comparison":row.classification==="confounded"?"cannot interpret: protein quality fell":row.classification==="unpaired"?"comparison mutation is missing":"candidate did not outperform comparison";const width=Math.max(0,Math.min(100,Math.abs(row.specificContrast)));return `<div class="posterior-row"><span>${esc(row.entry.residue.label)} · ${esc(label)}</span><i><b style="width:${width.toFixed(1)}%"></b></i><strong>${row.classification==="unpaired"?"—":`${row.specificContrast>=0?"+":""}${row.specificContrast.toFixed(0)} pts`}</strong></div>`;}).join("");
+  document.getElementById("adaptiveNextRows").innerHTML=analysis.next.map(({residue,mutation,reason,kind})=>`<div class="next-experiment-row"><button type="button" data-next-site="${esc(residue.label)}"><b>Next: build</b><br>${esc(residue.label)} ${esc(mutation)}</button><span>${esc(reason)}</span><strong>${esc(kind)}</strong></div>`).join("");
   const interpretation=document.getElementById("workflowInterpretation");
-  if(interpretation)interpretation.textContent=analysis.supported.length?`${analysis.supported.length} paired target-response contrast${analysis.supported.length===1?"":"s"} supported`:analysis.confounded.length?"Results confounded by protein quality":"No paired target-response contrast resolved";
+  if(interpretation)interpretation.textContent=analysis.supported.length?`${analysis.supported.length} mutation${analysis.supported.length===1?" changed":"s changed"} function more than the comparison`:analysis.confounded.length?"Cannot interpret yet: protein quality fell":"The proposed mutations did not outperform their comparisons";
   const next=document.getElementById("workflowNext");
-  if(next)next.textContent=analysis.next[0]?`${analysis.next[0].residue.label} ${analysis.next[0].mutation}`:"No follow-up site available";
+  if(next)next.textContent=analysis.next[0]?`Next: build ${analysis.next[0].residue.label} ${analysis.next[0].mutation} and repeat the same measurements`:"No additional construct is available from this structure";
   document.querySelectorAll("[data-next-site]").forEach(button=>button.addEventListener("click",()=>selectAnalyzedResidue(report.allResidues.find(row=>row.label===button.dataset.nextSite),{autoView:true})));
 }
 
@@ -1395,21 +1395,21 @@ function buildDiscoveryPrograms(report) {
     biology: {
       title: "Structure–function test",
       thesis: `Compare ${candidateLabel} with ${controlLabel} using a protein-specific functional readout.`,
-      opportunity: `Test whether the mutation at ${candidateLabel} produces a larger functional effect than the matched lower-score residue ${controlLabel}.`,
-      program: `Test ${firstChange}, a matched perturbation at ${controlLabel}, and wild type. Measure integrity first, then ${assay}.`,
-      question: `Does the candidate change the protein-specific output more than structural background while molecular integrity remains intact?`
+      opportunity: `Build ${candidateLabel} ${firstChange}, the comparison mutation at ${controlLabel}, and wild type.`,
+      program: `Measure ${assay}, abundance, and fold/assembly for all three in the same batch.`,
+      question: `Did ${candidateLabel} change ${assay} more than ${controlLabel} while abundance and fold/assembly remained acceptable?`
     },
     engineering: {
       title: "Protein engineering screen",
       thesis: `Test a graded mutation series at ${candidateLabel} and remove constructs that lose expression or fold.`,
-      opportunity: `Compare conservative, neutralizing and stronger mutations at ${candidateLabel}, using ${controlLabel} as the structural control.`,
+      opportunity: `Build conservative, neutralizing, and stronger mutations at ${candidateLabel}, plus the comparison mutation at ${controlLabel}.`,
       program: `Build a three-step chemistry ladder at ${candidateLabel}. Screen abundance and folding, then advance only intact constructs into ${assay}.`,
       question: "Can the response be shifted in a graded way without losing expression, assembly or fold quality?"
     },
     translation: {
       title: "Variant classification",
       thesis: "Classify each effect as functional, expression-related, folding-related, or unresolved.",
-      opportunity: `Use the candidate and matched control to classify a variant by function, abundance and fold rather than by one score.`,
+      opportunity: `Compare the variant with the comparison mutation using function, abundance, and fold rather than one score.`,
       program: `Measure abundance, one orthogonal integrity readout and ${assay} in the same batch. Keep conclusions at the protein level unless clinical evidence is supplied.`,
       question: "Which measurement cleanly distinguishes a functional effect from reduced expression, misfolding or failed assembly?"
     },
@@ -1428,7 +1428,7 @@ function buildDiscoveryPrograms(report) {
       thesis: "Compare heme-proximal, interface and lower-score control residues in the same preparation.",
       opportunity: "Measure which interventions preserve heme occupancy but alter oxygen affinity or cooperativity. This separates oxygen handling from generic protein damage.",
       program: `Compare ${candidateLabel}, an interface-ranked site and ${controlLabel}. Measure heme spectra, oxygen equilibrium and tetramer integrity in the same preparation.`,
-      question: "Does the candidate alter oxygen affinity or cooperativity while heme loading and tetramer integrity remain intact?"
+      question: `Did ${candidateLabel} alter oxygen affinity or cooperativity more than ${controlLabel} while heme loading and tetramer integrity remained intact?`
     },
     engineering: {
       title: "Oxygen-affinity engineering screen",
@@ -1461,7 +1461,7 @@ function discoveryGrounding(report) {
     return `Verified annotation: RCSB PDB ${publicData.pdbId}${uniprot} · ${publicData.entityCount} polymer ${publicData.entityCount === 1 ? "entity" : "entities"}`;
   }
   const selected = molecular.selectedResidue ? ` · selected ${molecular.selectedResidue.label}` : "";
-  return `Grounded in supplied PDB metadata, coordinates and deterministic residue graph${selected}.`;
+  return `Source: supplied PDB metadata, coordinates, and residue graph${selected}.`;
 }
 
 function renderDiscovery(report, mode = activeDiscoveryMode) {
@@ -1521,48 +1521,43 @@ function renderGuidance(report, candidateOverride = report.topResidues[0]) {
   const ladder = mutationLadder(candidate);
   const candidateLabel = candidate?.label || "No ranked residue";
   const controlLabel = control?.label || "Choose a lower-contact residue";
-  const contrast = runnerUp ? ` ${runnerUp.label} is the next site to examine if the first construct is inconclusive.` : "";
   const contactClass = candidate?.degree >= 8 ? "a highly connected structural hub" : candidate?.degree >= 4 ? "a moderately connected structural junction" : "the strongest available contact signal in this model";
   const disulfide = candidate?.disulfidePartner;
   const biology = biologicalGuidance(report, candidate, control);
   const assay = assayFor(report, candidate, control);
-  const structuralThesis = disulfide
-    ? `${candidateLabel} forms a ${disulfide.distance.toFixed(2)} Å sulfur–sulfur contact with ${disulfide.label}, consistent with a disulfide constraint. The decisive question is whether function changes beyond any loss of structural integrity.`
-    : `${candidateLabel} is rank ${candidate.rank}/${report.rankableCount||report.allResidues.length} under the active score. Compare it with ${controlLabel} and measure protein quality alongside function.`;
-
   document.getElementById("guidanceIdentity").textContent = biology.identity;
   document.getElementById("guidanceIdentityNote").textContent = biology.identityNote;
   document.getElementById("guidanceUseCase").textContent = biology.useCase;
   document.getElementById("guidanceUseCaseNote").textContent = biology.useNote;
   document.getElementById("guidancePrimaryReason").textContent = biology.siteReason;
   document.getElementById("guidanceMutation").textContent = biology.firstMove;
-  document.getElementById("guidanceGate").textContent = disulfide ? "Measure protein quality first" : "Function effect exceeds control";
+  document.getElementById("guidanceGate").textContent = disulfide ? "Protein quality must hold" : "Mutation changes function more than comparison";
   document.getElementById("guidanceConfidence").textContent = `${Math.round(completeness * 100)}% coordinate completeness, not biological certainty.`;
   document.getElementById("guidanceHypothesis").textContent = selectedExperimentQuestion(report, candidate);
   document.getElementById("guidanceExperiment").textContent = `Build the first and stronger chemistry probes at ${candidateLabel}, plus the matched perturbation at ${controlLabel}. Run all constructs beside wild type. Measure ${assay}, abundance, and one orthogonal folding or stability readout in the same batch.`;
-  document.getElementById("guidanceAdvance").textContent = `Advance the hypothesis if the ${candidateLabel} perturbation changes the biological readout more than ${controlLabel}, while expression and folding remain acceptably similar to wild type.`;
-  document.getElementById("guidanceStop").textContent = `Do not interpret the site as specifically informative if candidate and comparison behave similarly, or if the candidate mainly lowers expression or disrupts folding. In that case, test ${runnerUp?.label || "the next-ranked residue"} or revise the assay.`;
+  document.getElementById("guidanceAdvance").textContent = `${candidateLabel} supports a specific functional effect if it changes ${assay} more than ${controlLabel}, while abundance and fold/assembly remain acceptably similar to wild type.`;
+  document.getElementById("guidanceStop").textContent = `If ${candidateLabel} and ${controlLabel} behave similarly, next build ${runnerUp?.label || "the next-ranked residue"}. If abundance or fold/assembly falls, first use a milder mutation or improve the protein-quality controls; do not assign a specific functional effect yet.`;
   document.getElementById("mutationConservative").textContent = ladder.conservative;
   document.getElementById("mutationNeutral").textContent = ladder.neutral;
   document.getElementById("mutationStress").textContent = ladder.stress;
   document.getElementById("guidanceIntegrity").textContent = `For ${candidateLabel}, quantify expression or abundance and add one orthogonal folding/stability readout before interpreting function.`;
   document.getElementById("guidanceFunction").textContent = `Use ${assay}; predefine the smallest effect that would be worth following.`;
   document.getElementById("guidanceSpecificity").textContent = `Run wild type, ${ladder.conservative}, ${ladder.neutral}, and the matched-site perturbation at ${controlLabel} together.`;
-  document.getElementById("diagnosticAdvance").textContent = `${candidateLabel} becomes a stronger site-specific hypothesis if its functional effect exceeds ${controlLabel} without a comparable integrity defect.`;
+  document.getElementById("diagnosticAdvance").textContent = `${candidateLabel} changed function more than ${controlLabel}, while abundance and fold/assembly held. Repeat the result, then test the stronger mutation at the same residue.`;
   document.getElementById("diagnosticFold").textContent = `Do not call mechanism. Reduce perturbation severity, improve expression controls, or test ${ladder.conservative} first.`;
-  document.getElementById("diagnosticControl").textContent = `${candidateLabel} did not outperform the matched low-sensitivity control; the target-directed mechanical contrast was not supported. Change the target, mutation severity, or assay before assigning mechanism.`;
-  document.getElementById("diagnosticNext").textContent = `Confirm assay sensitivity, then move to ${runnerUp?.label || "the next-ranked structural site"}.`;
+  document.getElementById("diagnosticControl").textContent = `${candidateLabel} did not change function more than ${controlLabel}. Do not prioritize this residue from the current result. Change the mutation or assay, or test the next-ranked residue.`;
+  document.getElementById("diagnosticNext").textContent = `Next: confirm the assay can detect a known change, then build ${runnerUp?.label || "the next-ranked residue"} and repeat the same measurements.`;
   document.getElementById("alternatePacking").textContent = `${candidateLabel} may report local packing stress because it is ${contactClass}, rather than a specific functional pathway.`;
   document.getElementById("alternateExpression").textContent = `${ladder.neutral} may change abundance, folding or trafficking; those explanations must be measured before a site-specific interpretation.`;
   document.getElementById("alternateContext").textContent = `This static coordinate model may omit the assay-relevant state, ligand, partner or membrane context.`;
-  document.getElementById("guidanceNext").textContent = runnerUp?.label || "No second site available";
+  document.getElementById("guidanceNext").textContent = runnerUp ? `Build ${runnerUp.label} ${mutationLadder(runnerUp).conservative}` : "No second site available";
   document.getElementById("viewerCandidate").textContent = candidateLabel;
   document.getElementById("viewerCandidateReason").textContent = candidate ? residueExplanation(candidate) : "NO RANKABLE CONTACT SIGNAL";
-  document.getElementById("hudThesis").textContent = `${biology.identity}. ${biology.siteReason}`;
-  document.getElementById("hudMutation").textContent = ladder.conservative;
-  document.getElementById("hudMutationNote").textContent = disulfide ? "Disrupts the bridge; measure folding first." : `Smallest side-chain property change proposed for ${candidateLabel}.`;
-  document.getElementById("hudControl").textContent = controlLabel;
-  document.getElementById("hudGate").textContent = disulfide ? "MEASURE FOLD FIRST" : "FUNCTION EFFECT > CONTROL";
+  document.getElementById("hudThesis").textContent = `${candidateLabel} is the most important residue to test for ${report.activeTarget?.label || "the selected site"}. Build ${ladder.conservative}, run ${controlLabel} beside it, and measure ${assay}, abundance, and fold/assembly.`;
+  document.getElementById("hudMutation").textContent = `${candidateLabel} ${ladder.conservative}`;
+  document.getElementById("hudMutationNote").textContent = disulfide ? "This breaks a probable disulfide; measure folding first." : `Build ${candidateLabel} ${ladder.conservative} first.`;
+  document.getElementById("hudControl").textContent = control ? `${controlLabel} ${mutationLadder(control).conservative}` : controlLabel;
+  document.getElementById("hudGate").textContent = disulfide ? "PROTEIN QUALITY MUST HOLD" : "FUNCTION CHANGE > COMPARISON";
   document.getElementById("hudGateNote").textContent = disulfide ? `Do not assign a specific functional effect if ${candidateLabel} also lowers expression or folding.` : `${candidateLabel} must change the functional readout more than ${controlLabel} without a corresponding protein-quality defect.`;
 }
 
@@ -1620,20 +1615,20 @@ function renderAtomicEvidence(residue, report) {
   document.getElementById("atomicLigandCount").textContent=`${residue.ligandAtomicContacts}${residue.metalContacts?` / ${residue.metalContacts}`:""}`;
   document.getElementById("atomicEvidenceResidue").textContent=residue.label;
   document.getElementById("atomicEvidenceIntro").textContent=`${residue.label} has ${residue.atomicPartners} residue partner${residue.atomicPartners===1?"":"s"} with a side-chain-involving heavy-atom contact at 4.5 Å or less${residue.ligandAtomicContacts?` and ${residue.ligandAtomicContacts} bound-group partner${residue.ligandAtomicContacts===1?"":"s"}`:""}.`;
-  document.getElementById("atomicEvidenceRows").innerHTML=displayed.length?displayed.map(row=>`<div class="atomic-evidence-row"><i>${esc(interactionTypeLabel(row.type))}</i><strong>${esc(row.partnerLabel)}</strong><span>${esc(row.atom)}–${esc(row.partnerAtom)} · ${row.distance.toFixed(2)} Å${row.interchain?" · other chain":""}</span></div>`).join(""):`<p>No side-chain-involving heavy-atom partner was found within 4.5 Å in this coordinate model. The residue can still rank through target-compliance sensitivity, but the mutation has a weaker local-contact rationale.</p>`;
+  document.getElementById("atomicEvidenceRows").innerHTML=displayed.length?displayed.map(row=>`<div class="atomic-evidence-row"><i>${esc(interactionTypeLabel(row.type))}</i><strong>${esc(row.partnerLabel)}</strong><span>${esc(row.atom)}–${esc(row.partnerAtom)} · ${row.distance.toFixed(2)} Å${row.interchain?" · other chain":""}</span></div>`).join(""):`<p>No side-chain-involving heavy-atom partner was found within 4.5 Å in this coordinate model. The residue can still rank through its predicted effect on the chosen site, but the proposed mutation has less local contact evidence.</p>`;
   const substitution=mutationLadder(residue).conservative;
   const forecast=mutationInteractionForecast(residue,substitution);
   document.getElementById("atomicMutationLabel").textContent=`${residue.label} ${substitution}`;
   document.getElementById("atomicMutationSummary").textContent=forecast.summary;
-  document.getElementById("atomicChangeRows").innerHTML=forecast.changes.length?forecast.changes.map(row=>`<div class="atomic-change-row"><strong class="${row.retained===false?"lost":""}">${esc(row.status)}</strong><p>${esc(interactionTypeLabel(row.type))} with ${esc(row.partnerLabel)} (${esc(row.atom)}–${esc(row.partnerAtom)}, ${row.distance.toFixed(2)} Å in the original model).</p></div>`).join(""):`<div class="atomic-change-row"><strong>no local claim</strong><p>No mutation-sensitive side-chain contact class was assigned. Use the mutation as a wider structural-position test and rely on the candidate–control experiment.</p></div>`;
+  document.getElementById("atomicChangeRows").innerHTML=forecast.changes.length?forecast.changes.map(row=>`<div class="atomic-change-row"><strong class="${row.retained===false?"lost":""}">${esc(row.status)}</strong><p>${esc(interactionTypeLabel(row.type))} with ${esc(row.partnerLabel)} (${esc(row.atom)}–${esc(row.partnerAtom)}, ${row.distance.toFixed(2)} Å in the original model).</p></div>`).join(""):`<div class="atomic-change-row"><strong>no assigned local contact change</strong><p>No mutation-sensitive side-chain contact class was assigned. Treat this as a wider test of the residue position and compare it directly with the lower-ranking mutation.</p></div>`;
   document.getElementById("atomicBoundary").textContent="Rules used here: heavy-atom contact ≤4.5 Å; polar N/O/S proximity 2.35–3.60 Å; ionic side-chain geometry ≤4.0 Å; hydrophobic side-chain contact 3.0–4.6 Å; aromatic atom proximity 3.2–5.5 Å; metal donor distance ≤3.0 Å. Hydrogens, protonation, angles, solvation, relaxation and free energy are not calculated.";
   const control=report?matchedControlForResidue(report,residue):null;
   const atomicFeatures=new Set(["atomic","polar","ionic","ligandAtomic","coordination"]);
   const graphFeatures=new Set(["degree","weighted","longRange","interchain","closeness","betweenness"]);
   const differences=control?Object.keys(residue.contributions||{}).map(feature=>({ feature, delta:(residue.contributions[feature]||0)-(control.contributions?.[feature]||0), group:atomicFeatures.has(feature)?"atom-level":graphFeatures.has(feature)?"Cα graph":"structure context" })).filter(row=>row.delta>0.05).sort((a,b)=>b.delta-a.delta).slice(0,3):[];
   document.getElementById("atomicContrastTitle").textContent=control?`${residue.label} (${residue.score.toFixed(1)}) vs ${control.label} (${control.score.toFixed(1)})`:"No automatic control available";
-  document.getElementById("atomicContrastSummary").textContent=control?`The candidate is ${(residue.score-control.score).toFixed(1)} rank points higher. This pair matches chemistry and local atom-level context while the control retains only ${(100*(control.leverageRatio??control.mechanicalLeverage/Math.max(residue.mechanicalLeverage,1e-18))).toFixed(0)}% of the candidate's first-order target-compliance sensitivity. The terms at right are the largest exact rank differences. If the pair behaves alike experimentally, the mechanical-sensitivity rationale is not supported.`:"Choose a lower-sensitivity residue with comparable chemistry, burial, B field and local atom-level context before interpreting this candidate.";
-  document.getElementById("atomicContrastRows").innerHTML=differences.length?differences.map(row=>`<div class="atomic-contrast-row"><span>${esc(row.group)} · ${esc(featureLabels[row.feature]||row.feature)}</span><strong>+${row.delta.toFixed(1)} pts</strong><small>candidate contribution minus matched control</small></div>`).join(""):`<div class="atomic-contrast-row"><span>no resolved score gap</span><strong>—</strong><small>The selected control does not provide a positive term-by-term contrast.</small></div>`;
+  document.getElementById("atomicContrastSummary").textContent=control?`${residue.label} ranks ${(residue.score-control.score).toFixed(1)} points above ${control.label}. The residues have similar chemistry and local atom contacts, but ${control.label} is predicted to have only ${(100*(control.leverageRatio??control.mechanicalLeverage/Math.max(residue.mechanicalLeverage,1e-18))).toFixed(0)}% as much effect on the chosen site. The largest reasons for the score difference are shown at right. If both mutations behave alike, do not claim a specific effect for ${residue.label}.`:"Choose a lower-ranking residue with similar chemistry, burial, B field, and local atom contacts before interpreting this mutation.";
+  document.getElementById("atomicContrastRows").innerHTML=differences.length?differences.map(row=>`<div class="atomic-contrast-row"><span>${esc(row.group)} · ${esc(featureLabels[row.feature]||row.feature)}</span><strong>+${row.delta.toFixed(1)} pts</strong><small>points added to the selected residue relative to the comparison</small></div>`).join(""):`<div class="atomic-contrast-row"><span>no clear score difference</span><strong>—</strong><small>The selected comparison does not explain why this residue should rank higher.</small></div>`;
 }
 
 function matchedControlForResidue(report, residue) {
@@ -1658,11 +1653,11 @@ function selectedTestText(report, residue) {
     "QUESTION",
     selectedExperimentQuestion(report, residue),
     "",
-    "WHY THIS SITE",
-    `${residue.label} is rank ${residue.rank}/${report.rankableCount||report.allResidues.length} (score ${residue.score.toFixed(1)}, ${scoreLenses[report.scoringLens].label} model). ${residue.rationale}`,
+    "MOST IMPORTANT RESIDUE TO TEST",
+    `${residue.label} ranks ${residue.rank}/${report.rankableCount||report.allResidues.length} (score ${residue.score.toFixed(1)} for the ${scoreLenses[report.scoringLens].label.toLowerCase()} question). ${residue.rationale}`,
     "",
-    "WHAT THE MATCHED CONTROL TESTS",
-    control ? `${control.controlRationale}` : "No automatic local-environment match was available; choose and document a chemistry-matched low-sensitivity control before interpreting the target response.",
+    "COMPARISON MUTATION",
+    control ? `Build ${control.label} ${mutationLadder(control).conservative} beside the proposed mutation and wild type. ${control.controlRationale} If the proposed and comparison mutations behave alike, do not claim a specific effect for ${residue.label}.` : "No automatic local-environment match was available. Choose and document a chemistry-matched, lower-ranking comparison mutation before interpreting the result.",
     "",
     "BEFORE ORDERING",
     `Confirm that ${residue.label}${control ? ` and ${control.label}` : ""} map to the intended expression construct, author numbering, biological assembly and assay-relevant state.`,
@@ -1676,14 +1671,14 @@ function selectedTestText(report, residue) {
     "3. One orthogonal folding, stability or assembly readout appropriate to the protein.",
     "4. Use the same preparation and blinded sample labels where practical; set replicate count and the smallest meaningful effect before collecting data.",
     "",
-    "CALL THE SITE-SPECIFIC HYPOTHESIS SUPPORTED ONLY IF",
+    "RESULT THAT SUPPORTS THIS RESIDUE",
     `${residue.label} changes the primary readout more than ${control?.label || "the matched structural control"}, while expression and molecular integrity remain acceptably similar to wild type.`,
     "",
-    "STOP OR REINTERPRET",
-    "If candidate and matched control behave similarly, the ranking has not separated the site from structural background. If expression or integrity falls, treat the result as a stability/production effect before assigning function.",
+    "IF THE RESULT DOES NOT SUPPORT THIS RESIDUE",
+    `If ${residue.label} and ${control?.label || "the comparison mutation"} behave similarly, build the next-ranked residue instead. If expression or integrity falls, try a milder substitution or improve the protein-quality controls before assigning function.`,
     "",
-    "LIMIT",
-    "This is a structure-derived experimental contrast, not biological proof. RINet does not invent assay conditions, replicate counts or effect-size thresholds; set those from the validated assay and laboratory context."
+    "WHAT THIS FILE DOES NOT SET",
+    "Choose assay conditions, replicate count, and a meaningful effect-size threshold from the validated assay and laboratory context."
   ].join("\n");
 }
 
@@ -1703,23 +1698,23 @@ function renderSelectedAction(residue, report = current?.report) {
   const assay = assayFor(report, residue, control);
   const constructs = experimentConstructs(report, residue);
   document.getElementById("selectedActionResidue").textContent = residue.label;
-  document.getElementById("selectedActionScore").textContent = `rank ${residue.rank}/${report.rankableCount||report.allResidues.length} · target-compliance-sensitivity percentile ${(100*(residue.mechanicalPercentile||0)).toFixed(1)} · ${scoreLenses[report.scoringLens].label} question`;
+  document.getElementById("selectedActionScore").textContent = `rank ${residue.rank}/${report.rankableCount||report.allResidues.length} · predicted site-effect percentile ${(100*(residue.mechanicalPercentile||0)).toFixed(1)} · ${scoreLenses[report.scoringLens].label}`;
   document.getElementById("selectedActionBoundary").textContent = `${residue.targetDistance.toFixed(1)} Å from ${report.activeTarget?.label||"the target"} · ${(100*(residue.mechanicalRobustness||0)).toFixed(0)}/100 cutoff robustness. These are model outputs, not a probability of function.`;
   document.getElementById("selectedActionReason").textContent = residue.rationale;
-  document.getElementById("selectedActionMutation").textContent = constructs.map(row => row.site === "—" ? row.construct : `${row.construct}: ${row.site} ${row.substitution}`).join(" · ");
-  document.getElementById("selectedActionControl").textContent = control ? `${control.label} · ${mutationLadder(control).conservative} · match ${control.matchQuality.toFixed(0)}/100. ${control.controlRationale}` : "No credible matched control could be constructed from this structure.";
-  document.getElementById("selectedActionAssay").textContent = `1. ${assay}. 2. Expression or abundance. 3. One folding, stability or assembly readout. Compare every construct with wild type in the same batch.`;
-  document.getElementById("selectedActionRule").textContent = `${residue.label} changes ${assay} more than ${control?.label || "the matched control"}, while expression and molecular integrity remain acceptably similar to wild type.`;
+  document.getElementById("selectedActionMutation").textContent = `Build ${constructs.map(row => row.site === "—" ? row.construct : `${row.construct}: ${row.site} ${row.substitution}`).join(" · ")}.`;
+  document.getElementById("selectedActionControl").textContent = control ? `Build ${control.label} ${mutationLadder(control).conservative} as the comparison and run it beside the proposed mutation and wild type. Structural match: ${control.matchQuality.toFixed(0)}/100.` : "Choose and build a chemistry-matched, lower-ranking comparison mutation before interpreting the result.";
+  document.getElementById("selectedActionAssay").textContent = `Measure 1. ${assay}; 2. expression or abundance; and 3. one folding, stability, or assembly readout. Run every construct with wild type in the same batch.`;
+  document.getElementById("selectedActionRule").textContent = `${residue.label} changes ${assay} more than ${control?.label || "the comparison mutation"}, while abundance and fold/assembly remain acceptably similar to wild type.`;
   const question=document.getElementById("workflowQuestion");
   if(question)question.textContent=workflowQuestions[report.scoringLens]||workflowQuestions.general;
   const targetSummary=document.getElementById("workflowTarget");
-  if(targetSummary)targetSummary.textContent=`${report.activeTarget?.label||"Selected site"} → ${assay}`;
+  if(targetSummary)targetSummary.textContent=`Test ${report.activeTarget?.label||"the selected site"} using ${assay}`;
   const candidate=document.getElementById("workflowCandidate");
-  if(candidate)candidate.textContent=`${residue.label} ${mutationLadder(residue).conservative}`;
+  if(candidate)candidate.textContent=`Build ${residue.label} ${mutationLadder(residue).conservative} first`;
   const controlCard=document.getElementById("workflowControl");
-  if(controlCard)controlCard.textContent=control?`${control.label} ${mutationLadder(control).conservative}`:"Manual control required";
+  if(controlCard)controlCard.textContent=control?`Build ${control.label} ${mutationLadder(control).conservative} beside it`:"Choose and build a matched comparison mutation";
   const measurements=document.getElementById("workflowMeasurements");
-  if(measurements)measurements.textContent=`${assay} + abundance + fold/assembly`;
+  if(measurements)measurements.textContent=`Measure ${assay}, abundance, and fold/assembly`;
   updateAssaySetup(report, residue);
   renderEvidenceResiduePicker(report, residue);
   renderAtomicEvidence(residue, report);
@@ -1734,7 +1729,7 @@ function renderContributionAudit(residue, report = current?.report) {
   document.getElementById("contributionChart").innerHTML = entries.map(([feature,value],index)=>`<div class="contribution-row"><span>${esc(featureLabels[feature]||feature)}</span><div><i style="width:${(100*value/maximum).toFixed(1)}%;--bar:${["#c9fb3c","#66d7ff","#b98cff","#ffa95b","#62e3bb"][index%5]}"></i></div><b>${value.toFixed(1)} pts</b></div>`).join("");
   document.getElementById("auditMutation").textContent = mutationLabelForResidue(residue);
   const control = matchedControlForResidue(report, residue);
-  document.getElementById("auditControl").textContent = control ? `${control.label} · match quality ${control.matchQuality.toFixed(0)}/100. ${control.controlRationale}` : "No credible matched control could be constructed from this coordinate record.";
+  document.getElementById("auditControl").textContent = control ? `${control.label} · structural match ${control.matchQuality.toFixed(0)}/100. ${control.controlRationale}` : "No suitable comparison mutation could be constructed from this coordinate record.";
   document.querySelectorAll(".sequence-residue").forEach(element => element.classList.toggle("selected", element.dataset.label === residue.label));
   renderSelectedAction(residue, report);
   renderNetworkMap(report,residue);
@@ -1754,7 +1749,7 @@ function renderSequence(report, requestedChain = activeSequenceChain) {
   const blastQuery = new URLSearchParams({PROGRAM:"blastp",PAGE_TYPE:"BlastSearch",QUERY:blastChain.sequence,JOB_TITLE:`${report.metadata?.pdbId||current?.sourceName||"RINet"} chain ${blastChain.chain}`});
   document.getElementById("openBlast").href=`https://blast.ncbi.nlm.nih.gov/Blast.cgi?${blastQuery.toString()}`;
   const special = document.getElementById("specialRegionNote");
-  special.textContent = report.antibodyContext ? `Antibody-like annotation detected. Chains ${report.antibodyChains.join(", ")||"not confidently assigned"} show CDR-range heuristics based on variable-domain sequence positions 24–35, 50–65 and 89–102. These are prioritization aids, not IMGT/Kabat annotation; verify numbering and antigen contacts before design.` : "Author chain IDs and residue numbers are preserved. Missing coordinates and insertion codes remain explicit. Conservation is not inferred from structure; use FASTA/BLAST when evolutionary evidence matters.";
+  special.textContent = report.antibodyContext ? `Antibody-like annotation detected. Chains ${report.antibodyChains.join(", ")||"not confidently assigned"} show CDR-range checks based on variable-domain sequence positions 24–35, 50–65 and 89–102. These are not IMGT/Kabat annotations; verify numbering and antigen contacts before design.` : "Author chain IDs and residue numbers are preserved. Missing coordinates and insertion codes are shown. Conservation is not inferred from structure; use FASTA/BLAST when evolutionary evidence matters.";
 }
 
 function renderNetworkMap(report, selected = report.topResidues[0]) {
@@ -1859,7 +1854,7 @@ function renderImportedValidation(result, report) {
     {label:"Imported MD",value:validationAuc(entries,entry=>entry.md)},
     {label:"Imported external score",value:validationAuc(entries,entry=>entry.external)}
   ].filter(row=>Number.isFinite(row.value));
-  const caveat=positives.length&&negatives.length?"AUROC uses only resolved, explicitly labelled positives and negatives.":"Add both positive and negative labels to calculate AUROC; unlabelled residues are not treated as negatives.";
+  const caveat=positives.length&&negatives.length?"AUROC uses only resolved residues labelled positive or negative.":"Add both positive and negative labels to calculate AUROC; unlabelled residues are not treated as negatives.";
   target.innerHTML=`<div class="validation-summary"><span>Resolved labels<b>${entries.length}/${result.inputRows}</b></span><span>Positive / negative<b>${positives.length} / ${negatives.length}</b></span><span>Top-${topN} positive recovery<b>${topHits}/${positives.length||0}</b></span><span>Top-${topN} enrichment<b>${Number.isFinite(enrichment)?`${enrichment.toFixed(2)}×`:"—"}</b></span></div>${scores.map(row=>`<div class="validation-score-row"><span>${esc(row.label)}</span><b>AUROC ${row.value.toFixed(3)}</b></div>`).join("")}<p>${esc(caveat)}${result.unresolved.length?` Unresolved identifiers: ${esc(result.unresolved.slice(0,8).join(", "))}${result.unresolved.length>8?"…":""}.`:""}${result.conflicts.length?` Conflicting duplicate labels were ignored for ${esc(result.conflicts.join(", "))}.`:""}</p>`;
 }
 
@@ -1910,7 +1905,8 @@ function renderMechanicalTarget(report){
   document.getElementById("mechanicalNetworkSize").textContent=central?`${central.modelNodeCount} node${central.modelNodeCount===1?"":"s"} · ${central.edges} springs`:`${report.residueMetrics.length} nodes`;
   document.getElementById("mechanicalSolverStatus").textContent=central?`PCG residual ${central.residual.toExponential(1)} · ridge ${central.ridge.toExponential(1)}`:"Mechanical response unavailable";
   document.getElementById("mechanicalModelDetail").textContent=central?`H is the ${3*central.modelNodeCount} × ${3*central.modelNodeCount} anisotropic-network Hessian for ${central.edges} Cα springs at 8.5 Å. Net-zero unit forces are applied across ${target.residueKeys.length} target residue${target.residueKeys.length===1?"":"s"} along x, y and z. The linear systems use preconditioned conjugate gradients with a disclosed ridge of ${central.ridge.toExponential(2)}; the calculation is repeated at 8.0 and 9.0 Å.${central.modelNodeCount<central.fullNodeCount?` For interactive analysis of this large assembly, the mechanical domain contains the ${central.modelNodeCount} residues nearest the target out of ${central.fullNodeCount}; excluded residues are not ranked by target sensitivity.`:""}`:"No target response could be calculated.";
-  const status=document.getElementById("targetStatus");status.textContent=`Ranking now asks which mutation should most change compliance of ${target.label}. Change the target to recalculate every residue.`;status.classList.add("success");
+  const first=report.topResidues?.[0];
+  const status=document.getElementById("targetStatus");status.textContent=first?`Most important residue for ${target.label}: ${first.label}. Change the functional site to rerank every residue.`:`No rankable residue was found for ${target.label}.`;status.classList.add("success");
 }
 
 function refreshRankedOutputs(report, { resetSelection = true } = {}) {
@@ -1933,7 +1929,7 @@ function mechanochemicalMethodsText(data){
     `For each spring e=(p,q), target-load extension was δe = ne·(up−uq). Residue i first-order target-compliance sensitivity was Si(T)=Σe∋i meanx,y,z(δe²). If the springs incident to i are fractionally weakened by ε, the linear estimate is ΔJtarget≈εSi, where Jtarget=fᵀ(H+λI)⁻¹f. This is the primary mechanical ranking. Cross-compliance ||CiT||F/sqrt(tr(Cii)tr(CTT)) was also calculated as a response descriptor; diagonal compliance used eight deterministic Rademacher probes.`,
     `Sensitivity robustness was 1/(1 + coefficient of variation) across 8.0, 8.5 and 9.0 Å. ${scoreEquationText(r.scoringLens)}`,
     `The conservative substitution was audited against typed side-chain contacts to estimate what fraction of local constraint capacity it can change. Side-chain-involving heavy-atom contacts used 4.5 Å; polar N/O/S proximity 2.35–3.60 Å; opposite-charge geometry 4.0 Å; hydrophobic C/S proximity 3.0–4.6 Å; aromatic atom proximity 3.2–5.5 Å; and metal-donor proximity 3.0 Å. Mutation constraint leverage is a design heuristic, not ΔΔG.`,
-    `The automatic control minimizes differences in residue class, atom-level partners, polar and ligand contacts, burial, B field and chain while requiring substantially lower target-compliance sensitivity. The experimental claim is supported only if the candidate alters the target-linked functional readout more than that matched control while abundance and fold/assembly remain acceptable.`,
+    `The comparison mutation minimizes differences in residue class, atom-level partners, polar and ligand contacts, burial, B field and chain while requiring a substantially lower predicted effect on the chosen site. Prioritize the selected residue only if it alters the functional readout more than the comparison mutation while abundance and fold/assembly remain acceptable.`,
     `The mechanical model is a near-native-state linear approximation. Atomistic relaxation, ΔΔG, solvent, kinetics and conformational ensembles are separate validation layers when required by the system. Known labels, when bundled, were evaluated after ranking and contributed no score.`
   ].join(" ");
 }
@@ -2142,10 +2138,10 @@ async function initPreview() {
 
 function residueExplanation(residue) {
   if (residue.disulfidePartner) return `PROBABLE DISULFIDE · ${residue.disulfidePartner.distance.toFixed(2)} Å TO ${residue.disulfidePartner.label.toUpperCase()}`;
-  if (residue.directMetalCoordination) return `${residue.ligandDistance.toFixed(1)} Å DIRECT ${residue.nearestLigandElement} CONTACT · EXPLICIT COORDINATION EVIDENCE`;
+  if (residue.directMetalCoordination) return `${residue.ligandDistance.toFixed(1)} Å DIRECT ${residue.nearestLigandElement} CONTACT · DIRECT COORDINATION CONTACT`;
   if (residue.ligandDistance !== null && residue.ligandDistance <= 6) return `${residue.ligandDistance.toFixed(1)} Å FROM ${residue.nearestLigand || "BOUND GROUP"} · TEST LOCAL CHEMISTRY`;
-  if (residue.interchain) return `TARGET SENSITIVITY PERCENTILE ${(100*(residue.mechanicalPercentile||0)).toFixed(0)} · ${residue.interchain} CROSS-CHAIN CONTACTS`;
-  return `TARGET SENSITIVITY PERCENTILE ${(100*(residue.mechanicalPercentile||0)).toFixed(0)} · ${Number.isFinite(residue.targetDistance)?`${residue.targetDistance.toFixed(1)} Å FROM TARGET`:`${residue.degree} CONTACTS`}`;
+  if (residue.interchain) return `PREDICTED SITE-EFFECT PERCENTILE ${(100*(residue.mechanicalPercentile||0)).toFixed(0)} · ${residue.interchain} CROSS-CHAIN CONTACTS`;
+  return `PREDICTED SITE-EFFECT PERCENTILE ${(100*(residue.mechanicalPercentile||0)).toFixed(0)} · ${Number.isFinite(residue.targetDistance)?`${residue.targetDistance.toFixed(1)} Å FROM SITE`:`${residue.degree} CONTACTS`}`;
 }
 
 function selectAnalyzedResidue(residue, { button = null, autoView = false, updateDiscovery = true } = {}) {
@@ -2162,12 +2158,13 @@ function selectAnalyzedResidue(residue, { button = null, autoView = false, updat
   const ladder = mutationLadder(residue);
   document.getElementById("viewerCandidate").textContent = residue.label;
   document.getElementById("viewerCandidateReason").textContent = residueExplanation(residue);
-  document.getElementById("hudThesis").textContent = `${residue.label} is now selected. ${residue.context}. Compare its effect with ${comparison?.label || "a matched structural site"}.`;
-  document.getElementById("hudMutation").textContent = ladder.conservative;
-  document.getElementById("hudMutationNote").textContent = `Least severe informative change at ${residue.label}.`;
-  document.getElementById("hudGate").textContent = residue.disulfidePartner ? "INTEGRITY BEFORE FUNCTION" : "SELECTED SITE MUST BEAT CONTROL";
+  document.getElementById("hudThesis").textContent = `Build ${residue.label} ${ladder.conservative} first. Build ${comparison ? `${comparison.label} ${mutationLadder(comparison).conservative}` : "a matched comparison mutation"} beside it, then measure function, abundance, and fold/assembly.`;
+  document.getElementById("hudMutation").textContent = `${residue.label} ${ladder.conservative}`;
+  document.getElementById("hudMutationNote").textContent = `First mutation to build at ${residue.label}.`;
+  document.getElementById("hudControl").textContent = comparison ? `${comparison.label} ${mutationLadder(comparison).conservative}` : "Choose comparison mutation";
+  document.getElementById("hudGate").textContent = residue.disulfidePartner ? "PROTEIN QUALITY MUST HOLD" : "FUNCTION CHANGE > COMPARISON";
   document.getElementById("hudGateNote").textContent = `Interpret function only if ${residue.label} remains expressed and structurally intact.`;
-  updateSurfaceStatus(`SELECTED SITE · ${residue.label.toUpperCase()}`, true);
+  updateSurfaceStatus(`RESIDUE TO TEST · ${residue.label.toUpperCase()}`, true);
   document.querySelectorAll(".best-residue-row").forEach(row => {
     const ranked = molecular.topResidues[Number(row.dataset.residueIndex)];
     row.classList.toggle("active", row === button || ranked?.label === residue.label);
@@ -2177,7 +2174,7 @@ function selectAnalyzedResidue(residue, { button = null, autoView = false, updat
   if (updateDiscovery && current) renderDiscovery(current.report, activeDiscoveryMode);
   const actionStatus = document.getElementById("selectedActionStatus");
   if (actionStatus) {
-    actionStatus.textContent = `${residue.label} selected. Score breakdown, control and experiment updated.`;
+    actionStatus.textContent = `Experiment updated: build ${residue.label} ${ladder.conservative}, run the comparison mutation beside it, and measure all three outputs.`;
     actionStatus.classList.add("success");
   }
 }
@@ -2274,7 +2271,7 @@ window.addEventListener("resize", () => { updateResultScrollCue(); updateSection
 
 function recalculateForTarget(targetId){
   if(!current)return;
-  const status=document.getElementById("targetStatus");if(status){status.textContent="Solving the three target-response networks…";status.classList.remove("success");}
+  const status=document.getElementById("targetStatus");if(status){status.textContent="Recalculating the most important residues for this functional site…";status.classList.remove("success");}
   applyMechanicalTarget(current.report,targetId);rerankReport(current.report,activeScoringLens);refreshRankedOutputs(current.report);
   renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});fillBuiltInDemoResults(current.report);
   document.getElementById("methodsText").textContent=mechanochemicalMethodsText(current);
@@ -2451,7 +2448,7 @@ document.getElementById("copyDialog")?.addEventListener("click",event=>{if(event
 function receiptPayload() {
   const adaptivePanel=adaptiveRound.panel.map(entry=>({constructType:entry.type,residue:entry.residue?.label||"WT",mutation:entry.mutation,role:entry.role,matchedTo:entry.candidateFor?.label||null,reason:entry.why,result:adaptiveRound.results.get(entry.key)||null}));
   const central=current.report.mechanicalModel?.profiles?.find(profile=>profile.cutoff===8.5)||current.report.mechanicalModel?.profiles?.[0]||null;
-  return { tool:"RINet Targeted Mechanochemical Contrast", version:"1.0", receiptId:current.receiptId, analyzedAt:current.analyzedAt, sourceLabel:current.sourceName, sourceType:current.sourceType, structureSha256:current.digest, selectedAssay:customAssay||null, selectedTarget:current.report.activeTarget, mechanicalModel:central, sensitivityCutoffsAngstrom:[8,8.5,9], scoringLens:current.report.scoringLens, exactScoreWeights:current.report.scoreWeights, typedInteractionRules:{heavyAtomContactAngstrom:4.5,polarProximityAngstrom:[2.35,3.6],ionicGeometryAngstrom:4.0,hydrophobicContactAngstrom:[3.0,4.6],aromaticProximityAngstrom:[3.2,5.5],metalCoordinationAngstrom:3.0}, benchmarkManifest:benchmarkManifest[current.report.metadata?.pdbId]||null, experimentRound:{panelSize:adaptiveRound.panelSize,panel:adaptivePanel,illustrativeResults:adaptiveRound.example}, summary:current.report, scientificBoundary:"Target-loaded anisotropic-network response, first-order target-compliance sensitivity to local spring weakening, typed coordinate contacts, and an explicit candidate/control experiment. This near-native linear model does not substitute for mutant relaxation, ΔΔG, solvent, kinetics, ensembles, or experimental validation." };
+  return { tool:"RINet Targeted Mechanochemical Contrast", version:"1.0", receiptId:current.receiptId, analyzedAt:current.analyzedAt, sourceLabel:current.sourceName, sourceType:current.sourceType, structureSha256:current.digest, selectedAssay:customAssay||null, selectedTarget:current.report.activeTarget, mechanicalModel:central, sensitivityCutoffsAngstrom:[8,8.5,9], scoringLens:current.report.scoringLens, exactScoreWeights:current.report.scoreWeights, typedInteractionRules:{heavyAtomContactAngstrom:4.5,polarProximityAngstrom:[2.35,3.6],ionicGeometryAngstrom:4.0,hydrophobicContactAngstrom:[3.0,4.6],aromaticProximityAngstrom:[3.2,5.5],metalCoordinationAngstrom:3.0}, benchmarkManifest:benchmarkManifest[current.report.metadata?.pdbId]||null, experimentRound:{panelSize:adaptiveRound.panelSize,panel:adaptivePanel,illustrativeResults:adaptiveRound.example}, summary:current.report, scientificBoundary:"Target-loaded anisotropic-network response, first-order target-compliance sensitivity to local spring weakening, typed coordinate contacts, and a proposed-mutation/comparison-mutation experiment. This near-native linear model does not substitute for mutant relaxation, ΔΔG, solvent, kinetics, ensembles, or experimental validation." };
 }
 
 document.getElementById("downloadReceipt").addEventListener("click", () => {

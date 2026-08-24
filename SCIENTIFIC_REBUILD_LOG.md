@@ -208,6 +208,16 @@ Values should be rechecked after any change to target definition, spring constru
 - The visible page contains none of the previous "working models," "model fit," "model separation," or hand-set mechanism-pattern language.
 - The homepage is not modified by this rebuild; `/brief/` and `/brief/?demo=1` share the rebuilt app code.
 
+### Plain-language action pass (2026-08-25)
+
+- Rewrote the visible demo around direct laboratory actions: choose the functional site; build the first mutation; build the comparison mutation; measure function, abundance and fold/assembly; interpret the pair; build the next construct.
+- Replaced abstract phrases such as “the selected site is explicit,” “target-response contrast supported,” “falsification control,” “high-leverage candidate,” and bare residue-only next steps.
+- The six workflow cards now show complete instructions. For the default 4HHB example they read: build `ARG A/C:141 R→K`; build `ARG A/C:92 R→K` beside it; measure the oxygen/heme readout, abundance and fold/assembly; then build `ARG A/C:141 R→Q` if the supplied example result is reproduced.
+- Renamed the question choices for non-specialists: best residue to test, ligand-pocket residue, interface residue, distant residue, protein stability, and antibody binding. Detailed elastic-network terms and equations remain available underneath the main workflow.
+- Rewrote the construct table, selected-residue plan, result classification, and exported experiment sheet so every residue or mutation is paired with a verb (`build`, `measure`, `compare`, or `next`).
+- Verified desktop and 390 × 844 mobile layouts. The six-step workflow remains readable, the 1/5–5/5 section counter remains visible, and the scroll cue remains present.
+- Exercised question switching, construct-list regeneration, result interpretation, and selection of a recommended next construct. All updated controls changed the displayed experiment as intended.
+
 ## Work still required before strong performance claims
 
 1. Freeze a multi-protein benchmark before any further weight tuning. Use family-separated train/development/test partitions.
