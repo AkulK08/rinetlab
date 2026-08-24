@@ -1048,3 +1048,673 @@ body.analysis-mode .app-title { color: #9cac9f; }
 }
 
 @media (prefers-reduced-motion: reduce) { .result-scroll-cue i { animation: none; } }
+
+/* Structure Brief 4.1 — quiet, cinematic workspace */
+:root {
+  --canvas: #040605;
+  --glass: rgba(15, 20, 17, .78);
+  --glass-strong: rgba(18, 24, 20, .94);
+  --hairline: rgba(220, 241, 228, .11);
+  --hairline-strong: rgba(220, 241, 228, .18);
+  --text-primary: #f4f7f5;
+  --text-secondary: #a5b0aa;
+  --text-tertiary: #6f7a74;
+  --radius-xl: 30px;
+  --radius-lg: 22px;
+  --radius-md: 15px;
+  --shadow-soft: 0 34px 100px rgba(0, 0, 0, .34);
+}
+
+html { background: var(--canvas); scroll-behavior: smooth; }
+body.analysis-mode { background: var(--canvas); }
+body.analysis-mode .results {
+  padding: 18px clamp(12px, 2vw, 30px) 80px;
+  background:
+    radial-gradient(circle at 16% 6%, rgba(101, 181, 147, .09), transparent 27%),
+    radial-gradient(circle at 88% 30%, rgba(102, 215, 255, .055), transparent 24%),
+    var(--canvas);
+}
+
+.result-head,
+.molecule-workbench,
+.analysis-status,
+.metric-strip,
+.evidence-lab,
+.scientific-contract,
+.sequence-workbench,
+.validation-studio,
+.ai-guidance,
+.technical-details,
+.receipt,
+.research-contact {
+  width: min(1480px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.result-head {
+  min-height: 88px;
+  margin-bottom: 14px;
+  padding: 16px 22px;
+  border: 1px solid var(--hairline);
+  border-radius: 20px;
+  background: rgba(12, 16, 13, .72);
+  box-shadow: 0 14px 42px rgba(0, 0, 0, .18);
+  backdrop-filter: blur(24px) saturate(125%);
+}
+.result-head h2 { font-size: 24px; letter-spacing: -.035em; }
+.result-quick-form input,
+.result-quick-form button,
+.result-actions > button { border-color: var(--hairline-strong); }
+.result-quick-form input { border-radius: 11px 0 0 11px; background: rgba(0,0,0,.2); }
+.result-quick-form button { border-radius: 0 11px 11px 0; }
+.result-actions > button { border-radius: 11px; background: rgba(255,255,255,.035); }
+
+.molecule-workbench {
+  height: clamp(650px, calc(100svh - 132px), 820px);
+  grid-template-columns: minmax(0, 1.6fr) minmax(370px, .62fr);
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-xl);
+  background: #080b09;
+  box-shadow: var(--shadow-soft);
+}
+.molecule-stage-wrap { border-right-color: var(--hairline); }
+.molecule-stage-wrap::after,
+.ai-guidance::before,
+.discovery-radar::before,
+.experiment-blueprint::before,
+.receipt::before { opacity: .07; }
+#moleculeStage { inset: 0; }
+.molecule-toolbar {
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  min-height: 54px;
+  padding: 8px 12px 8px 16px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: rgba(7, 10, 8, .72);
+  box-shadow: 0 15px 38px rgba(0,0,0,.22);
+  backdrop-filter: blur(24px) saturate(130%);
+}
+.viewer-controls { gap: 5px; }
+.viewer-controls button,
+.viewer-controls label {
+  min-height: 32px;
+  border: 0;
+  border-radius: 9px;
+  background: rgba(255,255,255,.045);
+}
+.viewer-controls button:last-child { border-right: 0; }
+.viewer-controls button.active,
+.viewer-controls button:hover { background: rgba(201,251,60,.94); }
+.viewer-controls label { border-right: 0; }
+.color-legend,
+.surface-status,
+.structure-callout,
+.viewer-readout span {
+  border: 1px solid var(--hairline);
+  border-radius: 13px;
+  background: rgba(5, 9, 7, .66);
+  box-shadow: 0 16px 38px rgba(0,0,0,.2);
+  backdrop-filter: blur(22px) saturate(120%);
+}
+.surface-status { top: 82px; left: 18px; }
+.color-legend { top: 82px; left: auto; right: 18px; }
+.analysis-reticle { opacity: .18; }
+.structure-callout {
+  left: 22px;
+  bottom: 42px;
+  min-width: 315px;
+  padding: 16px 18px;
+  border-left: 1px solid var(--hairline);
+  box-shadow: inset 2px 0 0 var(--acid), 0 16px 42px rgba(0,0,0,.24);
+}
+.structure-callout strong { font-size: 23px; letter-spacing: -.025em; }
+.viewer-readout { right: 18px; bottom: 42px; }
+.viewer-boundary { left: 22px; right: 22px; border-color: var(--hairline); opacity: .7; }
+
+.best-residues {
+  padding: 28px 24px 24px;
+  border-left: 0;
+  background:
+    radial-gradient(circle at 10% 0, rgba(201,251,60,.065), transparent 30%),
+    rgba(10, 14, 11, .94);
+  scrollbar-color: rgba(201,251,60,.35) transparent;
+}
+.best-residues h3 { max-width: 420px; font-size: clamp(30px, 2.3vw, 40px); line-height: 1; }
+.best-residues > div:first-child > p:not(.eyebrow) { font-size: 12px; line-height: 1.65; }
+.best-residues .hud-definition { border-bottom: 0; padding-bottom: 0; }
+.best-residues #hudThesis {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--hairline);
+  border-radius: 13px;
+  background: rgba(255,255,255,.028);
+  color: #c7d1cb;
+}
+.intel-cards {
+  gap: 8px;
+  margin-top: 14px;
+  border: 0;
+}
+.intel-cards article,
+.intel-cards article:last-child {
+  min-height: 100px;
+  padding: 15px;
+  border: 1px solid var(--hairline);
+  border-radius: 13px;
+  background: rgba(255,255,255,.026);
+}
+.intel-cards strong { font-family: var(--sans); font-size: 17px; letter-spacing: -.02em; }
+.ranked-title { margin-top: 24px; }
+#bestResidueRows { margin-top: 10px; border: 0; }
+.best-residue-row {
+  margin-top: 3px;
+  padding: 11px 10px;
+  border: 0;
+  border-radius: 11px;
+  transition: background .2s ease, transform .2s ease, color .2s ease;
+}
+.best-residue-row:hover,
+.best-residue-row.active {
+  background: rgba(201,251,60,.075);
+  transform: translateX(2px);
+}
+.best-boundary { border-color: var(--hairline); text-transform: none; }
+
+.analysis-status {
+  min-height: 38px;
+  margin-top: 10px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-tertiary);
+  text-transform: none;
+}
+.metric-strip {
+  gap: 10px;
+  margin-top: 4px;
+  border: 0;
+  background: transparent;
+}
+.metric-strip div {
+  min-height: 98px;
+  padding: 19px 20px;
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background: rgba(255,255,255,.022);
+}
+.metric-strip strong { margin-top: 18px; font-size: 26px; }
+
+.section-rail,
+body[data-active-section="0"] .section-rail {
+  top: 18px;
+  right: 18px;
+  width: 78px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 17px;
+  background: rgba(7, 10, 8, .72);
+  box-shadow: 0 18px 48px rgba(0,0,0,.3);
+  backdrop-filter: blur(24px) saturate(130%);
+}
+.section-rail ol { border-color: var(--hairline-strong); border-radius: 14px; overflow: hidden; }
+
+.result-scroll-cue {
+  width: min(330px, calc(100vw - 28px));
+  min-height: 58px;
+  grid-template-columns: 58px 1fr 22px;
+  bottom: 16px;
+  border: 1px solid rgba(201,251,60,.4);
+  border-radius: 18px;
+  background: rgba(9, 14, 10, .8);
+  box-shadow: 0 20px 55px rgba(0,0,0,.42), inset 0 0 0 1px rgba(201,251,60,.035);
+  backdrop-filter: blur(24px) saturate(140%);
+}
+
+.evidence-lab,
+.scientific-contract,
+.sequence-workbench,
+.validation-studio,
+.ai-guidance,
+.technical-details,
+.receipt,
+.research-contact {
+  margin-top: 72px;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 30px 90px rgba(0,0,0,.22);
+}
+.evidence-lab { padding: 68px 46px 46px; background: rgba(9, 13, 10, .88); }
+.evidence-lab-head { gap: 70px; }
+.evidence-lab-head h3 { max-width: 720px; font-size: clamp(42px, 4.4vw, 70px); line-height: .94; }
+.evidence-lab-head > div:first-child > p:last-child { max-width: 720px; font-size: 15px; line-height: 1.7; }
+.lens-picker-wrap { align-content: end; }
+.lens-picker { gap: 7px; }
+.lens-picker button {
+  min-height: 38px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 0 14px;
+  background: rgba(255,255,255,.025);
+  transition: background .2s ease, color .2s ease, border-color .2s ease, transform .2s ease;
+}
+.lens-picker button:hover { transform: translateY(-1px); }
+.lens-picker button.active { border-color: rgba(201,251,60,.42); background: rgba(201,251,60,.12); box-shadow: none; }
+
+.experiment-spine {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 38px;
+  border: 0;
+  background: transparent;
+}
+.experiment-spine a,
+.experiment-spine a:nth-child(3n),
+.experiment-spine a:nth-child(-n+3) {
+  min-height: 174px;
+  padding: 20px;
+  border: 1px solid var(--hairline);
+  border-radius: 17px;
+  background: rgba(255,255,255,.025);
+  transition: transform .22s ease, border-color .22s ease, background .22s ease;
+}
+.experiment-spine a:hover {
+  transform: translateY(-2px);
+  border-color: var(--hairline-strong);
+  background: rgba(255,255,255,.042);
+}
+.experiment-spine a > strong { max-width: 330px; font-size: 17px; line-height: 1.24; }
+.workflow-answer { border-color: var(--hairline); }
+
+.target-director,
+.lens-context,
+.calculation-details,
+.adaptive-cycle,
+.selected-action,
+.atomic-evidence,
+.evidence-lab-grid {
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,.018);
+  box-shadow: none;
+}
+.target-director { margin-top: 14px; }
+.target-director-copy,
+.target-director-controls,
+.mechanics-readout article,
+.assay-setup-copy,
+.assay-setup-form { border-color: var(--hairline); }
+.target-director-controls select,
+.target-director-controls input,
+.target-director-controls button,
+.assay-setup-form input,
+.assay-setup-form button {
+  border-radius: 10px;
+  border-color: var(--hairline-strong);
+}
+.mechanics-readout { gap: 1px; background: var(--hairline); }
+.mechanics-readout article { border: 0; background: #0b100d; }
+.lens-context { margin-top: 14px; }
+.calculation-details { margin-top: 10px; }
+.calculation-details summary,
+.design-details summary { min-height: 56px; text-transform: none; }
+
+.adaptive-cycle {
+  margin-top: 22px;
+  box-shadow: none;
+  background: rgba(6,10,7,.58);
+}
+.adaptive-cycle-head {
+  min-height: 0;
+  padding: 34px;
+  border-color: var(--hairline);
+  background: radial-gradient(circle at 0 0, rgba(102,215,255,.065), transparent 36%);
+}
+.adaptive-cycle-actions { gap: 7px; }
+.adaptive-cycle-actions label,
+.adaptive-cycle-actions button,
+.adaptive-result-bar label,
+.adaptive-result-bar button {
+  border-radius: 11px;
+  border-color: var(--hairline-strong);
+}
+.adaptive-cycle-actions button:first-of-type { border-color: transparent; }
+.demo-data-note { margin: 12px; border: 0; border-radius: 13px; background: rgba(201,251,60,.07); }
+.adaptive-table-wrap {
+  margin: 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background: rgba(0,0,0,.16);
+}
+.adaptive-table { margin-top: 0; }
+.adaptive-table th,
+.adaptive-table td { border-right: 0; border-bottom-color: var(--hairline); }
+.adaptive-table th { background: rgba(255,255,255,.035); }
+.adaptive-table tbody tr:hover { background: rgba(255,255,255,.025); }
+.adaptive-result-input { border-radius: 8px; border-color: var(--hairline-strong); }
+.measurement-intro,
+.adaptive-result-bar,
+.adaptive-status,
+.adaptive-next { border-color: var(--hairline); background: transparent; }
+.measurement-intro { margin: 12px 12px 0; border: 1px solid var(--hairline); border-radius: 14px; }
+.adaptive-result-bar { margin: 0 12px; }
+.adaptive-status { margin: 0 12px; }
+.adaptive-next {
+  gap: 10px;
+  margin: 12px;
+  border: 0;
+  background: transparent;
+}
+.adaptive-next > div {
+  border: 1px solid var(--hairline);
+  border-radius: 15px;
+  background: rgba(255,255,255,.022);
+}
+.next-experiment-row { border-color: var(--hairline); }
+.next-experiment-row button { color: #eff5f1; }
+.design-details { margin: 12px; border: 1px solid var(--hairline); border-radius: 14px; }
+
+.prior-art-boundary {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  margin: 16px 0 0;
+  padding: 4px 0 10px;
+  border: 0;
+  background: transparent;
+  scroll-snap-type: x proximity;
+}
+.prior-art-boundary > div,
+.prior-art-boundary article {
+  min-width: 270px;
+  min-height: 185px;
+  flex: 1 0 270px;
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background: rgba(255,255,255,.02);
+  scroll-snap-align: start;
+}
+.prior-art-boundary > div:first-child { min-width: 320px; flex-basis: 320px; }
+.prior-art-boundary a { color: #e8f5c7; }
+
+.evidence-residue-picker {
+  gap: 7px;
+  padding-bottom: 4px;
+  border: 0;
+}
+.evidence-residue-button {
+  min-height: 88px;
+  border: 1px solid var(--hairline);
+  border-radius: 13px;
+  background: rgba(255,255,255,.022);
+}
+.evidence-residue-button.active { box-shadow: inset 0 0 0 1px rgba(201,251,60,.35); }
+.selected-action,
+.atomic-evidence { margin-top: 14px; box-shadow: none; }
+.selected-action-head,
+.selected-action-grid > div,
+.selected-action-rule,
+.selected-action-status,
+.atomic-evidence-head,
+.atomic-evidence-metrics,
+.atomic-evidence-metrics article,
+.atomic-evidence-grid > article,
+.atomic-contrast { border-color: var(--hairline); }
+.selected-action-grid { gap: 8px; padding: 8px; }
+.selected-action-grid > div {
+  min-height: 128px;
+  border: 1px solid var(--hairline);
+  border-radius: 13px;
+  background: rgba(255,255,255,.018);
+}
+.selected-action-buttons button { border-radius: 999px; border-color: var(--hairline-strong); }
+.selected-action-rule { margin: 0 8px 8px; border: 1px solid rgba(201,251,60,.18); border-radius: 13px; background: rgba(201,251,60,.04); }
+.atomic-evidence-metrics { gap: 1px; background: var(--hairline); }
+.atomic-evidence-metrics article { border: 0; background: #0a0f0c; }
+.atomic-evidence-grid { gap: 1px; background: var(--hairline); }
+.atomic-evidence-grid > article { border: 0; background: #090e0b; }
+.atomic-contrast { margin: 8px; border: 1px solid var(--hairline); border-radius: 14px; }
+.evidence-lab-grid { gap: 8px; margin-top: 14px; padding: 8px; border: 1px solid var(--hairline); }
+.evidence-lab-grid > article {
+  min-height: 500px;
+  border: 1px solid var(--hairline);
+  border-radius: 15px;
+  background: rgba(255,255,255,.018);
+}
+#networkMap { border-radius: 14px; }
+
+.scientific-contract,
+.sequence-workbench,
+.validation-studio { padding: 62px 46px; background: rgba(9,13,10,.88); }
+.contract-grid,
+.validation-grid { gap: 10px; border: 0; }
+.contract-grid article,
+.validation-grid > article {
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background: rgba(255,255,255,.022);
+}
+.sequence-note { border: 1px solid var(--hairline); border-radius: 13px; background: rgba(255,255,255,.025); }
+.sequence-actions button,
+.sequence-actions a,
+.chain-tabs button { border-radius: 999px; }
+.sequence-strip { gap: 6px; }
+.sequence-residue { border-radius: 8px; }
+
+.ai-guidance { background: rgba(7,11,8,.9); }
+.guidance-heading {
+  min-height: 280px;
+  padding: 56px 46px 44px;
+  border: 0;
+  background: radial-gradient(circle at 82% 30%, rgba(102,215,255,.085), transparent 28%);
+}
+.guidance-heading::before,
+.guidance-heading::after,
+.blueprint-head::after { display: none; }
+.guidance-summary { gap: 9px; padding: 0 12px 12px; border: 0; background: transparent; }
+.guidance-summary article {
+  min-height: 190px;
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background: rgba(255,255,255,.02);
+}
+.guidance-summary article::before,
+.guidance-summary article::after { display: none; }
+.guidance-grid { gap: 9px; padding: 0 12px 12px; background: transparent; }
+.guidance-grid article,
+.guidance-grid article:nth-child(even) {
+  min-height: 175px;
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background: rgba(255,255,255,.018);
+  box-shadow: none;
+}
+.guidance-grid article::after { display: none; }
+.discovery-radar,
+.experiment-blueprint { margin: 12px; border: 1px solid var(--hairline); border-radius: 22px; background: rgba(255,255,255,.014); }
+.discovery-head,
+.blueprint-head { min-height: 0; padding: 46px 34px 34px; background: transparent; }
+.discovery-modes { gap: 7px; margin: 0 12px; padding: 7px; border: 1px solid var(--hairline); border-radius: 15px; background: rgba(0,0,0,.15); }
+.discovery-modes button {
+  min-height: 56px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+}
+.discovery-modes button.active { border: 0; background: rgba(102,215,255,.1); box-shadow: none; }
+.discovery-console { gap: 8px; margin: 10px 12px 12px; border: 0; background: transparent; }
+.discovery-thesis,
+.discovery-panels article {
+  border: 1px solid var(--hairline);
+  border-radius: 15px;
+  background: rgba(255,255,255,.018);
+}
+.discovery-thesis { border-right: 1px solid var(--hairline); }
+.discovery-panels { gap: 8px; }
+.discovery-panels article { min-height: 290px; }
+.discovery-panels article::after { display: none; }
+.blueprint-grid { gap: 9px; padding: 0 12px 12px; background: transparent; }
+.blueprint-grid > article,
+.blueprint-grid > article:nth-child(even) {
+  min-height: 410px;
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background: rgba(255,255,255,.018);
+  box-shadow: none;
+}
+.blueprint-grid > article::after { display: none; }
+.guidance-note { margin: 12px; border: 1px solid var(--hairline); border-radius: 14px; background: rgba(255,255,255,.018); }
+
+.technical-details { padding: 0 30px; background: rgba(9,13,10,.88); }
+.technical-details > summary { margin: 0 -30px; padding: 0 30px; border: 0; background: transparent; }
+.technical-details > summary:hover,
+.technical-details[open] > summary { background: rgba(255,255,255,.025); }
+.receipt { padding: 72px 46px; background: rgba(9,13,10,.88); }
+.research-contact { padding: 86px 46px; background: rgba(9,13,10,.88); }
+.research-contact-form { border: 1px solid var(--hairline); border-radius: 18px; box-shadow: none; background: rgba(255,255,255,.018); }
+.research-contact-form input:not(.contact-honey),
+.research-contact-form textarea { border-radius: 11px; border-color: var(--hairline); background: rgba(0,0,0,.2); }
+.research-contact-form > button { border-radius: 12px; }
+.copy-dialog { border-color: var(--hairline-strong); border-radius: 22px; overflow: hidden; box-shadow: 0 30px 110px rgba(0,0,0,.75); }
+
+@media (max-width: 1080px) {
+  .molecule-workbench { height: auto; grid-template-columns: 1fr; }
+  .molecule-stage-wrap { min-height: 660px; }
+  .best-residues { min-height: 0; max-height: none; }
+  .target-director { grid-template-columns: 1fr; }
+  .experiment-spine { grid-template-columns: repeat(2, 1fr); }
+  .experiment-spine a,
+  .experiment-spine a:nth-child(3n),
+  .experiment-spine a:nth-child(-n+3) { border: 1px solid var(--hairline); }
+  .adaptive-next { grid-template-columns: 1fr; }
+  .selected-action-grid { grid-template-columns: 1fr 1fr; }
+  .evidence-lab-grid { grid-template-columns: 1fr; }
+  .discovery-console { grid-template-columns: 1fr; }
+  .discovery-thesis { border-bottom: 1px solid var(--hairline); }
+}
+
+@media (max-width: 700px) {
+  body.analysis-mode .results { padding: 8px 8px 54px; }
+  .result-head { margin-bottom: 8px; padding: 14px 16px 14px; border-radius: 20px; }
+  .result-head h2 { font-size: 23px; }
+  .result-actions { gap: 10px; }
+  .result-actions > button { padding: 9px 10px; }
+  .molecule-workbench { border-radius: 22px; }
+  .molecule-stage-wrap { min-height: 610px; }
+  #moleculeStage { inset: 0; }
+  .molecule-toolbar {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    padding: 10px;
+    border-radius: 14px;
+  }
+  .viewer-controls { gap: 4px; }
+  .viewer-controls button,
+  .viewer-controls label { min-height: 30px; padding-left: 7px; padding-right: 7px; }
+  .surface-status { top: 118px; left: 10px; min-width: 0; }
+  .color-legend { top: 188px; left: 12px; right: 12px; }
+  .structure-callout { left: 12px; right: 12px; bottom: 38px; min-width: 0; }
+  .best-residues { padding: 28px 18px 22px; }
+  .best-residues h3 { font-size: 34px; }
+  .metric-strip { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; }
+  .metric-strip div { min-width: 145px; flex: 0 0 145px; scroll-snap-align: start; }
+  .section-rail,
+  body[data-active-section="0"] .section-rail { top: 12px; right: 12px; border-radius: 14px; }
+  .evidence-lab,
+  .scientific-contract,
+  .sequence-workbench,
+  .validation-studio,
+  .ai-guidance,
+  .technical-details,
+  .receipt,
+  .research-contact { margin-top: 42px; border-radius: 22px; }
+  .evidence-lab,
+  .scientific-contract,
+  .sequence-workbench,
+  .validation-studio { padding: 42px 18px 24px; }
+  .evidence-lab-head h3 { font-size: 42px; }
+  .lens-picker { gap: 6px; }
+  .experiment-spine {
+    display: flex;
+    gap: 9px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scroll-snap-type: x mandatory;
+  }
+  .experiment-spine a,
+  .experiment-spine a:nth-child(3n),
+  .experiment-spine a:nth-child(-n+3),
+  .experiment-spine a:nth-child(2n) {
+    width: 82vw;
+    min-width: 280px;
+    min-height: 190px;
+    flex: 0 0 82vw;
+    border: 1px solid var(--hairline);
+    scroll-snap-align: start;
+  }
+  .target-director,
+  .lens-context,
+  .adaptive-cycle,
+  .selected-action,
+  .atomic-evidence,
+  .evidence-lab-grid { border-radius: 18px; }
+  .adaptive-cycle-head { padding: 27px 18px; }
+  .adaptive-table-wrap { margin: 8px; }
+  .measurement-intro,
+  .adaptive-result-bar,
+  .adaptive-status { margin-left: 8px; margin-right: 8px; }
+  .adaptive-next { margin: 8px; }
+  .adaptive-next > div { padding: 20px 18px; }
+  .prior-art-boundary > div,
+  .prior-art-boundary article { min-width: 82vw; flex-basis: 82vw; }
+  .evidence-residue-picker { grid-template-columns: repeat(10, minmax(142px, 1fr)); }
+  .selected-action-grid { grid-template-columns: 1fr; }
+  .selected-action-grid > div { min-height: 0; }
+  .selected-action-buttons { display: flex; overflow-x: auto; flex-wrap: nowrap; }
+  .selected-action-buttons button { flex: 0 0 auto; }
+  .atomic-evidence-metrics { display: flex; overflow-x: auto; background: transparent; }
+  .atomic-evidence-metrics article,
+  .atomic-evidence-metrics article:nth-child(3),
+  .atomic-evidence-metrics article:nth-child(even) {
+    min-width: 150px;
+    flex: 0 0 150px;
+    border: 1px solid var(--hairline);
+  }
+  .guidance-heading { padding: 42px 22px 34px; }
+  .guidance-summary { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; }
+  .guidance-summary article { min-width: 78vw; flex: 0 0 78vw; scroll-snap-align: start; }
+  .guidance-grid { grid-template-columns: 1fr; }
+  .discovery-radar,
+  .experiment-blueprint { margin: 8px; border-radius: 18px; }
+  .discovery-head,
+  .blueprint-head { padding: 38px 20px 28px; }
+  .discovery-modes { display: flex; overflow-x: auto; }
+  .discovery-modes button { min-width: 155px; flex: 0 0 155px; }
+  .discovery-panels { grid-template-columns: 1fr; }
+  .discovery-panels article { min-height: 210px; }
+  .blueprint-grid { grid-template-columns: 1fr; }
+  .blueprint-grid > article { min-height: 0; }
+  .technical-details { padding-left: 18px; padding-right: 18px; }
+  .technical-details > summary { margin: 0 -18px; padding: 0 18px; }
+  .receipt,
+  .research-contact { padding: 62px 22px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .molecule-workbench,
+  .evidence-lab,
+  .scientific-contract,
+  .sequence-workbench,
+  .validation-studio,
+  .ai-guidance { animation: surfaceReveal .55s cubic-bezier(.2,.75,.2,1) both; }
+  @keyframes surfaceReveal {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+}

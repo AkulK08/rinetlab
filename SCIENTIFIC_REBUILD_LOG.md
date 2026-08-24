@@ -218,6 +218,17 @@ Values should be rechecked after any change to target definition, spring constru
 - Verified desktop and 390 × 844 mobile layouts. The six-step workflow remains readable, the 1/5–5/5 section counter remains visible, and the scroll cue remains present.
 - Exercised question switching, construct-list regeneration, result interpretation, and selection of a recommended next construct. All updated controls changed the displayed experiment as intended.
 
+### Interface refinement (2026-08-25)
+
+- Rebuilt the demo's presentation as a quieter, cinematic workspace while preserving the scientific calculation and all controls.
+- Replaced the continuous hard-edged dashboard grid with a small number of rounded surfaces: structure and residue selection, experiment path, construct/results workspace, residue audit, and final assay plan.
+- Converted the viewer toolbar, question choices, action buttons, and section counter into compact translucent controls with clearer active states.
+- Changed the six-step experiment path from six compressed columns to a 3 × 2 layout on desktop and a horizontally swipeable card path on mobile.
+- Changed metric strips, validation panels, selected-residue evidence, prior-art references, and assay-plan sections from border grids to spaced cards with lower visual contrast.
+- Kept the original scroll prompt and 1/5–5/5 section indicator, but reduced their size and visual weight.
+- Verified the full-structure initial view and experiment path at desktop and 390 × 844 mobile sizes. The molecule remains fully visible, mobile cards are swipeable, and the viewport was reset after testing.
+- Re-tested the question tabs and construct-list regeneration after the layout change; both update the underlying experiment correctly.
+
 ## Work still required before strong performance claims
 
 1. Freeze a multi-protein benchmark before any further weight tuning. Use family-separated train/development/test partitions.
