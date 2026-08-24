@@ -28,7 +28,7 @@ jobs:
             -H 'Accept: application/vnd.github+json' \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
             -H 'User-Agent: rinet-download-metrics' \
-            'https://api.github.com/repos/AkulK08/rinetlab/releases/tags/v1.2.0-build012')"
+            'https://api.github.com/repos/AkulK08/rinetlab/releases/tags/v1.3.0-build013')"
 
           zip_asset="$(jq -c '[.assets[] | select(.name | endswith(".zip"))] | first' <<<"$release")"
           demo_asset="$(jq -c '[.assets[] | select(.name == "rinet-structure-brief-demo.txt")] | first' <<<"$release")"
@@ -93,7 +93,7 @@ jobs:
               schema_version: 1,
               updated_at: $updated_at,
               source_repository: "AkulK08/rinetlab",
-              source_release: "v1.2.0-build012",
+              source_release: "v1.3.0-build013",
               historical_baseline: $baseline,
               installer_and_zip: {
                 asset_id: $zip_id,
