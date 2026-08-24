@@ -14,6 +14,7 @@ let activeDiscoveryMode = "biology";
 let activeScoringLens = "general";
 let activeSequenceChain = null;
 let customAssay = "";
+const adaptiveRound = { panelSize: 8, panel: [], results: new Map(), example: false, posteriors: [] };
 const preview = { stage: null, component: null };
 const demoTour = { timer: null, frame: null, active: false };
 const waterNames = new Set(["HOH", "WAT", "DOD"]);
@@ -688,6 +689,296 @@ function updateAssaySetup(report, residue) {
   feedback.classList.toggle("applied", Boolean(customAssay));
 }
 
+const adaptiveHypotheses = [
+  { id:"network", label:"Network coupling" },
+  { id:"local", label:"Local chemistry" },
+  { id:"destabilization", label:"Destabilization" },
+  { id:"hub", label:"Generic hub" },
+  { id:"mixed", label:"Mixed model" }
+];
+
+function bounded(value, minimum = 0, maximum = 1) {
+  return Math.max(minimum, Math.min(maximum, Number(value) || 0));
+}
+
+function mean(values) {
+  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+}
+
+function variance(values, weights = null) {
+  if (!values.length) return 0;
+  if (!weights) {
+    const center = mean(values);
+    return mean(values.map(value => (value - center) ** 2));
+  }
+  const total = weights.reduce((sum, value) => sum + value, 0) || 1;
+  const center = values.reduce((sum, value, index) => sum + value * weights[index], 0) / total;
+  return values.reduce((sum, value, index) => sum + weights[index] * (value - center) ** 2, 0) / total;
+}
+
+function structuralVector(residue) {
+  const n = residue?.normalized || {};
+  return [n.degree,n.weighted,n.longRange,n.interchain,n.closeness,n.betweenness,n.burial,n.ligand,n.coordination,n.cdr].map(value => bounded(value));
+}
+
+function vectorDistance(left, right) {
+  return Math.sqrt(left.reduce((sum, value, index) => sum + (value - (right[index] || 0)) ** 2, 0));
+}
+
+function adaptiveSignatures(residue) {
+  const n = residue?.normalized || {};
+  const network = bounded(.42*n.longRange + .23*n.betweenness + .20*n.closeness + .15*n.interchain);
+  const local = bounded(.42*n.ligand + .28*n.coordination + .22*n.interchain + .08*n.weighted);
+  const hub = bounded(.42*n.degree + .24*n.weighted + .18*n.burial + .16*n.betweenness);
+  const qualityField = bounded((residue?.bMean || 0) / 100);
+  const specialRisk = residue?.disulfidePartner || residue?.directMetalCoordination ? 1 : 0;
+  const risk = bounded(.40*n.burial + .30*n.degree + .12*n.weighted + .10*qualityField + .08*specialRisk);
+  const mixed = bounded(.27*network + .25*local + .25*risk + .23*hub);
+  return [
+    [bounded(.72*network + .18*n.betweenness + .10*n.interchain), bounded(.18*risk + .06*hub), bounded(.22*risk + .06*hub)],
+    [bounded(.80*local + .20*n.weighted), bounded(.18*risk + .08*local), bounded(.20*risk + .08*local)],
+    [bounded(.56*risk + .24*hub + .20*n.burial), bounded(.78*risk + .22*hub), bounded(.82*risk + .18*hub)],
+    [hub, bounded(.34*hub + .22*risk), bounded(.38*hub + .25*risk)],
+    [mixed, bounded(.38*mixed + .25*risk), bounded(.42*mixed + .25*risk)]
+  ];
+}
+
+function adaptiveCounterfactualValue(residue) {
+  const signatures = adaptiveSignatures(residue);
+  const channelDisagreement = [0,1,2].map(channel => variance(signatures.map(row => row[channel])));
+  return bounded(3.2 * mean(channelDisagreement) + .7 * variance(signatures.flat()));
+}
+
+function dominantMechanism(residue) {
+  const signatures = adaptiveSignatures(residue);
+  const index = signatures.map(row => row[0] - .45*mean(row.slice(1))).reduce((best, value, current, values) => value > values[best] ? current : best, 0);
+  return adaptiveHypotheses[index];
+}
+
+function mechanismContrast(residue) {
+  const ranked=adaptiveSignatures(residue).map((channels,index)=>({mechanism:adaptiveHypotheses[index],activitySpecific:channels[0]-.5*mean(channels.slice(1))})).sort((a,b)=>b.activitySpecific-a.activitySpecific);
+  return { high:ranked[0].mechanism, low:ranked.at(-1).mechanism, gap:bounded(ranked[0].activitySpecific-ranked.at(-1).activitySpecific) };
+}
+
+function adaptiveControlFor(report, candidate, excluded = new Set()) {
+  const pool = report.allResidues.slice(Math.min(10, report.allResidues.length), Math.max(11, Math.ceil(report.allResidues.length * .9))).filter(row => row.label !== candidate.label && !excluded.has(row.label) && !row.disulfidePartner && !row.directMetalCoordination);
+  const penalty = row => (row.residueClass === candidate.residueClass ? 0 : 2) + 2*Math.abs(row.burial-candidate.burial) + Math.min(1,Math.abs((row.bMean||0)-(candidate.bMean||0))/40) + (row.chain===candidate.chain?0:.35) + row.score/100;
+  const control = [...pool].sort((a,b)=>penalty(a)-penalty(b))[0];
+  if (!control) return null;
+  return { ...control, matchQuality:bounded(100-24*penalty(control),0,100), controlRationale:`Matched on ${control.residueClass===candidate.residueClass?"residue chemistry":"nearest available chemistry"}, burial, B field and ${control.chain===candidate.chain?"chain":"available chain"} context; deliberately lower structural score.` };
+}
+
+function buildAdaptivePanel(report, requestedSize = adaptiveRound.panelSize) {
+  const panelSize = [6,8,12].includes(Number(requestedSize)) ? Number(requestedSize) : 8;
+  adaptiveRound.panelSize = panelSize;
+  const controlTarget = panelSize === 6 ? 1 : panelSize === 8 ? 2 : 3;
+  const candidateTarget = panelSize - 1 - controlTarget;
+  const eligible=report.allResidues.filter(row=>!row.disulfidePartner);
+  const pool = eligible.slice(0, Math.min(180, eligible.length));
+  const selected = [pool[0]||report.topResidues[0]].filter(Boolean);
+  while (selected.length < candidateTarget) {
+    const selectedVectors = selected.map(structuralVector);
+    const remaining = pool.filter(row => !selected.some(item => item.label === row.label));
+    const choice = remaining.map(row => {
+      const diversity = Math.min(...selectedVectors.map(vector => vectorDistance(structuralVector(row), vector))) / Math.sqrt(10);
+      const priority = row.percentile / 100;
+      const information = adaptiveCounterfactualValue(row);
+      return { row, score:.36*information + .34*diversity + .30*priority };
+    }).sort((a,b)=>b.score-a.score || a.row.rank-b.row.rank)[0]?.row;
+    if (!choice) break;
+    selected.push(choice);
+  }
+  const excluded = new Set(selected.map(row=>row.label));
+  const controls = [];
+  selected.slice(0,controlTarget).forEach(candidate => {
+    const control = adaptiveControlFor(report,candidate,excluded);
+    if (control) { excluded.add(control.label); controls.push({ residue:control, candidate }); }
+  });
+  while (selected.length + controls.length < panelSize - 1) {
+    const extra = pool.find(row => !excluded.has(row.label));
+    if (!extra) break;
+    excluded.add(extra.label); selected.push(extra);
+  }
+  const entries = [{ type:"wt", key:"WT", role:"WT reference", residue:null, mutation:"—", why:"Same-batch normalization for every assay channel." }];
+  selected.forEach((residue,index) => {
+    const mechanism = dominantMechanism(residue);
+    const contrast=mechanismContrast(residue);
+    entries.push({ type:"candidate", key:residue.label, role:`Test · ${contrast.high.label} / ${contrast.low.label}`, residue, mutation:mutationLadder(residue).conservative, mechanism, information:adaptiveCounterfactualValue(residue), contrast, why:`The declared mechanisms differ by ${(100*contrast.gap).toFixed(0)}/100 at this site; it also adds a structural context not already represented. Active-model rank ${residue.rank}/${report.allResidues.length}.` });
+    const pair = controls.find(item => item.candidate.label === residue.label);
+    if (pair) entries.push({ type:"control", key:pair.residue.label, role:"Matched control", residue:pair.residue, mutation:mutationLadder(pair.residue).conservative, candidateFor:residue, information:adaptiveCounterfactualValue(pair.residue), why:`Controls ${residue.label} for chemistry and structural context while carrying a lower network score; match ${pair.residue.matchQuality.toFixed(0)}/100.` });
+  });
+  adaptiveRound.panel = entries.slice(0,panelSize);
+  return adaptiveRound.panel;
+}
+
+function adaptiveCoverage(report, residues) {
+  if (!residues.length) return 0;
+  const selected = residues.map(structuralVector);
+  const universe = report.allResidues.slice(0,Math.min(120,report.allResidues.length));
+  return 100 * mean(universe.map(row => 1 - Math.min(...selected.map(vector=>vectorDistance(structuralVector(row),vector))) / Math.sqrt(10)));
+}
+
+function adaptiveMechanismSeparation(entries) {
+  const residues = entries.filter(entry=>entry.residue).map(entry=>entry.residue);
+  if (!residues.length) return 0;
+  const vectors = adaptiveHypotheses.map((_,hypothesis) => residues.flatMap(residue=>adaptiveSignatures(residue)[hypothesis]));
+  const distances = [];
+  for (let left=0;left<vectors.length;left+=1) for (let right=left+1;right<vectors.length;right+=1) distances.push(vectorDistance(vectors[left],vectors[right])/Math.sqrt(vectors[left].length));
+  const closestPair = distances.length ? Math.min(...distances) : 0;
+  return 100 * (1-Math.exp(-2.4*closestPair));
+}
+
+function resetAdaptiveAnalysisUI() {
+  const status = document.getElementById("adaptiveStatus");
+  if (status) {
+    status.className="adaptive-status";
+    status.innerHTML="<strong>Round 1 is ready.</strong><span>Download the CSV or enter results directly. No result is treated as causal proof.</span>";
+  }
+  const summary = document.getElementById("adaptivePosteriorSummary");
+  if (summary) summary.textContent="Enter complete results for at least two candidates and one additional construct to update the five mechanism weights.";
+  const posterior = document.getElementById("adaptivePosterior");
+  if (posterior) posterior.innerHTML="<span>No measured results</span>";
+  const nextRows = document.getElementById("adaptiveNextRows");
+  if (nextRows) nextRows.innerHTML="<p>The next panel will appear here with the structural reason and expected information gain for every residue.</p>";
+}
+
+function adaptiveResultClass(result) {
+  if (!result || ![result.function,result.abundance,result.integrity].every(Number.isFinite)) return { label:"Awaiting result", className:"" };
+  const functionalThreshold = bounded(document.getElementById("adaptiveFunctionThreshold")?.value || 20,1,100);
+  const integrityFloor = bounded(document.getElementById("adaptiveIntegrityFloor")?.value || 75,1,100);
+  const shifted = Math.abs(result.function-100) >= functionalThreshold;
+  const intact = result.abundance >= integrityFloor && result.integrity >= integrityFloor;
+  if (shifted && intact) return { label:"Function-specific signal", className:"signal" };
+  if (shifted && !intact) return { label:"Integrity-confounded", className:"confound" };
+  if (!shifted && intact) return { label:"Clean negative", className:"negative" };
+  return { label:"Integrity loss; function unresolved", className:"confound" };
+}
+
+function renderAdaptivePanel(report, { rebuild = true, clearResults = false } = {}) {
+  if (!report || !document.getElementById("adaptivePanelRows")) return;
+  if (clearResults) { adaptiveRound.results.clear(); adaptiveRound.example=false; adaptiveRound.posteriors=[]; resetAdaptiveAnalysisUI(); }
+  if (rebuild || !adaptiveRound.panel.length) buildAdaptivePanel(report,document.getElementById("adaptivePanelSize")?.value || adaptiveRound.panelSize);
+  const body = document.getElementById("adaptivePanelRows");
+  body.innerHTML = adaptiveRound.panel.map((entry,index) => {
+    const result = adaptiveRound.results.get(entry.key) || {};
+    const interpretation = adaptiveResultClass(result);
+    const position = `A${index+1}`;
+    const site = entry.residue ? `<button type="button" class="adaptive-site-button" data-adaptive-site="${esc(entry.residue.label)}">${esc(entry.residue.label)}<small>${esc(entry.mutation)}</small></button>` : `<strong>Wild type</strong><small>reference</small>`;
+    const field = (name,value) => `<input class="adaptive-result-input" type="number" min="0" max="300" step="1" ${entry.type==="wt"?"disabled value=\"100\"":`data-adaptive-key="${esc(encodeURIComponent(entry.key))}" data-adaptive-field="${name}" value="${Number.isFinite(value)?value:""}"`} aria-label="${esc(`${entry.key} ${name} percent wild type`)}">`;
+    return `<tr><td>${position}</td><td>${esc(entry.role)}</td><td>${site}</td><td>${esc(entry.why)}</td><td>${field("function",result.function)}</td><td>${field("abundance",result.abundance)}</td><td>${field("integrity",result.integrity)}</td><td><span class="round-interpretation ${interpretation.className}">${interpretation.label}</span></td></tr>`;
+  }).join("");
+  body.querySelectorAll("[data-adaptive-site]").forEach(button=>button.addEventListener("click",()=>selectAnalyzedResidue(report.allResidues.find(row=>row.label===button.dataset.adaptiveSite),{autoView:true})));
+  body.querySelectorAll("[data-adaptive-field]").forEach(input=>input.addEventListener("input",()=>{
+    const key=decodeURIComponent(input.dataset.adaptiveKey); const result=adaptiveRound.results.get(key)||{}; const value=Number(input.value); result[input.dataset.adaptiveField]=Number.isFinite(value)&&input.value!==""?value:NaN; adaptiveRound.results.set(key,result);
+  }));
+  const selectedResidues = adaptiveRound.panel.filter(entry=>entry.residue).map(entry=>entry.residue);
+  const baselineResidues = report.allResidues.slice(0,selectedResidues.length);
+  document.getElementById("adaptiveCoverage").textContent=`${adaptiveCoverage(report,selectedResidues).toFixed(0)}%`;
+  document.getElementById("adaptiveBaseline").textContent=`${adaptiveCoverage(report,baselineResidues).toFixed(0)}%`;
+  document.getElementById("adaptiveSeparation").textContent=`${adaptiveMechanismSeparation(adaptiveRound.panel).toFixed(0)}%`;
+  document.getElementById("adaptiveControls").textContent=String(adaptiveRound.panel.filter(entry=>entry.type==="control").length);
+  document.getElementById("adaptivePanelSize").value=String(adaptiveRound.panelSize);
+}
+
+function adaptivePosteriorAnalysis(report) {
+  const completed = new Map(adaptiveRound.panel.filter(entry=>entry.residue).map(entry=>[entry.key,adaptiveRound.results.get(entry.key)]).filter(([,result])=>[result?.function,result?.abundance,result?.integrity].every(Number.isFinite)));
+  const measured = adaptiveRound.panel.filter(entry=>entry.type==="candidate"&&completed.has(entry.key)).map(entry=>{
+    const controlEntry=adaptiveRound.panel.find(row=>row.type==="control"&&row.candidateFor?.label===entry.residue.label&&completed.has(row.key));
+    return { entry, result:completed.get(entry.key), controlEntry, controlResult:controlEntry?completed.get(controlEntry.key):null };
+  });
+  if (completed.size < 3 || measured.length < 2) return null;
+  const fits = adaptiveHypotheses.map((hypothesis,hypothesisIndex) => {
+    const squared = measured.flatMap(({entry,result,controlEntry,controlResult}) => {
+      const observedRaw=[bounded(Math.abs(result.function-100)/100),bounded((100-result.abundance)/100),bounded((100-result.integrity)/100)];
+      const expectedRaw=adaptiveSignatures(entry.residue)[hypothesisIndex];
+      const observedControl=controlResult?[bounded(Math.abs(controlResult.function-100)/100),bounded((100-controlResult.abundance)/100),bounded((100-controlResult.integrity)/100)]:[0,0,0];
+      const expectedControl=controlEntry?adaptiveSignatures(controlEntry.residue)[hypothesisIndex]:[0,0,0];
+      const observed=observedRaw.map((value,index)=>bounded(value-observedControl[index],-1,1));
+      const expected=expectedRaw.map((value,index)=>bounded(value-expectedControl[index],-1,1));
+      return observed.map((value,index)=>(value-expected[index])**2);
+    });
+    return { ...hypothesis, sse:mean(squared) };
+  });
+  const raw=fits.map(row=>Math.exp(-8*row.sse)); const total=raw.reduce((sum,value)=>sum+value,0)||1;
+  fits.forEach((row,index)=>{row.probability=raw[index]/total;});
+  fits.sort((a,b)=>b.probability-a.probability);
+  adaptiveRound.posteriors=fits;
+  const tested=new Set(adaptiveRound.panel.filter(entry=>entry.residue).map(entry=>entry.residue.label));
+  const weights=adaptiveHypotheses.map(hypothesis=>fits.find(row=>row.id===hypothesis.id)?.probability||0);
+  const candidates=report.allResidues.slice(0,Math.min(220,report.allResidues.length)).filter(row=>!tested.has(row.label)&&!row.disulfidePartner).map(row=>{
+    const signatures=adaptiveSignatures(row);
+    const disagreement=mean([0,1,2].map(channel=>variance(signatures.map(item=>item[channel]),weights)));
+    return { residue:row, gain:bounded(4*disagreement), score:.72*bounded(4*disagreement)+.28*adaptiveCounterfactualValue(row) };
+  }).sort((a,b)=>b.score-a.score||a.residue.rank-b.residue.rank);
+  const next=[];
+  for (const candidate of candidates) {
+    const diversity=next.length?Math.min(...next.map(item=>vectorDistance(structuralVector(item.residue),structuralVector(candidate.residue))))/Math.sqrt(10):1;
+    if (next.length<4 && (diversity>.12 || next.length<2)) next.push({...candidate,diversity});
+    if (next.length===4) break;
+  }
+  return { measured, completed, fits, next };
+}
+
+function analyzeAdaptiveResults(report=current?.report) {
+  if (!report) return;
+  document.querySelectorAll("[data-adaptive-field]").forEach(input=>{
+    const key=decodeURIComponent(input.dataset.adaptiveKey); const result=adaptiveRound.results.get(key)||{}; const value=Number(input.value); result[input.dataset.adaptiveField]=Number.isFinite(value)&&input.value!==""?value:NaN; adaptiveRound.results.set(key,result);
+  });
+  const analysis=adaptivePosteriorAnalysis(report);
+  renderAdaptivePanel(report,{rebuild:false});
+  const status=document.getElementById("adaptiveStatus");
+  if (!analysis) {
+    status.className="adaptive-status"; status.innerHTML="<strong>More results required.</strong><span>Enter all three measurements for at least two candidates and one additional non-WT construct.</span>";
+    return;
+  }
+  status.className=`adaptive-status ${adaptiveRound.example?"example":""}`;
+  const paired=analysis.measured.filter(row=>row.controlEntry).length;
+  status.innerHTML=adaptiveRound.example?"<strong>Illustrative data only.</strong><span>These values demonstrate the workflow and are not hemoglobin measurements.</span>":`<strong>${analysis.completed.size} constructs analyzed.</strong><span>${paired} candidate-control contrast${paired===1?"":"s"} used; conditional mechanism weights and round 2 recommendations updated.</span>`;
+  document.getElementById("adaptivePosteriorSummary").textContent=`${analysis.fits[0].label} best matches the candidate-versus-control, three-channel pattern (${(100*analysis.fits[0].probability).toFixed(0)}% conditional weight). This compares five declared models; it is not causal proof.`;
+  document.getElementById("adaptivePosterior").innerHTML=analysis.fits.map(row=>`<div class="posterior-row"><span>${esc(row.label)}</span><i><b style="width:${(100*row.probability).toFixed(1)}%"></b></i><strong>${(100*row.probability).toFixed(0)}%</strong></div>`).join("");
+  document.getElementById("adaptiveNextRows").innerHTML=analysis.next.map(({residue,gain})=>{const contrast=mechanismContrast(residue);return `<div class="next-experiment-row"><button type="button" data-next-site="${esc(residue.label)}">${esc(residue.label)}<br>${esc(mutationLadder(residue).conservative)}</button><span>Separates ${esc(contrast.high.label)} from ${esc(contrast.low.label)} among the models still consistent with round 1; active-model rank ${residue.rank}.</span><strong>${(100*gain).toFixed(0)}/100</strong></div>`;}).join("");
+  document.querySelectorAll("[data-next-site]").forEach(button=>button.addEventListener("click",()=>selectAnalyzedResidue(report.allResidues.find(row=>row.label===button.dataset.nextSite),{autoView:true})));
+}
+
+function loadAdaptiveExample(report=current?.report) {
+  if (!report) return;
+  const examples=[[55,96,93],[68,61,58],[101,98,97],[136,94,91],[84,90,89],[97,96,94],[108,99,96],[76,82,79],[112,91,88],[93,97,95],[64,70,68]];
+  adaptiveRound.results.clear();
+  adaptiveRound.panel.filter(entry=>entry.residue).forEach((entry,index)=>adaptiveRound.results.set(entry.key,{function:examples[index%examples.length][0],abundance:examples[index%examples.length][1],integrity:examples[index%examples.length][2]}));
+  adaptiveRound.example=true;
+  renderAdaptivePanel(report,{rebuild:false});
+  analyzeAdaptiveResults(report);
+}
+
+function adaptiveCsvCell(value) {
+  return `"${String(value??"").replaceAll('"','""')}"`;
+}
+
+function downloadAdaptiveTemplate() {
+  if (!current) return;
+  const residue=currentEvidenceResidue()||current.report.topResidues[0];
+  const assay=assayFor(current.report,residue,matchedControlForResidue(current.report,residue));
+  const header=["construct","role","residue","mutation","primary_assay","function_percent_wt","abundance_percent_wt","integrity_percent_wt","notes"];
+  const rows=adaptiveRound.panel.map((entry,index)=>[ `A${index+1}`,entry.role,entry.residue?.label||"WT",entry.mutation,assay,entry.type==="wt"?100:"",entry.type==="wt"?100:"",entry.type==="wt"?100:"",entry.why ]);
+  const csv=[header.map(adaptiveCsvCell).join(","),...rows.map(row=>row.map(adaptiveCsvCell).join(","))].join("\n");
+  const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); const link=document.createElement("a"); link.href=url; link.download=`rinet-${(current.report.metadata?.pdbId||"structure").toLowerCase()}-adaptive-round.csv`; link.click(); window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+  document.getElementById("adaptiveStatus").innerHTML="<strong>Results CSV downloaded.</strong><span>Fill the three % WT columns and import the same file to design round 2.</span>";
+}
+
+function parseAdaptiveCsvLine(line) {
+  const cells=[]; let value="", quoted=false;
+  for(let index=0;index<line.length;index+=1){const char=line[index];if(char==='"'){if(quoted&&line[index+1]==='"'){value+='"';index+=1;}else quoted=!quoted;}else if(char===","&&!quoted){cells.push(value);value="";}else value+=char;} cells.push(value); return cells;
+}
+
+async function importAdaptiveResults(file) {
+  if (!file||!current) return;
+  const lines=(await file.text()).replace(/\r/g,"").split("\n").filter(Boolean); if(lines.length<2)return;
+  const headers=parseAdaptiveCsvLine(lines[0]).map(value=>value.trim().toLowerCase()); const index=Object.fromEntries(headers.map((value,i)=>[value,i])); let imported=0;
+  const readNumber=value=>String(value??"").trim()===""?NaN:Number(value);
+  lines.slice(1).forEach(line=>{const cells=parseAdaptiveCsvLine(line);const label=(cells[index.residue]||"").trim();if(!label||label==="WT")return;const entry=adaptiveRound.panel.find(row=>row.residue?.label===label);if(!entry)return;const result={function:readNumber(cells[index.function_percent_wt]),abundance:readNumber(cells[index.abundance_percent_wt]),integrity:readNumber(cells[index.integrity_percent_wt])};if([result.function,result.abundance,result.integrity].every(Number.isFinite)){adaptiveRound.results.set(entry.key,result);imported+=1;}});
+  adaptiveRound.example=false; renderAdaptivePanel(current.report,{rebuild:false}); analyzeAdaptiveResults(current.report); if(imported<3)document.getElementById("adaptiveStatus").innerHTML=`<strong>${imported} complete rows imported.</strong><span>Round 2 requires two measured candidates and one additional complete construct.</span>`;
+}
+
 function parsePdb(text, options = {}) {
   const lines = text.replace(/\r/g, "").split("\n");
   const metadata = parseMetadata(lines);
@@ -841,6 +1132,11 @@ async function analyze(text, sourceName, sourceType) {
   setStatus(`Analyzing ${sourceName} locally…`);
   try {
     customAssay = "";
+    adaptiveRound.panelSize = 8;
+    adaptiveRound.panel = [];
+    adaptiveRound.results.clear();
+    adaptiveRound.example = false;
+    adaptiveRound.posteriors = [];
     const report = parseCoordinateFile(text, sourceName);
     const digest = await sha256(text);
     const receiptId = `RNB-${digest.slice(0, 12).toUpperCase()}`;
@@ -1260,7 +1556,8 @@ function render(data) {
   renderGuidance(r);
   renderDiscovery(r, "biology");
   renderScientificPanels(r,r.topResidues[0]);
-  const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Intelligence 3.0 (receipt ${data.receiptId}; ${r.format}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} author chain${r.chainReports.length === 1 ? "" : "s"}. A deterministic residue-contact graph was constructed between Cα atoms separated by no more than ${r.contactCutoff.toFixed(1)} Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. ${scoreEquationText(r.scoringLens)} Closeness was ${r.residues <= 1500 ? "calculated on reachable graph components" : "omitted because this very large structure exceeds the interactive all-pairs path limit"}; betweenness was ${r.betweennessCalculated ? "calculated with the unweighted Brandes algorithm" : "omitted because the structure exceeds the 900-residue interactive path limit"}. Known benchmark labels, when available, were evaluated only after ranking and contributed no score. Cysteines received no score bonus; ${r.disulfides} probable disulfide constraint${r.disulfides === 1 ? " was" : "s were"} assigned solely from Sγ separations of 1.7–2.3 Å and treated as an integrity warning. Coordinate screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} numbering gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}) and were not assumed to represent prediction confidence. This is a static, coarse residue-network analysis, not an all-atom potential, dynamics calculation, evolutionary analysis or causal claim. No AI or learned model generated the ranking or interpretation.`;
+  renderAdaptivePanel(r,{rebuild:true,clearResults:true});
+  const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Intelligence 3.0 (receipt ${data.receiptId}; ${r.format}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} author chain${r.chainReports.length === 1 ? "" : "s"}. A deterministic residue-contact graph was constructed between Cα atoms separated by no more than ${r.contactCutoff.toFixed(1)} Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. ${scoreEquationText(r.scoringLens)} Closeness was ${r.residues <= 1500 ? "calculated on reachable graph components" : "omitted because this very large structure exceeds the interactive all-pairs path limit"}; betweenness was ${r.betweennessCalculated ? "calculated with the unweighted Brandes algorithm" : "omitted because the structure exceeds the 900-residue interactive path limit"}. Known benchmark labels, when available, were evaluated only after ranking and contributed no score. Cysteines received no score bonus; ${r.disulfides} probable disulfide constraint${r.disulfides === 1 ? " was" : "s were"} assigned solely from Sγ separations of 1.7–2.3 Å and treated as an integrity warning. Detected disulfide residues were excluded from automatic adaptive rounds because breaking a covalent constraint creates a strong integrity confound; they remain available for manual inspection. Coordinate screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} numbering gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}) and were not assumed to represent prediction confidence. The first adaptive round contains wild type, structurally prioritized candidates and lower-score controls matched on residue class, burial, B-factor field and chain context. Candidate selection is greedy and deterministic: 36% counterfactual disagreement among five declared mechanisms, 34% diversity in the ten displayed structural features and 30% active-lens rank. Network coupling, local chemistry, destabilization, generic hub and mixed signatures define expected function, abundance and integrity patterns; these are explicit mechanistic assumptions, not learned predictions. After result entry, candidate-minus-matched-control patterns are fit by mean squared error and converted to conditional comparison weights with exp(-8 × MSE). The next sites maximize posterior-weighted disagreement while avoiding structural duplicates. These weights are neither calibrated probabilities nor evidence of causation and require prospective experimental validation. This is a static, coarse residue-network analysis, not an all-atom potential, dynamics calculation, evolutionary analysis or causal claim. No AI or learned model generated the ranking or interpretation.`;
   document.getElementById("methodsText").textContent = methods;
   els.results.classList.remove("hidden");
   document.body.classList.add("analysis-mode");
@@ -1560,8 +1857,30 @@ document.querySelectorAll("[data-scoring-lens]").forEach(button=>button.addEvent
   document.querySelectorAll("[data-scoring-lens]").forEach(item=>{const active=item===button;item.classList.toggle("active",active);item.setAttribute("aria-selected",String(active));});
   rerankReport(current.report,activeScoringLens);
   refreshRankedOutputs(current.report);
+  renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});
   document.getElementById("methodsText").textContent=document.getElementById("methodsText").textContent.replace(/score = 100 × \[[^\]]+\]; each feature is normalized to the maximum observed in this structure\./,scoreEquationText(activeScoringLens));
   setLocalActionStatus(`Ranking recalculated with the ${scoreLenses[activeScoringLens].label} model. ${current.report.topResidues[0].label} is now rank 1.`, true);
+}));
+
+document.getElementById("rebuildAdaptivePanel")?.addEventListener("click",()=>{
+  if(!current)return;
+  renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});
+});
+document.getElementById("adaptivePanelSize")?.addEventListener("change",event=>{
+  adaptiveRound.panelSize=Number(event.currentTarget.value);
+  if(current)renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});
+});
+document.getElementById("downloadAdaptiveTemplate")?.addEventListener("click",downloadAdaptiveTemplate);
+document.getElementById("adaptiveResultsFile")?.addEventListener("change",async event=>{
+  await importAdaptiveResults(event.currentTarget.files?.[0]);
+  event.currentTarget.value="";
+});
+document.getElementById("loadAdaptiveExample")?.addEventListener("click",()=>loadAdaptiveExample());
+document.getElementById("analyzeAdaptiveResults")?.addEventListener("click",()=>analyzeAdaptiveResults());
+["adaptiveFunctionThreshold","adaptiveIntegrityFloor"].forEach(id=>document.getElementById(id)?.addEventListener("change",()=>{
+  if(!current)return;
+  const completed=adaptiveRound.panel.filter(entry=>entry.residue).filter(entry=>{const result=adaptiveRound.results.get(entry.key);return [result?.function,result?.abundance,result?.integrity].every(Number.isFinite);}).length;
+  if(completed>=3)analyzeAdaptiveResults(current.report);else renderAdaptivePanel(current.report,{rebuild:false});
 }));
 
 function currentEvidenceResidue() {
@@ -1676,7 +1995,8 @@ document.getElementById("closeCopyDialog")?.addEventListener("click",()=>documen
 document.getElementById("copyDialog")?.addEventListener("click",event=>{if(event.target===event.currentTarget)event.currentTarget.close();});
 
 function receiptPayload() {
-  return { tool: "RINet Structure Intelligence", version: "3.0", receiptId: current.receiptId, analyzedAt: current.analyzedAt, sourceLabel: current.sourceName, sourceType: current.sourceType, structureSha256: current.digest, selectedAssay:customAssay||null, scoringLens:current.report.scoringLens, exactScoreWeights:current.report.scoreWeights, contactCutoffAngstrom:current.report.contactCutoff, benchmarkManifest:benchmarkManifest[current.report.metadata?.pdbId]||null, summary: current.report, scientificBoundary: "Static, descriptive coordinate and Cα contact analysis; not an all-atom potential, evolutionary analysis, dynamics calculation, functional proof or causal claim." };
+  const adaptivePanel=adaptiveRound.panel.map(entry=>({constructType:entry.type,residue:entry.residue?.label||"WT",mutation:entry.mutation,role:entry.role,matchedTo:entry.candidateFor?.label||null,reason:entry.why,result:adaptiveRound.results.get(entry.key)||null}));
+  return { tool: "RINet Structure Intelligence", version: "3.0", receiptId: current.receiptId, analyzedAt: current.analyzedAt, sourceLabel: current.sourceName, sourceType: current.sourceType, structureSha256: current.digest, selectedAssay:customAssay||null, scoringLens:current.report.scoringLens, exactScoreWeights:current.report.scoreWeights, contactCutoffAngstrom:current.report.contactCutoff, benchmarkManifest:benchmarkManifest[current.report.metadata?.pdbId]||null, adaptiveRound:{panelSize:adaptiveRound.panelSize,panel:adaptivePanel,conditionalMechanismWeights:adaptiveRound.posteriors.map(row=>({mechanism:row.id,weight:row.probability,sse:row.sse})),illustrativeResults:adaptiveRound.example}, summary: current.report, scientificBoundary: "Static, descriptive coordinate and Cα contact analysis plus an untrained, assumption-driven adaptive experiment design; not an all-atom potential, evolutionary analysis, dynamics calculation, calibrated functional prediction, functional proof or causal claim." };
 }
 
 document.getElementById("downloadReceipt").addEventListener("click", () => {
