@@ -9,14 +9,14 @@
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=20260816">
   <link rel="image_src" href="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <link rel="stylesheet" href="/contact.css?v=1">
-  <link rel="stylesheet" href="/site.css?v=10">
-  <title>RINet | Find the residue worth testing</title>
-  <meta name="description" content="Upload one protein structure to prioritize residues, understand why they matter and build a falsifiable experiment plan.">
+  <link rel="stylesheet" href="/site.css?v=11">
+  <title>RINet | Auditable residue-network hypotheses</title>
+  <meta name="description" content="Turn a protein structure into a transparent residue ranking, matched control and falsifiable experiment plan.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://rinetlab.com/">
   <meta property="og:site_name" content="RINet">
-  <meta property="og:title" content="RINet | Find the residue worth testing">
-  <meta property="og:description" content="A supplied structure in. A falsifiable evidence record out.">
+  <meta property="og:title" content="RINet | Auditable residue-network hypotheses">
+  <meta property="og:description" content="Exact graph metrics, score contributions, sensitivity, controls and experimental stopping rules from a supplied structure.">
   <meta property="og:image" content="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <meta property="og:image:secure_url" content="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <meta property="og:image:type" content="image/png">
@@ -25,8 +25,8 @@
   <meta property="og:image:alt" content="RINet protein network mark">
   <meta itemprop="image" content="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="RINet | Find the residue worth testing">
-  <meta name="twitter:description" content="Local protein structure analysis. No account. No structure upload.">
+  <meta name="twitter:title" content="RINet | Auditable residue-network hypotheses">
+  <meta name="twitter:description" content="Transparent, local protein-structure hypothesis triage. No account. No coordinate upload.">
   <meta name="twitter:image" content="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <meta name="twitter:image:alt" content="RINet protein network mark">
 </head>
@@ -49,9 +49,9 @@
       </video>
       <div class="hero-shade"></div>
       <div class="hero-copy">
-        <p class="overline">Protein science, made testable.</p>
-        <h1 id="hero-title">Find the residue<br>worth testing.</h1>
-        <p class="hero-summary">RINet turns protein structures into an inspectable argument and the experiment that could prove it wrong. Graph theory and residue interaction networks only. No AI.</p>
+        <p class="overline">Residue-network evidence, made inspectable.</p>
+        <h1 id="hero-title">From structure to<br>a testable hypothesis.</h1>
+        <p class="hero-summary">RINet constructs an explicit residue-interaction graph, shows every metric and score contribution, tests whether the ranking survives parameter changes, and designs a candidate-versus-control experiment. Deterministic graph analysis only. No AI-written interpretation.</p>
         <div class="hero-links">
           <a class="button button-light" href="/brief/">Analyze a PDB <span>↗</span></a>
           <a class="text-link" href="/brief/?demo=1">Instant demo <span>↗</span></a>
@@ -60,8 +60,8 @@
       </div>
       <div class="hero-proof" aria-label="RINet facts">
         <div><strong id="downloadCount" data-live-number>1,863</strong><span>downloads</span></div>
-        <div><strong>Deterministic</strong><span>repeatable results</span></div>
-        <div><strong>Local</strong><span>runs on your device</span></div>
+        <div><strong>Auditable</strong><span>every score decomposed</span></div>
+        <div><strong>Local</strong><span>coordinates stay on device</span></div>
       </div>
       <button class="film-toggle" id="filmToggle" type="button" aria-label="Pause molecular scan">Pause scan</button>
     </section>
@@ -78,8 +78,8 @@
           <button type="button" id="copyCommand">Copy</button>
         </div>
         <div class="install-links">
-          <a href="https://github.com/AkulK08/rinetlab/releases/tag/v1.2.0-build012">Release notes ↗</a>
-          <a id="zipDownload" href="https://github.com/AkulK08/rinetlab/releases/download/v1.2.0-build012/RINet_Build_012_Research_Utility_Studio_2026-08-16.zip" target="_blank" rel="noreferrer">Download ZIP ↗</a>
+          <a href="https://github.com/AkulK08/rinetlab/releases/tag/v1.3.0-build013">Release notes ↗</a>
+          <a id="zipDownload" href="https://github.com/AkulK08/rinetlab/releases/download/v1.3.0-build013/RINet_Build_013_Scientific_Transparency_Studio_2026-08-24.zip" target="_blank" rel="noreferrer">Download ZIP ↗</a>
           <a href="https://github.com/AkulK08/rinetlab-studio">Source ↗</a>
         </div>
         <div class="install-assurances" aria-label="Local application facts">
@@ -90,50 +90,62 @@
 
     <section class="statement" id="product">
       <div class="statement-lead">
-        <p class="section-tag">02 / What you get</p>
-        <h2>Upload one PDB.<br>Know what to test next.</h2>
-        <p>RINet finds residues that stand out in the supplied structure, explains them in biological language, suggests a comparison residue, and turns the result into a practical experiment plan.</p>
+        <p class="section-tag">02 / How the science works</p>
+        <h2>See the argument,<br>not just the answer.</h2>
+        <p>RINet treats a structure as a residue graph: residues are nodes, non-local Cα contacts are edges, and each ranking feature remains visible. It does not infer function from centrality alone. Instead, it asks whether a graph-prioritized perturbation produces a larger biological effect than a structurally matched lower-signal control while expression and fold remain intact.</p>
       </div>
       <div class="evidence-stack" aria-label="RINet analysis path">
-        <div class="stack-head"><span>FROM STRUCTURE TO EXPERIMENT</span><strong>One continuous analysis</strong></div>
-        <div class="evidence-step"><span>01</span><strong>Read the structure</strong><em>chains · missing atoms · confidence fields</em></div>
-        <div class="evidence-step"><span>02</span><strong>Prioritize residues</strong><em>local contacts · position · structural context</em></div>
-        <div class="evidence-step"><span>03</span><strong>Design a fair test</strong><em>candidate · matched comparison · mutation options</em></div>
-        <div class="evidence-verdict"><span>OUTPUT</span><strong>What to change, what to measure, and what result would change your mind.</strong></div>
+        <div class="stack-head"><span>FROM COORDINATES TO FALSIFIABLE CONTRAST</span><strong>Every assumption exposed</strong></div>
+        <div class="evidence-step"><span>01</span><strong>Reconcile the coordinate record</strong><em>author chains · numbering · insertion codes · gaps · ligands</em></div>
+        <div class="evidence-step"><span>02</span><strong>Build the residue graph</strong><em>Cα cutoff · non-local edges · interfaces · shortest paths</em></div>
+        <div class="evidence-step"><span>03</span><strong>Decompose the ranking</strong><em>degree · closeness · betweenness · burial · ligand evidence</em></div>
+        <div class="evidence-step"><span>04</span><strong>Stress-test the result</strong><em>7–9 Å sensitivity · known-site recovery · alternate lenses</em></div>
+        <div class="evidence-step"><span>05</span><strong>Design the contrast</strong><em>candidate · matched control · mutation chemistry · integrity gates</em></div>
+        <div class="evidence-verdict"><span>OUTPUT</span><strong>An auditable hypothesis, a fair experiment, and the result that should make you stop.</strong></div>
       </div>
     </section>
 
+    <section class="science-position" aria-labelledby="position-title">
+      <div class="position-head"><p class="section-tag">03 / What is actually new</p><h2 id="position-title">The missing layer between a structure viewer and an experiment.</h2><p>Structural biologists already have excellent tools for visualization, sequence analysis, molecular dynamics and energy calculations. RINet does not imitate them. It packages the residue-network question into a reproducible decision workflow and keeps the evidence attached to the recommendation.</p></div>
+      <div class="position-grid">
+        <article><span>VIEWER / DAILY TOOL</span><strong>Shows coordinates and lets you choose an analysis.</strong><p>Essential for expert inspection, but it does not automatically construct a matched experimental contrast or a stopping rule.</p></article>
+        <article><span>RINET</span><strong>Shows why one residue outranks another.</strong><p>Exact score contributions, full ranking, graph embedding, cutoff sensitivity, known-site recovery and a chemistry-aware mutation ladder.</p></article>
+        <article><span>EXPERIMENTAL VALUE</span><strong>Separates site-specific biology from damaged protein.</strong><p>Candidate and matched lower-signal control are measured beside wild type, with abundance and folding gates before function is interpreted.</p></article>
+      </div>
+      <div class="position-boundary"><strong>Scientific boundary</strong><span>A static residue graph is not an all-atom potential, evolutionary model, MD trajectory, free-energy calculation or proof of allostery. RINet exposes those missing evidence classes so they can be added rather than silently implied.</span></div>
+    </section>
+
     <section class="capabilities" aria-label="RINet scientific facilities">
-      <div class="capabilities-head"><p class="section-tag">03 / The guidance</p><h2>Built for decisions,<br>not dashboards.</h2></div>
+      <div class="capabilities-head"><p class="section-tag">04 / The evidence</p><h2>Built for scrutiny,<br>then decisions.</h2></div>
       <div class="capability-grid">
-        <article><span>A</span><h3>Where should I look?</h3><p>A short, clickable list of residues with the strongest structural reasons to investigate first.</p><small>PRIORITIZED RESIDUES</small></article>
-        <article><span>B</span><h3>Why might it matter?</h3><p>Plain-language explanations connect each residue to nearby contacts, structural position and data quality.</p><small>BIOLOGICAL CONTEXT</small></article>
-        <article><span>C</span><h3>What should I test?</h3><p>Mutation ideas, a matched comparison residue, measurements and a step-by-step experimental outline.</p><small>EXPERIMENT GUIDE</small></article>
-        <article><span>D</span><h3>What would disprove it?</h3><p>Every hypothesis includes the result that would weaken it, so a ranking never masquerades as proof.</p><small>DECISION RULE</small></article>
+        <article><span>A</span><h3>Why this residue?</h3><p>Ten ranked sites, exact graph metrics, point-by-point score decomposition and a complete searchable table.</p><small>TRANSPARENT RANKING</small></article>
+        <article><span>B</span><h3>Does the answer survive?</h3><p>Contact-cutoff sensitivity, known-site recovery and hypothesis-specific ligand, interface, allostery, stability and antibody lenses.</p><small>SENSITIVITY + VALIDATION</small></article>
+        <article><span>C</span><h3>What should I perturb?</h3><p>Property-aware mutation rationale, a matched lower-signal control, sequence reconciliation and integrity-first measurement gates.</p><small>CONTROLLED EXPERIMENT</small></article>
+        <article><span>D</span><h3>What would disprove it?</h3><p>Competing explanations and stopping rules prevent contact centrality from masquerading as mechanism.</p><small>FALSIFICATION RULE</small></article>
       </div>
     </section>
 
     <section class="brief-promo" id="brief">
       <div class="brief-copy">
-        <p class="section-tag">04 / Try it now</p>
-        <h2>One PDB in.<br>An experiment guide out.</h2>
-        <p>Drop a PDB, enter a PDB ID, or run the instant demo. See the 3D surface, what the protein may be useful for, the experiment worth running, comparison controls and a methods-ready record. Deterministic graph theory produces the guidance. No AI model is involved, and your coordinates stay in the browser.</p>
+        <p class="section-tag">05 / Try the scientific workbench</p>
+        <h2>One structure in.<br>An auditable record out.</h2>
+        <p>Drop a PDB/mmCIF, enter a PDB ID, or run the hemoglobin demo. Inspect chain-aware 3D and sequence views, every score contribution, graph embedding, benchmark recovery, cutoff sensitivity, alternate conformational states, matched controls and a methods-ready JSON receipt. Deterministic graph theory produces the result; your uploaded coordinates stay in the browser.</p>
         <div class="brief-actions"><a class="button button-dark" href="/brief/">Analyze my PDB</a><a class="plain-link" href="/brief/?demo=1">Run instant demo ↗</a></div>
       </div>
       <div class="brief-terminal" aria-label="Example Structure Brief output">
-        <div class="terminal-head"><span>EXPERIMENT GUIDE / 1CRN</span><span>ANALYZED LOCALLY</span></div>
-        <div class="terminal-signal"><span>FIRST LOOK</span><strong>ARG A:10</strong><i style="--signal:88%"></i></div>
-        <div class="terminal-line"><span>WHY</span><strong>Contact-dense, structurally connected position</strong></div>
-        <div class="terminal-line"><span>COMPARE WITH</span><strong>Lower-contact residue in a similar context</strong></div>
-        <div class="terminal-line"><span>TEST</span><strong>Candidate perturbation + matched control</strong></div>
-        <div class="terminal-line"><span>READOUT</span><strong>Function · expression · folding</strong></div>
-        <div class="terminal-status"><i></i> GUIDANCE READY · NO ACCOUNT REQUIRED</div>
+        <div class="terminal-head"><span>EVIDENCE TRACE / 4HHB</span><span>ANALYZED LOCALLY</span></div>
+        <div class="terminal-signal"><span>FIRST LOOK</span><strong>HIS A:87</strong><i style="--signal:88%"></i></div>
+        <div class="terminal-line"><span>WHY</span><strong>2.1 Å direct Fe coordination + explicit graph contributions</strong></div>
+        <div class="terminal-line"><span>COMPARE WITH</span><strong>Chemistry-, burial- and chain-matched lower-signal residue</strong></div>
+        <div class="terminal-line"><span>STRESS TEST</span><strong>Rank stability at 7.0, 8.0 and 9.0 Å</strong></div>
+        <div class="terminal-line"><span>READOUT</span><strong>Function only after expression + fold remain intact</strong></div>
+        <div class="terminal-status"><i></i> EVIDENCE TRACE READY · NO ACCOUNT REQUIRED</div>
       </div>
     </section>
 
     <section class="contact" id="contact">
       <div class="contact-copy">
-        <p class="section-tag">05 / Contact</p>
+        <p class="section-tag">06 / Contact</p>
         <h2>Questions, ideas,<br>or feedback.</h2>
         <p>Ask a question, share what you tried, report a problem, or suggest what RINet should do next. Short notes are welcome.</p>
       </div>

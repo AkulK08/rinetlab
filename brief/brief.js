@@ -9,12 +9,29 @@ const els = {
 };
 
 let current = null;
-const molecular = { stage: null, component: null, representation: "surface", spinning: true, highlight: null, topResidues: [], resultScheme: null, selectedResidue: null };
+const molecular = { stage: null, component: null, representation: "surface", colorMode: "chain", background: "black", spinning: false, highlight: null, topResidues: [], resultScheme: null, selectedResidue: null };
 let activeDiscoveryMode = "biology";
+let activeScoringLens = "general";
+let activeSequenceChain = null;
+let userHypothesis = "";
 const preview = { stage: null, component: null };
 const demoTour = { timer: null, frame: null, active: false };
 const waterNames = new Set(["HOH", "WAT", "DOD"]);
 const metalElements = new Set(["LI", "NA", "MG", "AL", "K", "CA", "MN", "FE", "CO", "NI", "CU", "ZN", "SR", "MO", "CD", "CS", "BA", "HG"]);
+const aminoAcidOneLetter = { ALA:"A", ARG:"R", ASN:"N", ASP:"D", CYS:"C", GLN:"Q", GLU:"E", GLY:"G", HIS:"H", ILE:"I", LEU:"L", LYS:"K", MET:"M", PHE:"F", PRO:"P", SER:"S", THR:"T", TRP:"W", TYR:"Y", VAL:"V", SEC:"U", PYL:"O" };
+const featureLabels = { degree:"Contact degree", weighted:"Distance-weighted packing", longRange:"Long-range contacts", interchain:"Cross-chain contacts", closeness:"Closeness centrality", betweenness:"Betweenness centrality", burial:"Radial burial", ligand:"Ligand proximity", coordination:"Direct metal coordination", cdr:"CDR-region evidence" };
+const scoreLenses = {
+  general: { label:"General", description:"Balanced structure-first ranking. Direct metal coordination is distinct from generic ligand proximity; no single metric is treated as function.", weights:{ degree:.15, weighted:.10, longRange:.10, interchain:.12, closeness:.10, betweenness:.08, burial:.05, ligand:.15, coordination:.15, cdr:0 } },
+  ligand: { label:"Ligand", description:"Prioritizes direct bound-group neighborhoods and metal coordination while retaining network reach and burial controls.", weights:{ degree:.08, weighted:.08, longRange:.05, interchain:.04, closeness:.07, betweenness:.06, burial:.06, ligand:.36, coordination:.20, cdr:0 } },
+  interface: { label:"Interface", description:"Prioritizes cross-chain contacts and graph bottlenecks. Crystal contacts and assembly choice must be checked.", weights:{ degree:.14, weighted:.10, longRange:.09, interchain:.38, closeness:.09, betweenness:.12, burial:.08, ligand:0, coordination:0, cdr:0 } },
+  allostery: { label:"Allostery", description:"Emphasizes long-range and shortest-path structure. This is an allosteric hypothesis lens, not proof of coupling.", weights:{ degree:.10, weighted:.07, longRange:.22, interchain:.13, closeness:.15, betweenness:.25, burial:.04, ligand:.04, coordination:0, cdr:0 } },
+  stability: { label:"Stability", description:"Emphasizes packing and burial to find structural liabilities; functional interpretation comes only after integrity testing.", weights:{ degree:.18, weighted:.22, longRange:.10, interchain:.10, closeness:.10, betweenness:.08, burial:.20, ligand:.02, coordination:0, cdr:0 } },
+  antibody: { label:"Antibody / CDR", description:"Adds antibody-variable-loop evidence when antibody-like sequence context is detected; CDR ranges remain a visible heuristic unless externally annotated.", weights:{ degree:.10, weighted:.06, longRange:.05, interchain:.25, closeness:.08, betweenness:.08, burial:.02, ligand:.10, coordination:0, cdr:.26 } }
+};
+const benchmarkManifest = {
+  "4HHB": { status:"Curated structural-anchor sanity check", source:"https://www.rcsb.org/structure/4HHB", citation:"4HHB primary structure and heme coordination", sites:["HIS A:87","HIS B:92","HIS C:87","HIS D:92"], note:"Proximal F8 histidines coordinate heme iron. Labels are evaluated after ranking and contribute no score." },
+  "5DTL": { status:"Curated published-site sanity check", source:"https://doi.org/10.1021/jacs.5b09923", citation:"Arginine 66 controls dark-state formation in mEos2", sites:["ARG A:66","ARG B:66","ARG C:66","ARG D:66","ARG E:66"], note:"Published Arg66 site. Chain copies are evaluated independently and contribute no score." }
+};
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 
 function switchSource(source, focusInput = true) {
@@ -134,7 +151,7 @@ async function readFile(file) {
 async function loadDemo() {
   if (els.demoButton.disabled) return;
   els.demoButton.disabled = true;
-  fetch(`https://github.com/AkulK08/rinetlab/releases/download/v1.2.0-build012/rinet-structure-brief-demo.txt?t=${Date.now()}`, { mode: "no-cors", cache: "no-store", keepalive: true }).catch(() => {});
+  fetch(`https://github.com/AkulK08/rinetlab/releases/download/v1.3.0-build013/rinet-structure-brief-demo.txt?t=${Date.now()}`, { mode: "no-cors", cache: "no-store", keepalive: true }).catch(() => {});
   setStatus("Loading the built-in 4HHB human deoxyhemoglobin demonstration…");
   try {
     const response = await fetch("/brief/demo/4hhb.pdb", { cache: "force-cache" });
@@ -152,12 +169,18 @@ async function fetchPdb(value) {
   if (!/^[A-Z0-9]{4}$/.test(id)) return setStatus("Enter a four-character PDB identifier, such as 1CRN.", true);
   setStatus(`Fetching ${id} directly from RCSB PDB…`);
   try {
-    const response = await fetch(`https://files.rcsb.org/download/${id}.pdb`);
-    if (!response.ok) throw new Error(`RCSB returned ${response.status}`);
+    let response = await fetch(`https://files.rcsb.org/download/${id}.pdb`);
+    let format = "pdb";
+    if (!response.ok) {
+      setStatus(`${id} is not available in legacy PDB format. Trying mmCIF for large or newly released structures…`);
+      response = await fetch(`https://files.rcsb.org/download/${id}.cif`);
+      format = "cif";
+    }
+    if (!response.ok) throw new Error(`RCSB returned ${response.status} for both PDB and mmCIF`);
     const text = await response.text();
-    await analyze(text, `${id}.pdb`, "rcsb-pdb");
+    await analyze(text, `${id}.${format}`, `rcsb-${format}`);
   } catch (error) {
-    setStatus(`Could not fetch ${id}: ${error.message}. You can download the PDB and use Local file instead.`, true);
+    setStatus(`Could not fetch ${id}: ${error.message}. Download its PDB or mmCIF record and use Local file instead.`, true);
   }
 }
 
@@ -190,13 +213,34 @@ function mutationSuggestion(residue) {
 function mutationLadder(residue) {
   const name = residue?.name || "Residue";
   const conservative = { ARG: "R→K", LYS: "K→R", ASP: "D→E", GLU: "E→D", ASN: "N→Q", GLN: "Q→N", SER: "S→T", THR: "T→S", PHE: "F→Y", TYR: "Y→F", TRP: "W→F", LEU: "L→I", ILE: "I→V", VAL: "V→I", MET: "M→L", CYS: "C→S", HIS: "H→N", ALA: "A→G", GLY: "G→A", PRO: "P→A" };
-  const neutral = { ARG: "R→Q", LYS: "K→Q", ASP: "D→N", GLU: "E→Q", HIS: "H→N", SER: "S→A", THR: "T→A", ASN: "N→A", GLN: "Q→A", CYS: "C→A" };
+  const neutral = { ARG: "R→Q", LYS: "K→Q", ASP: "D→N", GLU: "E→Q", HIS: "H→A", SER: "S→A", THR: "T→A", ASN: "N→A", GLN: "Q→A", CYS: "C→A" };
   const stress = { ARG: "R→E", LYS: "K→E", ASP: "D→K", GLU: "E→K", HIS: "H→E", GLY: "G→P", PRO: "P→G" };
   return {
     conservative: conservative[name] || `${name}→similar residue`,
     neutral: neutral[name] || `${name}→Ala`,
     stress: residue?.disulfidePartner ? `${residue.disulfidePartner.label.replace("CYS ", "Cys ")}→Ser` : (stress[name] || `${name}→Pro`)
   };
+}
+
+function mutationRationale(residue, substitution = mutationLadder(residue).conservative) {
+  const chemistry = {
+    ASN:"Asparagine is a neutral amide. N→Q retains the amide donor/acceptor pattern while adding one methylene, testing side-chain reach and hydrogen-bond geometry without claiming that the fold will be preserved.",
+    GLN:"Glutamine is a neutral amide. Q→N retains the amide while shortening the side chain by one methylene, testing geometric reach.",
+    ASP:"Aspartate is negatively charged near neutral pH. D→E preserves charge while lengthening the side chain; D→N removes charge while retaining an amide-sized polar group.",
+    GLU:"Glutamate is negatively charged near neutral pH. E→D preserves charge while shortening reach; E→Q removes charge while retaining similar size.",
+    LYS:"Lysine is usually positively charged. K→R preserves positive charge with different geometry; K→Q removes charge while keeping a long polar side chain.",
+    ARG:"Arginine is usually positively charged and offers directional guanidinium contacts. R→K preserves charge with fewer hydrogen-bonding geometries; R→Q removes charge.",
+    HIS:"Histidine can change protonation and coordinate metals. H→N removes the imidazole ring and cannot preserve direct metal coordination; at a metal-linked site it is an intentionally disruptive mechanistic probe, so heme/metal occupancy and fold must be measured first.",
+    CYS:"Cysteine can be redox-active or disulfide-bonded. C→S replaces sulfur with oxygen; if a disulfide is present, fold and assembly are the primary readouts.",
+    GLY:"Glycine uniquely lacks a side chain. G→A adds a methyl group and tests backbone-space tolerance rather than a simple chemical feature.",
+    PRO:"Proline constrains backbone geometry. P→A removes that constraint and may alter local secondary structure.",
+    PHE:"Phenylalanine is aromatic and hydrophobic. F→Y preserves the aromatic ring while adding a hydroxyl.",
+    TYR:"Tyrosine is aromatic with a hydroxyl. Y→F preserves the ring while removing hydrogen-bond donation.",
+    TRP:"Tryptophan is a large aromatic side chain. W→F reduces size while retaining aromaticity.",
+    SER:"Serine is a small hydroxyl-bearing residue. S→T preserves the hydroxyl while adding a methyl group.",
+    THR:"Threonine is a branched hydroxyl-bearing residue. T→S preserves the hydroxyl while reducing steric bulk."
+  };
+  return `${substitution}: ${chemistry[residue?.name] || `${residue?.name || "This residue"} is changed first with the least severe available property-aware substitution; packing and fold preservation still require measurement.`}`;
 }
 
 function pdbRecord(lines, prefix, start = 10) {
@@ -215,6 +259,281 @@ function parseMetadata(lines) {
     organism,
     keywords: pdbRecord(lines, "KEYWDS", 10),
   };
+}
+
+function cleanCifValue(value) {
+  const text = String(value ?? "").trim();
+  if (!text || text === "." || text === "?") return "";
+  if ((text.startsWith("'") && text.endsWith("'")) || (text.startsWith('"') && text.endsWith('"'))) return text.slice(1, -1);
+  return text;
+}
+
+function cifScalar(text, field) {
+  const escaped = field.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = text.match(new RegExp(`^${escaped}\\s+(.+)$`, "m"));
+  return cleanCifValue(match?.[1] || "");
+}
+
+function tokenizeCifRow(line) {
+  return line.match(/'(?:[^']|'')*'|"(?:[^"]|"")*"|\S+/g)?.map(cleanCifValue) || [];
+}
+
+function parseMmcifAtoms(text) {
+  const lines = text.replace(/\r/g, "").split("\n");
+  let columns = null;
+  let dataStart = -1;
+  for (let i = 0; i < lines.length; i += 1) {
+    if (lines[i].trim() !== "loop_") continue;
+    const candidate = [];
+    let cursor = i + 1;
+    while (cursor < lines.length && lines[cursor].trim().startsWith("_")) candidate.push(lines[cursor++].trim());
+    if (candidate.includes("_atom_site.Cartn_x") && candidate.includes("_atom_site.Cartn_y") && candidate.includes("_atom_site.Cartn_z")) {
+      columns = candidate;
+      dataStart = cursor;
+      break;
+    }
+  }
+  if (!columns) throw new Error("No mmCIF atom_site coordinate loop was found");
+  const index = name => columns.indexOf(name);
+  const firstIndex = names => names.map(index).find(value => value >= 0) ?? -1;
+  const field = (row, names) => {
+    const position = firstIndex(names);
+    return position >= 0 ? cleanCifValue(row[position]) : "";
+  };
+  const allAtoms = [];
+  const pending = [];
+  for (let cursor = dataStart; cursor < lines.length; cursor += 1) {
+    const trimmed = lines[cursor].trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      if (allAtoms.length && !pending.length) break;
+      continue;
+    }
+    if ((trimmed === "loop_" || trimmed.startsWith("_")) && !pending.length) break;
+    pending.push(...tokenizeCifRow(lines[cursor]));
+    while (pending.length >= columns.length) {
+      const row = pending.splice(0, columns.length);
+      const record = field(row, ["_atom_site.group_PDB"]) || "ATOM";
+      const atom = {
+        record, serial: Number(field(row, ["_atom_site.id"])),
+        atom: field(row, ["_atom_site.auth_atom_id", "_atom_site.label_atom_id"]),
+        alt: field(row, ["_atom_site.label_alt_id"]),
+        residue: field(row, ["_atom_site.auth_comp_id", "_atom_site.label_comp_id"]),
+        chain: field(row, ["_atom_site.auth_asym_id", "_atom_site.label_asym_id"]) || "∅",
+        seq: Number(field(row, ["_atom_site.auth_seq_id", "_atom_site.label_seq_id"])),
+        insertion: field(row, ["_atom_site.pdbx_PDB_ins_code"]),
+        x: Number(field(row, ["_atom_site.Cartn_x"])), y: Number(field(row, ["_atom_site.Cartn_y"])), z: Number(field(row, ["_atom_site.Cartn_z"])),
+        occupancy: Number(field(row, ["_atom_site.occupancy"])), b: Number(field(row, ["_atom_site.B_iso_or_equiv"])),
+        element: field(row, ["_atom_site.type_symbol"]).toUpperCase(), model: Number(field(row, ["_atom_site.pdbx_PDB_model_num"])) || 1
+      };
+      if ([atom.x, atom.y, atom.z].every(Number.isFinite)) allAtoms.push(atom);
+    }
+  }
+  const pdbId = cifScalar(text, "_entry.id").toUpperCase();
+  const title = cifScalar(text, "_struct.title");
+  const compound = cifScalar(text, "_entity.pdbx_description");
+  const organism = cifScalar(text, "_entity_src_gen.pdbx_gene_src_scientific_name") || cifScalar(text, "_entity_src_nat.pdbx_organism_scientific");
+  const classification = cifScalar(text, "_struct_keywords.pdbx_keywords");
+  const keywords = cifScalar(text, "_struct_keywords.text");
+  return { allAtoms, metadata:{ pdbId, title, compound, organism, classification, keywords }, models: Math.max(...allAtoms.map(atom => atom.model || 1), 1), format:"mmCIF" };
+}
+
+function computeBetweenness(cas, adjacency) {
+  const values = new Map(cas.map(residue => [residue.key, 0]));
+  if (cas.length > 900) return { values, calculated:false };
+  cas.forEach(source => {
+    const stack = [];
+    const predecessors = new Map(cas.map(residue => [residue.key, []]));
+    const paths = new Map(cas.map(residue => [residue.key, 0]));
+    const depth = new Map(cas.map(residue => [residue.key, -1]));
+    paths.set(source.key, 1); depth.set(source.key, 0);
+    const queue = [source.key];
+    for (let cursor = 0; cursor < queue.length; cursor += 1) {
+      const node = queue[cursor]; stack.push(node);
+      adjacency.get(node).forEach(neighbor => {
+        if (depth.get(neighbor) < 0) { queue.push(neighbor); depth.set(neighbor, depth.get(node) + 1); }
+        if (depth.get(neighbor) === depth.get(node) + 1) {
+          paths.set(neighbor, paths.get(neighbor) + paths.get(node));
+          predecessors.get(neighbor).push(node);
+        }
+      });
+    }
+    const dependency = new Map(cas.map(residue => [residue.key, 0]));
+    while (stack.length) {
+      const node = stack.pop();
+      predecessors.get(node).forEach(predecessor => {
+        const denominator = paths.get(node) || 1;
+        dependency.set(predecessor, dependency.get(predecessor) + (paths.get(predecessor) / denominator) * (1 + dependency.get(node)));
+      });
+      if (node !== source.key) values.set(node, values.get(node) + dependency.get(node));
+    }
+  });
+  values.forEach((value, key) => values.set(key, value / 2));
+  return { values, calculated:true };
+}
+
+function scoreResidues(metrics, lensName = "general") {
+  const lens = scoreLenses[lensName] || scoreLenses.general;
+  const maxima = {};
+  ["degree","weighted","longRange","interchain","closeness","betweenness"].forEach(feature => { maxima[feature] = Math.max(...metrics.map(row => row[feature] || 0), 1e-12); });
+  const ranked = metrics.map(row => {
+    const normalized = {
+      degree:(row.degree || 0) / maxima.degree, weighted:(row.weighted || 0) / maxima.weighted,
+      longRange:(row.longRange || 0) / maxima.longRange, interchain:(row.interchain || 0) / maxima.interchain,
+      closeness:(row.closeness || 0) / maxima.closeness, betweenness:(row.betweenness || 0) / maxima.betweenness,
+      burial:row.burial || 0, ligand:row.ligandDistance === null ? 0 : Math.max(0, 1 - row.ligandDistance / 10), coordination:row.directMetalCoordination ? 1 : 0, cdr:row.cdrHeuristic ? 1 : 0
+    };
+    const contributions = Object.fromEntries(Object.entries(lens.weights).map(([feature, weight]) => [feature, 100 * weight * (normalized[feature] || 0)]));
+    const score = Object.values(contributions).reduce((sum, value) => sum + value, 0);
+    const signals = [];
+    if (row.directMetalCoordination) signals.push(`${row.ligandDistance.toFixed(1)} Å direct ${row.nearestLigandElement} coordination in ${row.nearestLigand}`);
+    else if (row.ligandDistance !== null && row.ligandDistance <= 6) signals.push(`${row.ligandDistance.toFixed(1)} Å from ${row.nearestLigand || "a bound group"}`);
+    if (row.interchain) signals.push(`${row.interchain} cross-chain contact${row.interchain === 1 ? "" : "s"}`);
+    if (row.longRange) signals.push(`${row.longRange} long-range contact${row.longRange === 1 ? "" : "s"}`);
+    if (row.betweenness > 0) signals.push("shortest-path participation");
+    if (row.cdrHeuristic) signals.push("antibody CDR-range heuristic");
+    if (row.disulfidePartner) signals.push(`probable disulfide to ${row.disulfidePartner.label} (${row.disulfidePartner.distance.toFixed(2)} Å; no score bonus)`);
+    if (row.burial >= .58) signals.push("buried structural context");
+    if (!signals.length) signals.push("strongest available contact context");
+    return { ...row, normalized, contributions, score, context:signals[0], rationale:`${row.degree} non-local contacts; ${signals.join("; ")}.` };
+  }).sort((a,b) => b.score - a.score || b.degree - a.degree || a.label.localeCompare(b.label));
+  ranked.forEach((row, index) => { row.rank = index + 1; row.percentile = ranked.length > 1 ? 100 * (ranked.length - index - 1) / (ranked.length - 1) : 100; });
+  return ranked;
+}
+
+function pickMatchedControl(ranked, candidate) {
+  if (!candidate) return null;
+  const pool = ranked.slice(Math.min(10, ranked.length), Math.max(11, Math.ceil(ranked.length * .9))).filter(row => row.label !== candidate.label);
+  const penalty = row => {
+    const chemistry = row.residueClass === candidate.residueClass ? 0 : 2;
+    const burial = 2 * Math.abs(row.burial - candidate.burial);
+    const quality = Math.min(1, Math.abs((row.bMean || 0) - (candidate.bMean || 0)) / 40);
+    const chain = row.chain === candidate.chain ? 0 : .35;
+    const residualSignal = row.score / 100;
+    return chemistry + burial + quality + chain + residualSignal;
+  };
+  const control = [...pool].sort((a,b) => penalty(a) - penalty(b))[0] || ranked.at(-1) || null;
+  if (!control) return null;
+  const quality = Math.max(0, Math.min(100, 100 - 24 * penalty(control)));
+  return { ...control, matchQuality:quality, controlRationale:`Matched on ${control.residueClass === candidate.residueClass ? "residue chemistry" : "nearest available chemistry"}, burial (${control.burial.toFixed(2)} vs ${candidate.burial.toFixed(2)}), B field and ${control.chain === candidate.chain ? "chain context" : "available chain context"}; deliberately lower network score (${control.score.toFixed(1)} vs ${candidate.score.toFixed(1)}).` };
+}
+
+function rerankReport(report, lensName = activeScoringLens) {
+  report.scoringLens = lensName;
+  report.scoreWeights = { ...scoreLenses[lensName].weights };
+  report.allResidues = scoreResidues(report.residueMetrics, lensName);
+  report.topResidues = report.allResidues.slice(0, 10);
+  report.controlResidue = pickMatchedControl(report.allResidues, report.topResidues[0]);
+  return report;
+}
+
+function buildReportFromAtoms({ allAtoms, metadata, models = 1, format = "PDB", contactCutoff = 8 }) {
+  const alternateCount = allAtoms.filter(atom => atom.alt && atom.alt !== "A").length;
+  const atoms = allAtoms.filter(atom => !atom.alt || atom.alt === "A");
+  const polymerAtoms = atoms.filter(atom => atom.record === "ATOM");
+  if (!polymerAtoms.length) throw new Error("No polymer ATOM records were found");
+  const residueMap = new Map();
+  polymerAtoms.forEach(atom => {
+    const key = `${atom.chain}:${atom.seq}:${atom.insertion}:${atom.residue}`;
+    if (!residueMap.has(key)) residueMap.set(key, { key, chain:atom.chain, seq:atom.seq, insertion:atom.insertion, name:atom.residue, atoms:[], ca:null });
+    const residue = residueMap.get(key); residue.atoms.push(atom); if (atom.atom === "CA") residue.ca = atom;
+  });
+  const residues = [...residueMap.values()];
+  const chains = new Map();
+  residues.forEach(residue => { if (!chains.has(residue.chain)) chains.set(residue.chain, []); chains.get(residue.chain).push(residue); });
+  chains.forEach(items => items.sort((a,b) => a.seq - b.seq || a.insertion.localeCompare(b.insertion)).forEach((residue,index) => { residue.sequenceIndex = index + 1; }));
+  const antibodyContext = /antibody|immunoglobulin|fab\b|nanobody|variable domain/i.test(Object.values(metadata || {}).join(" "));
+  const antibodyChains = new Set();
+  if (antibodyContext) chains.forEach((items, chain) => {
+    const sequence = items.map(item => aminoAcidOneLetter[item.name] || "X").join("");
+    const motifLike = items.length >= 85 && items.length <= 260 && /C.{7,22}[WFY].{35,85}C/.test(sequence);
+    if (motifLike || chains.size <= 3) antibodyChains.add(chain);
+  });
+  const cdrRanges = [[24,35],[50,65],[89,102]];
+  residues.forEach(residue => { residue.cdrHeuristic = antibodyChains.has(residue.chain) && cdrRanges.some(([start,end]) => residue.sequenceIndex >= start && residue.sequenceIndex <= end); });
+  const disulfidePartners = new Map();
+  const cysteines = residues.map(residue => ({ residue, sulfur:residue.atoms.find(atom => atom.atom === "SG") })).filter(item => item.residue.name === "CYS" && item.sulfur);
+  for (let i=0;i<cysteines.length;i+=1) for (let j=i+1;j<cysteines.length;j+=1) {
+    const separation = distance(cysteines[i].sulfur,cysteines[j].sulfur);
+    if (separation >= 1.7 && separation <= 2.3) {
+      const label = item => `CYS ${item.residue.chain}:${item.residue.seq}${item.residue.insertion}`;
+      disulfidePartners.set(cysteines[i].residue.key,{ label:label(cysteines[j]), distance:separation });
+      disulfidePartners.set(cysteines[j].residue.key,{ label:label(cysteines[i]), distance:separation });
+    }
+  }
+  const degree = new Map(residues.map(row => [row.key,0]));
+  const weighted = new Map(residues.map(row => [row.key,0]));
+  const longRange = new Map(residues.map(row => [row.key,0]));
+  const interchain = new Map(residues.map(row => [row.key,0]));
+  const adjacency = new Map(residues.map(row => [row.key,new Set()]));
+  const cas = residues.filter(row => row.ca);
+  const edges = [];
+  const spatialCells = new Map();
+  const cellKey = (x,y,z) => `${x},${y},${z}`;
+  cas.forEach(a => {
+    const cell = [Math.floor(a.ca.x/contactCutoff),Math.floor(a.ca.y/contactCutoff),Math.floor(a.ca.z/contactCutoff)];
+    for (let dx=-1;dx<=1;dx+=1) for (let dy=-1;dy<=1;dy+=1) for (let dz=-1;dz<=1;dz+=1) {
+      (spatialCells.get(cellKey(cell[0]+dx,cell[1]+dy,cell[2]+dz)) || []).forEach(b => {
+        if (a.chain === b.chain && Math.abs(a.sequenceIndex-b.sequenceIndex) <= 2) return;
+        const separation=distance(a.ca,b.ca);
+        if (separation > contactCutoff) return;
+        edges.push({ source:a.key, target:b.key, distance:separation });
+        degree.set(a.key,degree.get(a.key)+1); degree.set(b.key,degree.get(b.key)+1);
+        adjacency.get(a.key).add(b.key); adjacency.get(b.key).add(a.key);
+        weighted.set(a.key,weighted.get(a.key)+(contactCutoff-separation)/contactCutoff); weighted.set(b.key,weighted.get(b.key)+(contactCutoff-separation)/contactCutoff);
+        if (a.chain !== b.chain) { interchain.set(a.key,interchain.get(a.key)+1); interchain.set(b.key,interchain.get(b.key)+1); }
+        else if (Math.abs(a.sequenceIndex-b.sequenceIndex) >= 12) { longRange.set(a.key,longRange.get(a.key)+1); longRange.set(b.key,longRange.get(b.key)+1); }
+      });
+    }
+    const ownKey=cellKey(...cell);
+    if (!spatialCells.has(ownKey)) spatialCells.set(ownKey,[]);
+    spatialCells.get(ownKey).push(a);
+  });
+  const closeness = new Map(residues.map(row => [row.key,0]));
+  if (cas.length <= 1500) cas.forEach(start => {
+    const distances=new Map([[start.key,0]]), queue=[start.key];
+    for (let cursor=0;cursor<queue.length;cursor+=1) adjacency.get(queue[cursor]).forEach(neighbor => { if (!distances.has(neighbor)) { distances.set(neighbor,distances.get(queue[cursor])+1); queue.push(neighbor); } });
+    const total=[...distances.values()].reduce((sum,value)=>sum+value,0);
+    closeness.set(start.key,total>0?(distances.size-1)/total:0);
+  });
+  const betweennessResult = computeBetweenness(cas, adjacency);
+  const chainReports = [...chains.entries()].map(([chain,items]) => {
+    let breaks=0;
+    for (let i=1;i<items.length;i+=1) if (items[i].seq-items[i-1].seq>1 || (items[i].ca && items[i-1].ca && distance(items[i].ca,items[i-1].ca)>4.5)) breaks+=1;
+    return { chain, residues:items.length, atoms:items.reduce((sum,row)=>sum+row.atoms.length,0), start:items[0]?.seq, end:items.at(-1)?.seq, breaks, sequence:items.map(item=>aminoAcidOneLetter[item.name]||"X").join("") };
+  });
+  const hetero=new Map(), waters=[];
+  const heteroAtoms=atoms.filter(atom => atom.record === "HETATM" && !waterNames.has(atom.residue));
+  atoms.filter(atom => atom.record === "HETATM").forEach(atom => {
+    if (waterNames.has(atom.residue)) return waters.push(atom);
+    const key=`${atom.residue}:${atom.chain}:${atom.seq}`;
+    if (!hetero.has(key)) hetero.set(key,{ name:atom.residue,chain:atom.chain,seq:atom.seq,elements:new Set() });
+    hetero.get(key).elements.add(atom.element);
+  });
+  const metals=[...hetero.values()].filter(group => [...group.elements].some(element=>metalElements.has(element)));
+  const bValues=polymerAtoms.map(atom=>atom.b).filter(Number.isFinite);
+  const lowOccupancy=polymerAtoms.filter(atom=>Number.isFinite(atom.occupancy)&&atom.occupancy<.999).length;
+  const missingCa=residues.filter(row=>!row.ca).length;
+  const centroid=cas.reduce((sum,row)=>({x:sum.x+row.ca.x/Math.max(cas.length,1),y:sum.y+row.ca.y/Math.max(cas.length,1),z:sum.z+row.ca.z/Math.max(cas.length,1)}),{x:0,y:0,z:0});
+  const maxRadius=Math.max(...cas.map(row=>distance(row.ca,centroid)),1);
+  const residueMetrics=residues.filter(row=>row.ca).map(row => {
+    const nearestLigandAtom=row.atoms.slice(0,16).reduce((residueBest,residueAtom)=>heteroAtoms.slice(0,2000).reduce((best,atom)=>{const separation=distance(residueAtom,atom);return !best||separation<best.distance?{atom,distance:separation}:best;},residueBest),null);
+    return {
+      key:row.key,label:`${row.name} ${row.chain}:${row.seq}${row.insertion}`,name:row.name,chain:row.chain,seq:row.seq,insertion:row.insertion,sequenceIndex:row.sequenceIndex,
+      degree:degree.get(row.key),weighted:weighted.get(row.key),longRange:longRange.get(row.key),interchain:interchain.get(row.key),closeness:closeness.get(row.key),betweenness:betweennessResult.values.get(row.key)||0,
+      burial:1-Math.min(1,distance(row.ca,centroid)/maxRadius),ligandDistance:nearestLigandAtom?.distance??null,nearestLigand:nearestLigandAtom?.atom?.residue??null,nearestLigandElement:nearestLigandAtom?.atom?.element??null,directMetalCoordination:Boolean(nearestLigandAtom&&metalElements.has(nearestLigandAtom.atom.element)&&nearestLigandAtom.distance<=3.0),
+      bMean:row.atoms.length?row.atoms.reduce((sum,atom)=>sum+(Number.isFinite(atom.b)?atom.b:0),0)/row.atoms.length:null,residueClass:residueClass(row.name),disulfidePartner:disulfidePartners.get(row.key)||null,cdrHeuristic:row.cdrHeuristic,ca:{x:row.ca.x,y:row.ca.y,z:row.ca.z}
+    };
+  });
+  const report={ residues:residues.length,polymerAtoms:polymerAtoms.length,chainReports,contacts:edges.length,alternateCount,lowOccupancy,missingCa,disulfides:Math.floor(disulfidePartners.size/2),waters:waters.length,
+    hetero:[...hetero.values()].map(group=>`${group.name} ${group.chain}:${group.seq}`),metals:metals.map(group=>`${group.name} ${group.chain}:${group.seq}`),bMean:bValues.length?bValues.reduce((sum,value)=>sum+value,0)/bValues.length:null,bMedian:median(bValues),
+    residueMetrics,edges,models,metadata,format,contactCutoff,betweennessCalculated:betweennessResult.calculated,antibodyContext,antibodyChains:[...antibodyChains]
+  };
+  return rerankReport(report,activeScoringLens);
+}
+
+function parseCoordinateFile(text, sourceName = "", options = {}) {
+  if (/^\s*data_/i.test(text) || /\.cif$/i.test(sourceName) || /\.mmcif$/i.test(sourceName)) return buildReportFromAtoms({ ...parseMmcifAtoms(text), contactCutoff:options.contactCutoff || 8 });
+  return parsePdb(text, options);
 }
 
 function biologicalGuidance(report) {
@@ -285,7 +604,9 @@ function biologicalGuidance(report) {
     purpose: "The coordinate model supports a controlled structure-function test. Protein-specific use should be confirmed from the supplied annotation and laboratory context.",
   };
   const identityNote = `${proteinLabel}${metadata.organism ? ` · ${metadata.organism}` : ""}. ${assembly}${ligandContext}.`;
-  const siteReason = candidate?.interchain
+  const siteReason = candidate?.directMetalCoordination
+    ? `${candidate.label} makes a ${candidate.ligandDistance.toFixed(1)} Å direct contact to ${candidate.nearestLigandElement} in ${candidate.nearestLigand}; this is explicit coordinate evidence for a metal-linked structural role, not a prediction of the mutation outcome.`
+    : candidate?.interchain
     ? `${candidate.label} sits at a cross-chain structural junction and is positioned to test communication within the assembly.`
     : candidate?.ligandDistance !== null && candidate?.ligandDistance <= 6
       ? `${candidate.label} is ${candidate.ligandDistance.toFixed(1)} Å from ${candidate.nearestLigand || "a bound group"} and can test whether that local ligand contact matters.`
@@ -301,12 +622,14 @@ function biologicalGuidance(report) {
   };
 }
 
-function parsePdb(text) {
+function parsePdb(text, options = {}) {
   const lines = text.replace(/\r/g, "").split("\n");
   const metadata = parseMetadata(lines);
   const atomLines = lines.filter(line => line.startsWith("ATOM  ") || line.startsWith("HETATM"));
   if (!atomLines.length) throw new Error("No ATOM or HETATM coordinate records were found");
   const allAtoms = atomLines.map(parseAtom).filter(a => [a.x, a.y, a.z].every(Number.isFinite));
+  return buildReportFromAtoms({ allAtoms, metadata, models:lines.filter(line => line.startsWith("MODEL ")).length || 1, format:"PDB", contactCutoff:options.contactCutoff || 8 });
+  /* Legacy implementation retained below for release-diff traceability; execution returns through the shared parser above. */
   const alternateCount = allAtoms.filter(a => a.alt && a.alt !== "A").length;
   const atoms = allAtoms.filter(a => !a.alt || a.alt === "A");
   const polymerAtoms = atoms.filter(a => a.record === "ATOM");
@@ -451,7 +774,7 @@ async function sha256(text) {
 async function analyze(text, sourceName, sourceType) {
   setStatus(`Analyzing ${sourceName} locally…`);
   try {
-    const report = parsePdb(text);
+    const report = parseCoordinateFile(text, sourceName);
     const digest = await sha256(text);
     const receiptId = `RNB-${digest.slice(0, 12).toUpperCase()}`;
     current = { sourceName, sourceType, digest, receiptId, report, rawText: text, analyzedAt: new Date().toISOString() };
@@ -459,6 +782,7 @@ async function analyze(text, sourceName, sourceType) {
     fetchPublicBiology(report);
     setStatus(`Complete. ${sourceName} was parsed locally; no coordinates were sent to RINet.`);
   } catch (error) {
+    console.error("RINet analysis failed", error);
     setStatus(`Analysis stopped: ${error.message}. Confirm that this is a fixed-column PDB file.`, true);
   }
 }
@@ -559,9 +883,6 @@ function renderDiscovery(report, mode = activeDiscoveryMode) {
   document.getElementById("discoveryProgram").textContent = program.program;
   document.getElementById("discoveryQuestion").textContent = program.question;
   document.getElementById("discoveryGrounding").textContent = discoveryGrounding(report);
-  const output = document.getElementById("localSynthesisOutput");
-  output.classList.remove("visible");
-  output.textContent = "";
 }
 
 async function fetchPublicBiology(report) {
@@ -588,43 +909,6 @@ async function fetchPublicBiology(report) {
     if (current?.report === report) renderDiscovery(report, activeDiscoveryMode);
   } catch (_) {
     // Embedded metadata remains the grounded fallback if public annotation is unavailable.
-  }
-}
-
-async function deepenDiscoveryLocally() {
-  if (!current) return;
-  const button = document.getElementById("localSynthesisButton");
-  const output = document.getElementById("localSynthesisOutput");
-  const report = current.report;
-  const program = buildDiscoveryPrograms(report)[activeDiscoveryMode];
-  output.classList.add("visible");
-  output.textContent = "Checking for an on-device model in this browser…";
-  button.disabled = true;
-  try {
-    let session = null;
-    if (globalThis.LanguageModel?.create) {
-      session = await globalThis.LanguageModel.create({ temperature: .2, topK: 8 });
-    } else if (globalThis.ai?.languageModel?.create) {
-      session = await globalThis.ai.languageModel.create({ temperature: .2, topK: 8 });
-    }
-    if (!session?.prompt) throw new Error("unavailable");
-    const evidence = {
-      identity: biologicalGuidance(report).identity,
-      metadata: report.metadata,
-      chains: report.chainReports.length,
-      boundGroups: report.hetero.slice(0, 12),
-      candidate: report.topResidues[0],
-      comparison: report.controlResidue,
-      verifiedPublicAnnotation: report.publicBiology || null,
-      selectedProgram: activeDiscoveryMode,
-      deterministicProgram: program
-    };
-    const prompt = `You are extending a protein research brief. Use only the evidence in the JSON below. Do not invent function, disease relevance, binding partners or literature claims. Write three concise sections titled High-value question, Smallest credible program, and Result that changes direction. Explain biological importance in plain language. State uncertainty explicitly. Avoid em dashes. Evidence: ${JSON.stringify(evidence)}`;
-    output.textContent = await session.prompt(prompt);
-  } catch (_) {
-    output.textContent = "No on-device language model is available in this browser. The grounded discovery program above remains active and does not require a model.";
-  } finally {
-    button.disabled = false;
   }
 }
 
@@ -676,13 +960,132 @@ function renderGuidance(report) {
   document.getElementById("alternateContext").textContent = `This static coordinate model may omit the assay-relevant state, ligand, partner or membrane context.`;
   document.getElementById("guidanceNext").textContent = runnerUp?.label || "No second site available";
   document.getElementById("viewerCandidate").textContent = candidateLabel;
-  document.getElementById("viewerCandidateReason").textContent = candidate ? (disulfide ? `PROBABLE DISULFIDE · ${disulfide.distance.toFixed(2)} Å TO ${disulfide.label.toUpperCase()}` : `${candidate.degree} NON-LOCAL CONTACTS · ${contactClass.toUpperCase()}`) : "NO RANKABLE CONTACT SIGNAL";
+  document.getElementById("viewerCandidateReason").textContent = candidate ? residueExplanation(candidate) : "NO RANKABLE CONTACT SIGNAL";
   document.getElementById("hudThesis").textContent = `${biology.identity}. ${biology.siteReason}`;
   document.getElementById("hudMutation").textContent = ladder.conservative;
   document.getElementById("hudMutationNote").textContent = disulfide ? "Disrupts the bridge; treat folding as the first readout." : `Tests ${candidateLabel} with the least severe informative change.`;
   document.getElementById("hudControl").textContent = controlLabel;
   document.getElementById("hudGate").textContent = disulfide ? "INTEGRITY BEFORE FUNCTION" : "CANDIDATE MUST BEAT CONTROL";
   document.getElementById("hudGateNote").textContent = disulfide ? `A functional effect is not site-specific evidence if ${candidateLabel} also loses expression or fold.` : `Advance only if ${candidateLabel} changes the functional readout more than ${controlLabel} without a matching integrity defect.`;
+  const hypothesisElement = document.getElementById("guidanceHypothesis");
+  hypothesisElement.dataset.base = hypothesisElement.textContent;
+  if (userHypothesis) hypothesisElement.textContent = `User-defined question: “${userHypothesis}” ${hypothesisElement.dataset.base}`;
+}
+
+function scoreEquationText(lensName = activeScoringLens) {
+  const lens = scoreLenses[lensName] || scoreLenses.general;
+  return `score = 100 × [${Object.entries(lens.weights).filter(([,weight])=>weight>0).map(([feature,weight])=>`${weight.toFixed(2)}·${featureLabels[feature]}`).join(" + ")}]; each feature is normalized to the maximum observed in this structure.`;
+}
+
+function mutationLabelForResidue(residue) {
+  const ladder = mutationLadder(residue);
+  return `${mutationRationale(residue,ladder.conservative)} Stronger follow-up: ${ladder.neutral}. These are property probes, not predictions of benefit.`;
+}
+
+function renderContributionAudit(residue, report = current?.report) {
+  if (!residue || !report) return;
+  document.getElementById("auditResidue").textContent = `${residue.label} · rank ${residue.rank}/${report.allResidues.length} · ${residue.score.toFixed(1)}`;
+  document.getElementById("auditSummary").textContent = `${residue.rationale} Its ${residue.percentile.toFixed(1)}th score percentile means it ranks above ${residue.percentile.toFixed(1)}% of residues under the ${scoreLenses[report.scoringLens].label.toLowerCase()} lens; it is not a probability of function.`;
+  const entries = Object.entries(residue.contributions).filter(([feature]) => (report.scoreWeights?.[feature] || 0) > 0).sort((a,b)=>b[1]-a[1]);
+  const maximum = Math.max(...entries.map(([,value])=>value),1);
+  document.getElementById("contributionChart").innerHTML = entries.map(([feature,value],index)=>`<div class="contribution-row"><span>${esc(featureLabels[feature]||feature)}</span><div><i style="width:${(100*value/maximum).toFixed(1)}%;--bar:${["#c9fb3c","#66d7ff","#b98cff","#ffa95b","#62e3bb"][index%5]}"></i></div><b>${value.toFixed(1)} pts</b></div>`).join("");
+  document.getElementById("auditMutation").textContent = mutationLabelForResidue(residue);
+  const control = report.controlResidue;
+  document.getElementById("auditControl").textContent = control ? `${control.label} · match quality ${control.matchQuality.toFixed(0)}/100. ${control.controlRationale}` : "No credible matched control could be constructed from this coordinate record.";
+  document.querySelectorAll(".sequence-residue").forEach(element => element.classList.toggle("selected", element.dataset.label === residue.label));
+  renderNetworkMap(report,residue);
+}
+
+function renderSequence(report, requestedChain = activeSequenceChain) {
+  const chains = report.chainReports.map(row=>row.chain);
+  activeSequenceChain = chains.includes(requestedChain) ? requestedChain : chains[0];
+  document.getElementById("sequenceChainTabs").innerHTML = report.chainReports.map(row=>`<button type="button" role="tab" aria-selected="${row.chain===activeSequenceChain}" class="${row.chain===activeSequenceChain?"active":""}" data-sequence-chain="${esc(row.chain)}">Chain ${esc(row.chain)} · ${row.residues} aa</button>`).join("");
+  const residues = report.allResidues.filter(row=>row.chain===activeSequenceChain).sort((a,b)=>a.sequenceIndex-b.sequenceIndex);
+  const rankedLabels = new Set(report.topResidues.map(row=>row.label));
+  const primary = report.topResidues[0]?.label;
+  document.getElementById("sequenceStrip").innerHTML = residues.map(row=>`<button class="sequence-residue ${rankedLabels.has(row.label)?"ranked":""} ${row.label===primary?"rank-one":""} ${row.cdrHeuristic?"cdr-heuristic":""}" type="button" data-label="${esc(row.label)}" title="${esc(row.label)} · score ${row.score.toFixed(1)}"><span>${aminoAcidOneLetter[row.name]||"X"}</span><small>${esc(`${row.seq}${row.insertion||""}`)}</small></button>`).join("");
+  document.querySelectorAll("[data-sequence-chain]").forEach(button=>button.addEventListener("click",()=>renderSequence(report,button.dataset.sequenceChain)));
+  document.querySelectorAll(".sequence-residue").forEach(button=>button.addEventListener("click",()=>selectAnalyzedResidue(report.allResidues.find(row=>row.label===button.dataset.label),{autoView:true})));
+  const special = document.getElementById("specialRegionNote");
+  special.textContent = report.antibodyContext ? `Antibody-like annotation detected. Chains ${report.antibodyChains.join(", ")||"not confidently assigned"} show CDR-range heuristics based on variable-domain sequence positions 24–35, 50–65 and 89–102. These are prioritization aids, not IMGT/Kabat annotation; verify numbering and antigen contacts before design.` : "Author chain IDs and residue numbers are preserved. Missing coordinates and insertion codes remain explicit. Conservation is not inferred from structure; use FASTA/BLAST when evolutionary evidence matters.";
+}
+
+function renderNetworkMap(report, selected = report.topResidues[0]) {
+  const svg = document.getElementById("networkMap");
+  if (!svg) return;
+  const selectedKeys = new Set(report.allResidues.slice(0,90).map(row=>row.key));
+  report.edges.forEach(edge => { if (selectedKeys.has(edge.source)) selectedKeys.add(edge.target); if (selectedKeys.has(edge.target)) selectedKeys.add(edge.source); });
+  const nodes = report.allResidues.filter(row=>selectedKeys.has(row.key)).slice(0,150).map((row,index)=>({ ...row, x:310+170*Math.cos(2*Math.PI*index/Math.max(1,Math.min(40,report.allResidues.length))), y:210+150*Math.sin(2*Math.PI*index/Math.max(1,Math.min(40,report.allResidues.length))) }));
+  const byKey = new Map(nodes.map(node=>[node.key,node]));
+  const edges = report.edges.filter(edge=>byKey.has(edge.source)&&byKey.has(edge.target)).slice(0,900);
+  for (let iteration=0;iteration<65;iteration+=1) {
+    const forces=new Map(nodes.map(node=>[node.key,{x:0,y:0}]));
+    for (let i=0;i<nodes.length;i+=1) for (let j=i+1;j<nodes.length;j+=1) {
+      const a=nodes[i],b=nodes[j],dx=a.x-b.x,dy=a.y-b.y,d2=Math.max(25,dx*dx+dy*dy),force=130/d2;
+      forces.get(a.key).x+=dx*force;forces.get(a.key).y+=dy*force;forces.get(b.key).x-=dx*force;forces.get(b.key).y-=dy*force;
+    }
+    edges.forEach(edge=>{const a=byKey.get(edge.source),b=byKey.get(edge.target),dx=b.x-a.x,dy=b.y-a.y,d=Math.max(1,Math.hypot(dx,dy)),force=(d-34)*.012;forces.get(a.key).x+=dx/d*force;forces.get(a.key).y+=dy/d*force;forces.get(b.key).x-=dx/d*force;forces.get(b.key).y-=dy/d*force;});
+    nodes.forEach(node=>{const force=forces.get(node.key);node.x=Math.max(14,Math.min(606,node.x+force.x+(310-node.x)*.003));node.y=Math.max(14,Math.min(406,node.y+force.y+(210-node.y)*.003));});
+  }
+  const chainColors=["#4bc6d9","#738cff","#b98cff","#ff9b5e","#42cf9b","#d9bd54"];
+  const chainIndex=new Map(report.chainReports.map((row,index)=>[row.chain,index]));
+  svg.innerHTML = `${edges.map(edge=>{const a=byKey.get(edge.source),b=byKey.get(edge.target);return `<line class="network-edge" x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}"/>`;}).join("")}${nodes.map(node=>{const top=node.rank<=10,active=node.label===selected?.label,radius=active?8:top?5:3.1,color=active?"#ff4f91":top?"#c9fb3c":chainColors[(chainIndex.get(node.chain)||0)%chainColors.length];return `<circle class="network-node" data-network-label="${esc(node.label)}" cx="${node.x.toFixed(1)}" cy="${node.y.toFixed(1)}" r="${radius}" fill="${color}"><title>${esc(node.label)} · rank ${node.rank} · score ${node.score.toFixed(1)}</title></circle>${active||node.rank<=5?`<text class="network-label" x="${(node.x+8).toFixed(1)}" y="${(node.y-7).toFixed(1)}">${esc(node.label)}</text>`:""}`;}).join("")}`;
+  svg.querySelectorAll("[data-network-label]").forEach(node=>node.addEventListener("click",()=>selectAnalyzedResidue(report.allResidues.find(row=>row.label===node.dataset.networkLabel),{autoView:true})));
+}
+
+function renderBenchmark(report) {
+  const pdbId=String(report.metadata?.pdbId||current?.sourceName?.match(/[A-Z0-9]{4}/i)?.[0]||"").toUpperCase();
+  const benchmark=benchmarkManifest[pdbId];
+  if (!benchmark) {
+    document.getElementById("benchmarkStatus").textContent="No curated labels bundled for this entry";
+    document.getElementById("benchmarkRows").innerHTML="";
+    document.getElementById("benchmarkBoundary").textContent="RINet makes no recovery claim for this structure. Importing or curating experimental labels is required before benchmarking.";
+    return;
+  }
+  const byLabel=new Map(report.allResidues.map(row=>[row.label,row]));
+  document.getElementById("benchmarkStatus").textContent=benchmark.status;
+  document.getElementById("benchmarkRows").innerHTML=benchmark.sites.map(label=>{const row=byLabel.get(label);return `<div class="benchmark-row"><span>${esc(label)}</span><b>${row?`rank ${row.rank}/${report.allResidues.length} · ${row.percentile.toFixed(1)}th percentile`:"not resolved in coordinates"}</b></div>`;}).join("");
+  document.getElementById("benchmarkBoundary").innerHTML=`${esc(benchmark.note)} <a href="${benchmark.source}" target="_blank" rel="noreferrer">Source: ${esc(benchmark.citation)} ↗</a>`;
+}
+
+function cutoffRanking(report,cutoff) {
+  const metrics=report.residueMetrics.map(row=>({...row,degree:0,weighted:0,longRange:0,interchain:0}));
+  const byKey=new Map(metrics.map(row=>[row.key,row]));
+  const cells=new Map(), key=(x,y,z)=>`${x},${y},${z}`;
+  metrics.forEach(a=>{const cell=[Math.floor(a.ca.x/cutoff),Math.floor(a.ca.y/cutoff),Math.floor(a.ca.z/cutoff)];for(let dx=-1;dx<=1;dx+=1)for(let dy=-1;dy<=1;dy+=1)for(let dz=-1;dz<=1;dz+=1)(cells.get(key(cell[0]+dx,cell[1]+dy,cell[2]+dz))||[]).forEach(b=>{if(a.chain===b.chain&&Math.abs(a.sequenceIndex-b.sequenceIndex)<=2)return;const d=distance(a.ca,b.ca);if(d>cutoff)return;a.degree+=1;b.degree+=1;a.weighted+=(cutoff-d)/cutoff;b.weighted+=(cutoff-d)/cutoff;if(a.chain!==b.chain){a.interchain+=1;b.interchain+=1}else if(Math.abs(a.sequenceIndex-b.sequenceIndex)>=12){a.longRange+=1;b.longRange+=1;}});const own=key(...cell);if(!cells.has(own))cells.set(own,[]);cells.get(own).push(a);});
+  return scoreResidues(metrics,report.scoringLens);
+}
+
+function renderSensitivity(report) {
+  const reference=report.topResidues[0];
+  const baseTop=new Set(report.topResidues.map(row=>row.label));
+  document.getElementById("sensitivityRows").innerHTML=[7,8,9].map(cutoff=>{const ranked=cutoff===report.contactCutoff?report.allResidues:cutoffRanking(report,cutoff);const row=ranked.find(item=>item.label===reference.label);const overlap=ranked.slice(0,10).filter(item=>baseTop.has(item.label)).length;return `<div class="sensitivity-row"><span>${cutoff.toFixed(1)} Å · ${overlap}/10 top-site overlap</span><b>${esc(reference.label)} rank ${row?.rank||"N/A"}</b></div>`;}).join("");
+}
+
+function renderExpertRanking(report, query = "") {
+  const needle=query.trim().toLowerCase();
+  const rows=report.allResidues.filter(row=>!needle||`${row.label} ${row.rationale} ${row.chain}`.toLowerCase().includes(needle)).slice(0,500);
+  document.getElementById("expertRows").innerHTML=rows.map(row=>`<tr class="expert-row" data-expert-label="${esc(row.label)}"><td>${row.rank}</td><td>${esc(row.label)}</td><td>${row.score.toFixed(1)}</td><td>${row.degree}</td><td>${row.closeness.toFixed(3)}</td><td>${row.betweenness.toFixed(2)}</td><td>${row.longRange}</td><td>${row.interchain}</td><td>${row.ligandDistance===null?"—":row.ligandDistance.toFixed(1)}</td><td>${esc(row.context)}</td></tr>`).join("");
+  document.querySelectorAll("[data-expert-label]").forEach(row=>row.addEventListener("click",()=>selectAnalyzedResidue(report.allResidues.find(item=>item.label===row.dataset.expertLabel),{autoView:true})));
+}
+
+function renderScientificPanels(report, selected = report.topResidues[0]) {
+  document.getElementById("lensDescription").textContent=scoreLenses[report.scoringLens].description;
+  document.getElementById("scoreEquation").textContent=scoreEquationText(report.scoringLens);
+  renderContributionAudit(selected,report);
+  renderSequence(report);
+  renderBenchmark(report);
+  renderSensitivity(report);
+  renderExpertRanking(report,document.getElementById("rankingFilter")?.value||"");
+}
+
+function refreshRankedOutputs(report, { resetSelection = true } = {}) {
+  document.getElementById("topologyRows").innerHTML = report.topResidues.map((residue,i)=>`<div class="topology-row"><strong>${String(i+1).padStart(2,"0")} / ${esc(residue.label)}</strong><span>PRIORITY ${residue.score.toFixed(1)} · DEG ${residue.degree}</span></div>`).join("");
+  document.getElementById("bestResidueRows").innerHTML = report.topResidues.map((residue,i)=>`<button class="best-residue-row" type="button" data-residue-index="${i}"><span>${String(i+1).padStart(2,"0")}</span><strong>${esc(residue.label)}<em>${esc(residue.context)}</em></strong><small>${residue.score.toFixed(1)}</small></button>`).join("");
+  document.querySelectorAll(".best-residue-row").forEach(button=>button.addEventListener("click",()=>selectAnalyzedResidue(report.topResidues[Number(button.dataset.residueIndex)],{button,autoView:true})));
+  renderGuidance(report);renderDiscovery(report,activeDiscoveryMode);renderScientificPanels(report,resetSelection?report.topResidues[0]:(molecular.selectedResidue||report.topResidues[0]));
+  molecular.topResidues=report.topResidues;molecular.resultScheme=buildResultColorScheme(report.topResidues);setMolecularRepresentation(molecular.representation);
+  if(resetSelection) selectAnalyzedResidue(report.topResidues[0],{autoView:false});
 }
 
 function render(data) {
@@ -711,7 +1114,8 @@ function render(data) {
   document.getElementById("bestResidueRows").innerHTML = r.topResidues.map((residue, i) => `<button class="best-residue-row" type="button" data-residue-index="${i}"><span>${String(i+1).padStart(2,"0")}</span><strong>${esc(residue.label)}<em>${esc(residue.context)}</em></strong><small>${residue.score.toFixed(0)}</small></button>`).join("");
   renderGuidance(r);
   renderDiscovery(r, "biology");
-  const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Intelligence 2.1 (receipt ${data.receiptId}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} chain${r.chainReports.length === 1 ? "" : "s"}. A deterministic residue-contact graph was constructed between Cα atoms separated by no more than 8.0 Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. Residue priority integrated normalized contact degree, graph reach, distance-weighted packing, long-range and cross-chain contacts, radial burial and proximity to non-water hetero atoms. ${r.disulfides} probable disulfide constraint${r.disulfides === 1 ? " was" : "s were"} assigned from cysteine Sγ separations of 1.7 to 2.3 Å. Coordinate-record screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} sequence gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}); they were not assumed to represent prediction confidence. The biological decision brief used explicit rules grounded in supplied PDB metadata, coordinates and graph-derived comparisons. No AI or learned model generated the recommendations.`;
+  renderScientificPanels(r,r.topResidues[0]);
+  const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Intelligence 3.0 (receipt ${data.receiptId}; ${r.format}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} author chain${r.chainReports.length === 1 ? "" : "s"}. A deterministic residue-contact graph was constructed between Cα atoms separated by no more than ${r.contactCutoff.toFixed(1)} Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. ${scoreEquationText(r.scoringLens)} Closeness was ${r.residues <= 1500 ? "calculated on reachable graph components" : "omitted because this very large structure exceeds the interactive all-pairs path limit"}; betweenness was ${r.betweennessCalculated ? "calculated with the unweighted Brandes algorithm" : "omitted because the structure exceeds the 900-residue interactive path limit"}. Known benchmark labels, when available, were evaluated only after ranking and contributed no score. Cysteines received no score bonus; ${r.disulfides} probable disulfide constraint${r.disulfides === 1 ? " was" : "s were"} assigned solely from Sγ separations of 1.7–2.3 Å and treated as an integrity warning. Coordinate screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} numbering gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}) and were not assumed to represent prediction confidence. This is a static, coarse residue-network analysis, not an all-atom potential, dynamics calculation, evolutionary analysis or causal claim. No AI or learned model generated the ranking or interpretation.`;
   document.getElementById("methodsText").textContent = methods;
   els.results.classList.remove("hidden");
   document.body.classList.add("analysis-mode");
@@ -721,24 +1125,52 @@ function render(data) {
   window.scrollTo({ top: 0, behavior: "auto" });
   requestAnimationFrame(updateResultScrollCue);
   renderMolecule(data.rawText, data.sourceName, r.topResidues);
-  if (data.sourceType === "built-in-demo") scheduleDemoTour();
-  else stopDemoTour();
+  stopDemoTour();
 }
 
-function buildResultColorScheme(topResidues) {
+function buildResultColorScheme(topResidues, mode = molecular.colorMode) {
   if (!window.NGL) return null;
   const targets = new Map(topResidues.map((residue, index) => [`${residue.chain}:${residue.seq}${residue.insertion || ""}`, [0xd9ff58, 0x69d7ff, 0xb98cff, 0xffa95b, 0x62e3bb][index]]));
-  const chainPalette = [0x236a78, 0x435fb2, 0x754ca2, 0xb05f36, 0x268568, 0xb08d31];
+  const chainPalette = [0x2a93a7, 0x5877d8, 0x985fc4, 0xd57a43, 0x2fa77f, 0xb59a32, 0xd65b82, 0x70934b];
+  const bValues = current?.report?.residueMetrics?.map(row=>row.bMean).filter(Number.isFinite) || [];
+  const bMin = Math.min(...bValues,0), bMax = Math.max(...bValues,1);
   return NGL.ColormakerRegistry.addScheme(function () {
     this.atomColor = atom => {
       const chain = atom.chainname || atom.chainid || "∅";
       const key = `${chain}:${atom.resno}${String(atom.inscode || "").trim()}`;
-      if (targets.has(key)) return targets.get(key);
+      if (mode === "priority") return targets.get(key) || 0x2c604f;
+      const residue = String(atom.resname || "").toUpperCase();
+      if (mode === "charge") {
+        if (["ARG","LYS","HIS"].includes(residue)) return 0x3f8cff;
+        if (["ASP","GLU"].includes(residue)) return 0xff5d68;
+        if (["SER","THR","ASN","GLN","CYS"].includes(residue)) return 0x72d9c0;
+        return 0xc1a86b;
+      }
+      if (mode === "hydrophobicity") {
+        if (["ILE","LEU","VAL","MET","ALA","PHE","TRP","PRO"].includes(residue)) return 0xf09a4a;
+        if (["ARG","LYS","ASP","GLU","HIS"].includes(residue)) return 0x6ba9ff;
+        return 0x71d5b8;
+      }
+      if (mode === "bfactor") {
+        const t = Math.max(0,Math.min(1,((Number(atom.bfactor||atom.b)||0)-bMin)/Math.max(bMax-bMin,1e-9)));
+        const red=Math.round(52+203*t), green=Math.round(178-102*t), blue=Math.round(224-116*t);
+        return (red<<16)|(green<<8)|blue;
+      }
       const chainIndex = [...String(chain)].reduce((sum, character) => sum + character.charCodeAt(0), 0);
-      const structuralRegion = Math.max(0, Math.floor((Number(atom.resno || 1) - 1) / 38));
-      return chainPalette[(chainIndex + structuralRegion) % chainPalette.length];
+      return chainPalette[chainIndex % chainPalette.length];
     };
-  }, "RINet deterministic structure map");
+  }, `RINet ${mode} structure map`);
+}
+
+function updateColorLegend() {
+  const title=document.querySelector("#colorLegend strong"), items=document.getElementById("colorLegendItems");
+  if (!title||!items||!current) return;
+  const dot=(color,label)=>`<span><i style="background:${color}"></i>${esc(label)}</span>`;
+  if(molecular.colorMode==="chain") { title.textContent="CHAIN COLORS"; const palette=["#2a93a7","#5877d8","#985fc4","#d57a43","#2fa77f","#b59a32","#d65b82","#70934b"];items.innerHTML=current.report.chainReports.map((row,index)=>dot(palette[[...String(row.chain)].reduce((sum,char)=>sum+char.charCodeAt(0),0)%palette.length],`chain ${row.chain}`)).join(""); }
+  else if(molecular.colorMode==="priority") { title.textContent="RINET PRIORITY";items.innerHTML=dot("#d9ff58","rank 1")+dot("#69d7ff","rank 2")+dot("#b98cff","rank 3")+dot("#2c604f","other residues"); }
+  else if(molecular.colorMode==="charge") { title.textContent="SIDE-CHAIN CHARGE";items.innerHTML=dot("#3f8cff","basic")+dot("#ff5d68","acidic")+dot("#72d9c0","polar neutral")+dot("#c1a86b","nonpolar/aromatic"); }
+  else if(molecular.colorMode==="hydrophobicity") { title.textContent="HYDROPHOBICITY CLASS";items.innerHTML=dot("#f09a4a","hydrophobic")+dot("#6ba9ff","charged")+dot("#71d5b8","polar/other"); }
+  else { title.textContent="B-FACTOR / CONFIDENCE FIELD";items.innerHTML=dot("#34b2e0","lower field")+dot("#ff4c6c","higher field")+"<span>Meaning depends on coordinate source; not automatically confidence.</span>"; }
 }
 
 function updateSurfaceStatus(message, ready = false) {
@@ -767,6 +1199,7 @@ function setMolecularRepresentation(type) {
   }
   addTargetRepresentations();
   document.querySelectorAll("[data-representation]").forEach(button => button.classList.toggle("active", button.dataset.representation === type));
+  updateColorLegend();
 }
 
 function residueSelection(residue) {
@@ -800,9 +1233,10 @@ async function renderMolecule(text, label, topResidues) {
     molecular.component = await molecular.stage.loadFile(blob, { ext: label.toLowerCase().endsWith(".cif") || label.toLowerCase().endsWith(".mmcif") ? "cif" : "pdb", defaultRepresentation: false });
     setMolecularRepresentation(molecular.representation);
     molecular.component.autoView(500);
-    molecular.stage.setSpin([0, 1, .06], .00155);
-    molecular.spinning = true;
-    document.getElementById("viewerSpin").textContent = "Pause";
+    molecular.stage.setSpin(false);
+    molecular.spinning = false;
+    document.getElementById("viewerSpin").textContent = "Start rotation";
+    updateColorLegend();
     document.querySelectorAll(".best-residue-row").forEach(button => button.addEventListener("click", () => selectAnalyzedResidue(topResidues[Number(button.dataset.residueIndex)], { button, autoView: true })));
   } catch (error) {
     document.getElementById("viewerLabel").textContent = `Viewer unavailable: ${error.message}`;
@@ -824,7 +1258,7 @@ async function initPreview() {
     preview.component.addRepresentation("cartoon", { sele: "protein", color: "#85efcb", opacity: .2, quality: "high" });
     preview.component.addRepresentation("ball+stick", { sele: "32:A", color: "#d9ff58", scale: 1.5, quality: "high" });
     preview.component.autoView(0);
-    preview.stage.setSpin([0, 1, .05], .00125);
+    preview.stage.setSpin(false);
     window.addEventListener("resize", () => preview.stage?.handleResize());
   } catch (_) {
     // The launch console remains fully usable if WebGL preview initialization fails.
@@ -833,6 +1267,7 @@ async function initPreview() {
 
 function residueExplanation(residue) {
   if (residue.disulfidePartner) return `PROBABLE DISULFIDE · ${residue.disulfidePartner.distance.toFixed(2)} Å TO ${residue.disulfidePartner.label.toUpperCase()}`;
+  if (residue.directMetalCoordination) return `${residue.ligandDistance.toFixed(1)} Å DIRECT ${residue.nearestLigandElement} CONTACT · EXPLICIT COORDINATION EVIDENCE`;
   if (residue.ligandDistance !== null && residue.ligandDistance <= 6) return `${residue.ligandDistance.toFixed(1)} Å FROM ${residue.nearestLigand || "BOUND GROUP"} · TEST LOCAL CHEMISTRY`;
   if (residue.interchain) return `${residue.interchain} CROSS-CHAIN CONTACTS · TEST ASSEMBLY COMMUNICATION`;
   return `${residue.degree} NON-LOCAL CONTACTS · TEST STRUCTURE TO FUNCTION`;
@@ -862,6 +1297,7 @@ function selectAnalyzedResidue(residue, { button = null, autoView = false, updat
     const ranked = molecular.topResidues[Number(row.dataset.residueIndex)];
     row.classList.toggle("active", row === button || ranked?.label === residue.label);
   });
+  renderContributionAudit(residue,current?.report);
   if (updateDiscovery && current) renderDiscovery(current.report, activeDiscoveryMode);
 }
 
@@ -895,6 +1331,17 @@ function handleMolecularPick(pickingProxy) {
 }
 
 document.querySelectorAll("[data-representation]").forEach(button => button.addEventListener("click", () => setMolecularRepresentation(button.dataset.representation)));
+document.getElementById("viewerColor")?.addEventListener("change", event => {
+  molecular.colorMode=event.currentTarget.value;
+  molecular.resultScheme=buildResultColorScheme(molecular.topResidues,molecular.colorMode);
+  setMolecularRepresentation(molecular.representation);
+});
+document.getElementById("viewerBackground")?.addEventListener("change", event => {
+  molecular.background=event.currentTarget.value;
+  const light=molecular.background==="white";
+  document.querySelector(".molecule-stage-wrap")?.classList.toggle("viewer-light",light);
+  molecular.stage?.setParameters({backgroundColor:light?"#ffffff":"#080b09"});
+});
 document.querySelectorAll("[data-discovery-mode]").forEach(button => button.addEventListener("click", () => {
   if (!current) return;
   const mode = button.dataset.discoveryMode;
@@ -908,13 +1355,20 @@ document.querySelectorAll("[data-discovery-mode]").forEach(button => button.addE
   selectAnalyzedResidue(targets[mode], { autoView: true, updateDiscovery: false });
   document.getElementById("discoveryGrounding").textContent = discoveryGrounding(current.report);
 }));
-document.getElementById("localSynthesisButton")?.addEventListener("click", deepenDiscoveryLocally);
-document.getElementById("viewerFit").addEventListener("click", () => molecular.component?.autoView(450));
+document.getElementById("viewerFit").addEventListener("click", () => {
+  if (!molecular.component) return;
+  if (molecular.highlight) molecular.highlight.forEach(representation=>molecular.component.removeRepresentation(representation));
+  molecular.highlight=null;molecular.selectedResidue=null;
+  setMolecularRepresentation(molecular.representation);
+  molecular.component.autoView(450);
+  document.querySelectorAll(".best-residue-row,.sequence-residue").forEach(element=>element.classList.remove("active","selected"));
+  updateSurfaceStatus("FULL STRUCTURE RESTORED",true);
+});
 document.getElementById("viewerSpin").addEventListener("click", event => {
   if (!molecular.stage) return;
   molecular.spinning = !molecular.spinning;
   molecular.stage.setSpin(molecular.spinning ? [0, 1, .06] : false, .00155);
-  event.currentTarget.textContent = molecular.spinning ? "Pause" : "Spin";
+  event.currentTarget.textContent = molecular.spinning ? "Stop rotation" : "Start rotation";
 });
 document.getElementById("newAnalysis").addEventListener("click", () => { window.location.href = "/brief/"; });
 document.querySelector("[data-scroll-guidance]")?.addEventListener("click", event => {
@@ -936,18 +1390,66 @@ function updateResultScrollCue() {
 window.addEventListener("scroll", updateResultScrollCue, { passive: true });
 window.addEventListener("resize", updateResultScrollCue, { passive: true });
 
+document.querySelectorAll("[data-scoring-lens]").forEach(button=>button.addEventListener("click",()=>{
+  if(!current)return;
+  activeScoringLens=button.dataset.scoringLens;
+  document.querySelectorAll("[data-scoring-lens]").forEach(item=>{const active=item===button;item.classList.toggle("active",active);item.setAttribute("aria-selected",String(active));});
+  rerankReport(current.report,activeScoringLens);
+  refreshRankedOutputs(current.report);
+  document.getElementById("methodsText").textContent=document.getElementById("methodsText").textContent.replace(/score = 100 × \[[^\]]+\]; each feature is normalized to the maximum observed in this structure\./,scoreEquationText(activeScoringLens));
+}));
+
+document.getElementById("applyHypothesis")?.addEventListener("click",()=>{
+  userHypothesis=document.getElementById("hypothesisInput").value.trim();
+  if(!current)return;
+  renderGuidance(current.report);
+  const status=document.getElementById("analysisStatus");
+  status.textContent=userHypothesis?"Hypothesis framing applied. Scores are unchanged; only the experiment question was updated.":"Hypothesis framing cleared. Scores were unchanged.";
+});
+
+document.getElementById("rankingFilter")?.addEventListener("input",event=>{if(current)renderExpertRanking(current.report,event.currentTarget.value);});
+
+function activeFasta(report=current?.report){
+  if(!report)return"";
+  return report.chainReports.map(chain=>`>${report.metadata?.pdbId||current.sourceName}|chain_${chain.chain}|author_numbering_${chain.start}-${chain.end}\n${chain.sequence.match(/.{1,70}/g)?.join("\n")||chain.sequence}`).join("\n");
+}
+document.getElementById("copyFasta")?.addEventListener("click",async event=>{
+  try{await navigator.clipboard.writeText(activeFasta());event.currentTarget.textContent="FASTA copied";setTimeout(()=>event.currentTarget.textContent="Copy FASTA",1400);}catch(_){event.currentTarget.textContent="Copy unavailable";}
+});
+document.getElementById("openBlast")?.addEventListener("click",()=>{
+  if(!current)return;
+  const chain=current.report.chainReports.find(row=>row.chain===activeSequenceChain)||current.report.chainReports[0];
+  const form=document.createElement("form");form.method="post";form.action="https://blast.ncbi.nlm.nih.gov/Blast.cgi";form.target="_blank";
+  const values={PROGRAM:"blastp",PAGE_TYPE:"BlastSearch",QUERY:chain.sequence,JOB_TITLE:`${current.report.metadata?.pdbId||current.sourceName} chain ${chain.chain}`};
+  Object.entries(values).forEach(([name,value])=>{const input=document.createElement("input");input.type="hidden";input.name=name;input.value=value;form.appendChild(input);});
+  document.body.appendChild(form);form.submit();form.remove();
+});
+
+document.getElementById("stateFileButton")?.addEventListener("click",()=>document.getElementById("stateFileInput")?.click());
+document.getElementById("stateFileInput")?.addEventListener("change",async event=>{
+  const file=event.currentTarget.files?.[0];if(!file||!current)return;
+  const target=document.getElementById("stateComparison");target.textContent=`Comparing ${file.name} with ${current.sourceName}…`;
+  try{
+    const second=parseCoordinateFile(await file.text(),file.name);rerankReport(second,current.report.scoringLens);
+    const secondByLabel=new Map(second.allResidues.map(row=>[row.label,row]));
+    const comparisons=current.report.topResidues.map(first=>({first,second:secondByLabel.get(first.label)})).filter(row=>row.second);
+    if(!comparisons.length)throw new Error("no matching author chain/residue identifiers; reconcile numbering before state comparison");
+    target.innerHTML=`<p><b>${comparisons.length}/10 primary-state top sites matched by exact author identifier.</b> Positive Δdegree means contacts gained in the second state.</p>${comparisons.map(({first,second:other})=>`<div class="sensitivity-row"><span>${esc(first.label)} · Δdegree ${(other.degree-first.degree)>=0?"+":""}${other.degree-first.degree} · Δinterchain ${(other.interchain-first.interchain)>=0?"+":""}${other.interchain-first.interchain}</span><b>rank ${first.rank} → ${other.rank}</b></div>`).join("")}<p>Comparison is coordinate-state evidence only; unequal constructs, ligands, assemblies or missing residues can cause apparent changes.</p>`;
+  }catch(error){target.textContent=`State comparison stopped: ${error.message}.`;}
+});
+
 document.getElementById("copyMethods").addEventListener("click", async e => {
   try { await navigator.clipboard.writeText(document.getElementById("methodsText").textContent); e.currentTarget.textContent = "Copied"; setTimeout(() => e.currentTarget.textContent = "Copy paragraph", 1500); }
   catch (_) { e.currentTarget.textContent = "Select + copy"; }
 });
 
 function receiptPayload() {
-  return { tool: "RINet Structure Intelligence", version: "2.1", receiptId: current.receiptId, analyzedAt: current.analyzedAt, sourceLabel: current.sourceName, sourceType: current.sourceType, structureSha256: current.digest, summary: current.report, scientificBoundary: "Descriptive coordinate and Cα contact analysis; not functional or causal proof." };
+  return { tool: "RINet Structure Intelligence", version: "3.0", receiptId: current.receiptId, analyzedAt: current.analyzedAt, sourceLabel: current.sourceName, sourceType: current.sourceType, structureSha256: current.digest, userHypothesis:userHypothesis||null, scoringLens:current.report.scoringLens, exactScoreWeights:current.report.scoreWeights, contactCutoffAngstrom:current.report.contactCutoff, benchmarkManifest:benchmarkManifest[current.report.metadata?.pdbId]||null, summary: current.report, scientificBoundary: "Static, descriptive coordinate and Cα contact analysis; not an all-atom potential, evolutionary analysis, dynamics calculation, functional proof or causal claim." };
 }
 
 document.getElementById("downloadReceipt").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(receiptPayload(), null, 2)], { type: "application/json" });
-  const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `${current.receiptId.toLowerCase()}-structure-brief.json`; link.click(); URL.revokeObjectURL(link.href);
+  const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `${current.receiptId.toLowerCase()}-structure-brief.json`; document.body.appendChild(link); link.click(); link.remove(); window.setTimeout(() => URL.revokeObjectURL(link.href), 2000);
 });
 
 switchSource("id", false);

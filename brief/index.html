@@ -8,7 +8,7 @@
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=20260816">
   <link rel="image_src" href="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <link rel="stylesheet" href="/contact.css?v=1">
-  <link rel="stylesheet" href="/brief/brief.css?v=18">
+  <link rel="stylesheet" href="/brief/brief.css?v=19">
   <title>Structure Brief | RINet</title>
   <meta name="description" content="Interrogate a protein structure and turn its strongest structural signals into a falsifiable experiment plan.">
   <meta property="og:type" content="website">
@@ -32,7 +32,7 @@
 <body>
   <header class="app-header">
     <a class="brand" href="/"><img src="/media/rinet-mark.png?v=20260816" alt="">RINet</a>
-    <div class="app-title">Structure Intelligence <i>2.1</i></div>
+    <div class="app-title">Structure Intelligence <i>3.0</i></div>
     <div class="header-actions"><a class="header-demo" href="/brief/?demo=1">Demo <span>↗</span></a><div class="privacy"><b></b> Local browser analysis</div></div>
   </header>
 
@@ -40,7 +40,7 @@
     <section class="launch-screen" id="launchScreen" aria-labelledby="input-title">
       <div class="launch-visual" aria-label="Animated preview of the RINet structure analysis">
         <div class="preview-toolbar"><span>LIVE STRUCTURE / 1CRN</span><strong>RESIDUE NETWORK INTERROGATION</strong></div>
-        <div id="previewMolecule" aria-label="Rotating protein structure preview"></div>
+        <div id="previewMolecule" aria-label="Protein structure preview"></div>
         <div class="preview-reticle" aria-hidden="true"><i></i><i></i></div>
         <div class="preview-callout"><span>PRIMARY STRUCTURAL SIGNAL</span><strong>NETWORK CONSTRAINT DETECTED</strong><small>ENTER THE DEMO TO RESOLVE THE SITE AND EXPERIMENT</small></div>
         <div class="preview-footer"><span>SUPPLIED COORDINATES</span><span>LOCAL ANALYSIS · NO ACCOUNT</span></div>
@@ -70,10 +70,10 @@
             </form>
           </div>
           <div class="source-panel hidden" id="filePanel">
-            <input id="fileInput" type="file" accept=".pdb,.ent,text/plain" hidden>
+            <input id="fileInput" type="file" accept=".pdb,.ent,.cif,.mmcif,text/plain" hidden>
             <button class="dropzone" id="dropzone" type="button">
               <span class="drop-icon">+</span>
-              <strong>Choose or drop a .pdb file</strong>
+              <strong>Choose or drop a PDB or mmCIF file</strong>
               <small>Coordinates stay in this tab · 25 MB recommended maximum</small>
             </button>
           </div>
@@ -100,9 +100,17 @@
         <div class="molecule-stage-wrap">
           <div class="molecule-toolbar">
             <div><span>INTERACTIVE STRUCTURE</span><strong id="viewerLabel">Supplied coordinates</strong></div>
-            <div class="viewer-controls"><button type="button" class="active" data-representation="surface">Surface</button><button type="button" data-representation="cartoon">Cartoon</button><button type="button" id="viewerSpin">Pause</button><button type="button" id="viewerFit">Fit</button></div>
+            <div class="viewer-controls">
+              <button type="button" class="active" data-representation="surface">Surface</button>
+              <button type="button" data-representation="cartoon">Cartoon</button>
+              <label>Color <select id="viewerColor" aria-label="Structure color scheme"><option value="chain">Chain</option><option value="priority">RINet priority</option><option value="charge">Charge</option><option value="hydrophobicity">Hydrophobicity</option><option value="bfactor">B-factor / confidence field</option></select></label>
+              <label>Background <select id="viewerBackground" aria-label="Viewer background"><option value="black">Black</option><option value="white">White</option></select></label>
+              <button type="button" id="viewerSpin">Start rotation</button>
+              <button type="button" id="viewerFit">Reset view</button>
+            </div>
           </div>
           <div id="moleculeStage" aria-label="Rotatable molecular structure"></div>
+          <div class="color-legend" id="colorLegend" aria-live="polite"><strong>CHAIN COLORS</strong><span id="colorLegendItems">Building legend…</span></div>
           <div class="surface-status" id="surfaceStatus" role="status"><i></i><div><span>STRUCTURE MAP</span><strong>BUILDING COLOR-CODED SURFACE</strong></div></div>
           <div class="analysis-reticle" aria-hidden="true"><i></i><i></i></div>
           <div class="structure-callout"><span>PRIMARY SITE</span><strong id="viewerCandidate">Pending</strong><small id="viewerCandidateReason">CALCULATING CONTACT TOPOLOGY</small></div>
@@ -116,7 +124,7 @@
             <article><span>MATCHED CONTROL</span><strong id="hudControl">Pending</strong><small>Separates a site effect from structural background.</small></article>
             <article class="intel-risk"><span>INTERPRETATION GATE</span><strong id="hudGate">Pending</strong><small id="hudGateNote">Integrity must hold before function is interpreted.</small></article>
           </div>
-          <div class="ranked-title"><span>RANKED TARGETS</span><small>Click to locate</small></div>
+          <div class="ranked-title"><span>RANKED TARGETS · TOP 10</span><small>Click to inspect evidence</small></div>
           <div id="bestResidueRows"></div>
           <p class="best-boundary">Structural priority generates a testable contrast, not a biological conclusion.</p>
         </aside>
@@ -134,6 +142,78 @@
         <div><span>Structural contacts</span><strong id="contactMetric">Pending</strong></div>
         <div><span>Confidence / B field</span><strong id="bMetric">Pending</strong></div>
       </div>
+
+      <section class="scientific-contract" aria-labelledby="scientific-contract-title">
+        <div class="contract-copy">
+          <p class="eyebrow">Why RINet / the scientific contribution</p>
+          <h3 id="scientific-contract-title">A viewer shows where atoms are. RINet builds the controlled experiment.</h3>
+          <p>RINet converts one structural model into an auditable candidate-versus-control test. It exposes the graph, the scoring equation, every residue-level contribution, parameter sensitivity, known-site recovery, mutation chemistry, and the result that would falsify the interpretation. It complements PyMOL, ChimeraX, evolutionary analysis and simulation; it does not replace them.</p>
+        </div>
+        <div class="contract-grid">
+          <article><span>INPUT</span><strong>One coordinate model</strong><p>Author chain IDs, residue numbering, ligands, missing atoms and quality fields remain visible.</p></article>
+          <article><span>ADDED VALUE</span><strong>A traceable contrast</strong><p>Ten candidates, a matched lower-signal control, explicit weights and competing explanations.</p></article>
+          <article><span>OUTPUT</span><strong>A falsifiable experiment</strong><p>Mutation ladder, integrity gates, functional readout, stopping rule and reproducible receipt.</p></article>
+          <article><span>BOUNDARY</span><strong>Not atomistic proof</strong><p>No energy, dynamics, evolution or causal biology is inferred unless those data are supplied separately.</p></article>
+        </div>
+      </section>
+
+      <section class="evidence-lab" aria-labelledby="evidence-lab-title">
+        <div class="evidence-lab-head">
+          <div><p class="eyebrow">Residue evidence lab</p><h3 id="evidence-lab-title">Why this residue, rather than another?</h3></div>
+          <div class="lens-picker" role="tablist" aria-label="Scientific ranking lens">
+            <button class="active" type="button" role="tab" aria-selected="true" data-scoring-lens="general">General</button>
+            <button type="button" role="tab" aria-selected="false" data-scoring-lens="ligand">Ligand</button>
+            <button type="button" role="tab" aria-selected="false" data-scoring-lens="interface">Interface</button>
+            <button type="button" role="tab" aria-selected="false" data-scoring-lens="allostery">Allostery</button>
+            <button type="button" role="tab" aria-selected="false" data-scoring-lens="stability">Stability</button>
+            <button type="button" role="tab" aria-selected="false" data-scoring-lens="antibody">Antibody / CDR</button>
+          </div>
+        </div>
+        <div class="lens-context">
+          <label for="hypothesisInput">Your biological hypothesis <span>used to frame the experiment, never to manufacture evidence</span></label>
+          <div><input id="hypothesisInput" maxlength="240" placeholder="Example: Does this interface transmit the deoxy-to-oxy state change?"><button id="applyHypothesis" type="button">Apply framing</button></div>
+          <p id="lensDescription">Balanced structure-first ranking. No single metric is treated as function.</p>
+          <code id="scoreEquation">Loading exact score equation…</code>
+        </div>
+        <div class="evidence-lab-grid">
+          <article class="residue-audit">
+            <div class="panel-head"><span>01 / SCORE DECOMPOSITION</span><strong id="auditResidue">Pending</strong></div>
+            <p id="auditSummary">Select a ranked residue to inspect every score component.</p>
+            <div class="contribution-chart" id="contributionChart"></div>
+            <div class="audit-detail"><span>MUTATION CHEMISTRY</span><p id="auditMutation">Pending</p></div>
+            <div class="audit-detail"><span>MATCHED CONTROL LOGIC</span><p id="auditControl">Pending</p></div>
+          </article>
+          <article class="network-panel">
+            <div class="panel-head"><span>02 / NETWORK EMBEDDING</span><strong>Deterministic force-directed map</strong></div>
+            <svg id="networkMap" viewBox="0 0 620 420" role="img" aria-label="Residue interaction network projection linked to the selected residue"></svg>
+            <p>Edges are Cα contacts under the active cutoff. Position is a deterministic 2D layout of the graph, not a learned embedding and not a physical trajectory.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="sequence-workbench" aria-labelledby="sequence-title">
+        <div class="sequence-head">
+          <div><p class="eyebrow">Sequence / coordinate reconciliation</p><h3 id="sequence-title">Track every result back to the supplied record.</h3></div>
+          <div class="sequence-actions"><button type="button" id="copyFasta">Copy FASTA</button><button type="button" id="openBlast">Open BLAST with sequence</button></div>
+        </div>
+        <div class="sequence-note" id="specialRegionNote">Author chain IDs and residue numbers are preserved. Missing coordinates and insertion codes remain explicit.</div>
+        <div class="chain-tabs" id="sequenceChainTabs" role="tablist" aria-label="Sequence chain"></div>
+        <div class="sequence-strip" id="sequenceStrip" aria-live="polite"></div>
+        <div class="sequence-legend"><span><i class="rank-one"></i>primary</span><span><i class="ranked"></i>ranked</span><span><i class="selected"></i>selected</span><span><i class="cdr"></i>CDR heuristic</span><span>Conservation is <b>not scored</b> until an external sequence analysis is supplied.</span></div>
+      </section>
+
+      <section class="validation-studio" aria-labelledby="validation-title">
+        <div class="validation-head">
+          <div><p class="eyebrow">Validation / sensitivity / state comparison</p><h3 id="validation-title">Make the ranking earn confidence.</h3></div>
+          <p>Known-site labels are evaluated after ranking and never enter the score. Parameter sensitivity shows whether a candidate survives reasonable graph choices.</p>
+        </div>
+        <div class="validation-grid">
+          <article><span>A / KNOWN-SITE RECOVERY</span><h4 id="benchmarkStatus">Checking benchmark manifest…</h4><div id="benchmarkRows"></div><p id="benchmarkBoundary"></p></article>
+          <article><span>B / CONTACT-CUTOFF SENSITIVITY</span><h4>Rank stability across 7–9 Å</h4><div id="sensitivityRows"></div><p>Stable ranks are more credible than a single-cutoff winner; instability is evidence to inspect, not an error to hide.</p></article>
+          <article><span>C / SECOND CONFORMATION</span><h4>Compare the same protein in another state</h4><input id="stateFileInput" type="file" accept=".pdb,.ent,.cif,.mmcif,text/plain" hidden><button type="button" id="stateFileButton">Choose second PDB/mmCIF</button><div id="stateComparison">No second state loaded. RINet will compare matched chain/residue identifiers, contact changes and rank shifts.</div></article>
+          <article><span>D / VALIDATION STATUS</span><h4>Sanity check, not a universal benchmark</h4><p>The built-in known sites test whether the ranking recovers established structural anchors in selected examples. It is not a substitute for blinded multi-protein benchmarking against mutational, allosteric, evolutionary or MD datasets.</p></article>
+        </div>
+      </section>
 
       <section class="ai-guidance" id="decisionBrief" aria-labelledby="guidance-title">
         <div class="guidance-heading">
@@ -177,17 +257,13 @@
               <article><span>DECISIVE QUESTION</span><p id="discoveryQuestion">Does the candidate alter function more than the matched comparison while the fold remains intact?</p></article>
             </div>
           </div>
-          <div class="local-synthesis">
-            <div><span>OPTIONAL ON-DEVICE SYNTHESIS</span><p>Runs only if this browser provides a local language model. No API key, upload or token charge.</p></div>
-            <button id="localSynthesisButton" type="button">Deepen this program locally</button>
-            <p id="localSynthesisOutput" aria-live="polite"></p>
-          </div>
+          <div class="deterministic-note"><span>DETERMINISTIC ONLY</span><p>This program is assembled from explicit rules and displayed evidence. No language model writes or deepens the scientific interpretation.</p></div>
         </section>
 
         <section class="experiment-blueprint" aria-labelledby="blueprint-title">
           <div class="blueprint-head"><span>EXPERIMENT BLUEPRINT / GENERATED LOCALLY</span><h4 id="blueprint-title">From construct design to interpretation.</h4><p>Use the sequence as a staged plan. Earlier gates prevent a folding defect from being mislabeled as mechanism.</p></div>
           <div class="blueprint-grid">
-            <article class="mutation-ladder"><span>A / PERTURBATION LADDER</span><h5>Change chemistry in interpretable steps.</h5><ol><li><b>Conservative</b><strong id="mutationConservative">Pending</strong><small>Tests whether subtle side-chain chemistry matters.</small></li><li><b>Neutralizing</b><strong id="mutationNeutral">Pending</strong><small>Reduces the dominant chemical feature.</small></li><li><b>Network-pair control</b><strong id="mutationStress">Pending</strong><small>Tests the linked structural explanation after the first construct is interpretable.</small></li></ol></article>
+            <article class="mutation-ladder"><span>A / PERTURBATION LADDER</span><h5>Change chemistry in interpretable steps.</h5><ol><li><b>First property probe</b><strong id="mutationConservative">Pending</strong><small>Uses the least severe interpretable change available; “conservative” is not assumed.</small></li><li><b>Property-removing probe</b><strong id="mutationNeutral">Pending</strong><small>Removes or reduces the dominant chemical feature.</small></li><li><b>Network-pair control</b><strong id="mutationStress">Pending</strong><small>Tests the linked structural explanation after the first construct is interpretable.</small></li></ol></article>
             <article class="assay-gates"><span>B / MEASUREMENT GATES</span><h5>Measure in this order.</h5><ol><li><b>Gate 0</b><p>Confirm numbering, construct sequence and assay dynamic range.</p></li><li><b>Gate 1</b><p id="guidanceIntegrity">Check abundance plus one folding or stability readout.</p></li><li><b>Gate 2</b><p id="guidanceFunction">Measure the protein-specific functional output.</p></li><li><b>Gate 3</b><p id="guidanceSpecificity">Compare candidate, matched residue and wild type in the same batch.</p></li></ol></article>
             <article class="diagnostic-matrix"><span>C / RESULT INTERPRETER</span><h5>What the pattern would mean.</h5><div><b>Function changes; integrity holds</b><p id="diagnosticAdvance">Structural hypothesis survives the first specificity gate.</p></div><div><b>Function and integrity both fall</b><p id="diagnosticFold">Treat as a stability or expression explanation first.</p></div><div><b>Candidate equals comparison</b><p id="diagnosticControl">The site is not more informative than structural background.</p></div><div><b>No measurable effect</b><p id="diagnosticNext">Move to the next-ranked residue or improve assay sensitivity.</p></div></article>
             <article class="alternative-models"><span>D / COMPETING EXPLANATIONS</span><h5>Keep these alive until the data separate them.</h5><ul><li id="alternatePacking">Local packing change rather than a specific functional pathway.</li><li id="alternateExpression">Expression, trafficking or folding loss rather than site-specific biology.</li><li id="alternateContext">The supplied static state may not represent the assay-relevant conformation.</li></ul><div class="next-site"><span>NEXT SITE IF INCONCLUSIVE</span><strong id="guidanceNext">Pending</strong></div></article>
@@ -221,9 +297,27 @@
           <p class="scope-note">Contact degree is a geometric descriptor, not proof of functional importance or allosteric causality.</p>
         </section>
 
+        <section class="expert-ranking">
+          <div class="section-head"><span>05</span><h3>Complete expert ranking</h3><p>All parsed residues · sortable evidence record</p></div>
+          <label class="ranking-filter">Filter chain, residue or feature <input id="rankingFilter" type="search" placeholder="Example: chain B, ligand, interchain, HIS"></label>
+          <div class="expert-table-wrap"><table><thead><tr><th>Rank</th><th>Residue</th><th>Score</th><th>Degree</th><th>Closeness</th><th>Betweenness</th><th>Long range</th><th>Interchain</th><th>Ligand Å</th><th>Why</th></tr></thead><tbody id="expertRows"></tbody></table></div>
+        </section>
+
         <section class="methods">
-          <div class="section-head"><span>05</span><h3>Methods capsule</h3><button type="button" id="copyMethods">Copy paragraph</button></div>
+          <div class="section-head"><span>06</span><h3>Methods capsule</h3><button type="button" id="copyMethods">Copy paragraph</button></div>
           <p id="methodsText"></p>
+        </section>
+
+        <section class="limitations">
+          <div class="section-head"><span>07</span><h3>Interpretation limits</h3><p>Read before ordering constructs</p></div>
+          <div class="limitations-grid">
+            <article><strong>Static coordinates</strong><p>No dynamics, kinetics, conformational ensemble or energetic coupling is inferred from one model.</p></article>
+            <article><strong>Residue-level graph</strong><p>Cα contacts are a coarse structural description, not an all-atom potential, folding model or free-energy calculation.</p></article>
+            <article><strong>Biological assembly</strong><p>The supplied coordinate file may contain an asymmetric unit, crystal contacts or an incomplete biological assembly.</p></article>
+            <article><strong>Numbering and construct</strong><p>Author numbering, insertion codes, unresolved residues, tags and assay constructs must be reconciled experimentally.</p></article>
+            <article><strong>Evolution absent by default</strong><p>Conservation is not invented. Use the FASTA/BLAST route or import external evidence before making evolutionary claims.</p></article>
+            <article><strong>Validation scope</strong><p>Known-site recovery and cutoff stability support inspection; they do not establish general predictive performance.</p></article>
+          </div>
         </section>
       </details>
 
@@ -255,9 +349,9 @@
     </form>
   </section>
 
-  <footer><a href="/">← RINet home</a><span>Structure Intelligence 2.1 · local coordinate analysis</span></footer>
+  <footer><a href="/">← RINet home</a><span>Structure Intelligence 3.0 · transparent residue-network analysis</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
   <script src="/contact.js?v=5"></script>
-  <script src="/brief/brief.js?v=16"></script>
+  <script src="/brief/brief.js?v=17"></script>
 </body>
 </html>
