@@ -8,7 +8,7 @@
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=20260816">
   <link rel="image_src" href="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <link rel="stylesheet" href="/contact.css?v=1">
-  <link rel="stylesheet" href="/brief/brief.css?v=21">
+  <link rel="stylesheet" href="/brief/brief.css?v=22">
   <title>Structure Brief | RINet</title>
   <meta name="description" content="Rank residues from a protein structure, inspect every score term, and design a controlled experiment.">
   <meta property="og:type" content="website">
@@ -155,35 +155,33 @@
       <section class="evidence-lab" id="scoringSection" data-demo-section="Scoring" aria-labelledby="evidence-lab-title">
         <div class="evidence-lab-head">
           <div><p class="eyebrow">Start here after inspecting the structure</p><h3 id="evidence-lab-title">Why does this residue rank here?</h3><p>Choose a residue. Its score terms, mutation rationale, matched control and experiment update together.</p></div>
-          <div class="lens-picker" role="tablist" aria-label="Ranking model">
+          <div class="lens-picker-wrap"><span>WHAT ARE YOU TESTING?</span><div class="lens-picker" role="tablist" aria-label="Research question">
             <button class="active" type="button" role="tab" aria-selected="true" data-scoring-lens="general">General</button>
             <button type="button" role="tab" aria-selected="false" data-scoring-lens="ligand">Ligand</button>
             <button type="button" role="tab" aria-selected="false" data-scoring-lens="interface">Interface</button>
             <button type="button" role="tab" aria-selected="false" data-scoring-lens="allostery">Allostery</button>
             <button type="button" role="tab" aria-selected="false" data-scoring-lens="stability">Stability</button>
             <button type="button" role="tab" aria-selected="false" data-scoring-lens="antibody">Antibody / CDR</button>
-          </div>
+          </div><small>Changing this recomputes the ranking and every score term.</small></div>
         </div>
-        <div class="evidence-steps" aria-label="How to use residue scoring"><span><b>1</b> Choose a ranking model</span><span><b>2</b> Select a residue</span><span><b>3</b> Inspect score terms</span><span><b>4</b> Copy a controlled test</span></div>
+        <div class="evidence-steps" aria-label="How to prepare an experiment"><span><b>1</b> Choose what you are testing</span><span><b>2</b> Select a residue</span><span><b>3</b> Confirm your lab readout</span><span><b>4</b> Export the experiment sheet</span></div>
         <div class="lens-context">
-          <label for="hypothesisInput">Experiment question <span>optional; this never changes the residue score</span></label>
-          <div><input id="hypothesisInput" maxlength="240" placeholder="Example: Does this interface transmit the deoxy-to-oxy state change?"><button id="suggestHypothesis" class="secondary" type="button">Use suggested question</button><button id="applyHypothesis" type="button">Set experiment question</button></div>
-          <div class="hypothesis-feedback" id="hypothesisFeedback" role="status">No question set. The structural ranking is unchanged.</div>
-          <p id="lensDescription">Balanced structure-first ranking. No single metric is treated as function.</p>
-          <code id="scoreEquation">Loading exact score equation…</code>
+          <div class="assay-setup-copy"><span>YOUR LAB READOUT</span><h4>What will you measure?</h4><p>RINet suggests a protein-relevant readout from the structure annotation. Keep it, or replace it with the assay your lab already runs. This changes the experiment sheet—not the structural ranking.</p></div>
+          <div class="assay-setup-form"><label for="assayInput">Primary functional readout</label><div><input id="assayInput" maxlength="180" placeholder="Loading a suggested readout…"><button id="applyAssay" type="button">Use this readout</button><button id="resetAssay" class="secondary" type="button">Use RINet suggestion</button></div><div class="hypothesis-feedback" id="assayFeedback" role="status">Loading the suggested assay…</div></div>
+          <div class="model-explanation"><span>WHAT THE ACTIVE MODEL CHANGES</span><p id="lensDescription">Balanced structure-first ranking. No single metric is treated as function.</p><code id="scoreEquation">Loading exact score equation…</code></div>
         </div>
         <div class="evidence-residue-picker" id="evidenceResiduePicker" aria-label="Top ten ranked residues"></div>
         <article class="selected-action" aria-labelledby="selected-action-title">
-          <div class="selected-action-head"><div><span>SELECTED RESIDUE</span><h4 id="selected-action-title"><strong id="selectedActionResidue">Pending</strong><em id="selectedActionScore">—</em></h4></div><p id="selectedActionBoundary">Structure-derived ranking; not a probability of function.</p></div>
-          <div class="selected-action-buttons"><button type="button" id="actionFocusStructure">Show in 3D</button><button type="button" id="actionOpenSequence">Show in sequence</button><button type="button" id="copySelectedTest">Open copyable test</button><button type="button" id="actionOpenExperiment">Full experiment plan</button></div>
+          <div class="selected-action-head"><div><span>YOUR NEXT CONTROLLED EXPERIMENT</span><h4 id="selected-action-title"><strong id="selectedActionResidue">Pending</strong><em id="selectedActionScore">—</em></h4></div><p id="selectedActionBoundary">Structure-derived ranking; not a probability of function.</p></div>
+          <div class="selected-action-buttons"><button type="button" id="copySelectedTest">Open experiment sheet</button><button type="button" id="downloadConstructs">Download construct list</button><button type="button" id="actionFocusStructure">Show in 3D</button><button type="button" id="actionOpenSequence">Show in sequence</button><button type="button" id="actionOpenExperiment">See full rationale</button></div>
           <div class="selected-action-grid">
             <div><span>WHY IT RANKS</span><p id="selectedActionReason">Pending</p></div>
-            <div><span>FIRST MUTATION</span><p id="selectedActionMutation">Pending</p></div>
-            <div><span>MATCHED CONTROL</span><p id="selectedActionControl">Pending</p></div>
-            <div><span>MEASURE IN THE SAME BATCH</span><p id="selectedActionAssay">Pending</p></div>
+            <div><span>CONSTRUCTS TO ORDER</span><p id="selectedActionMutation">Pending</p></div>
+            <div><span>WHY THIS CONTROL IS FAIR</span><p id="selectedActionControl">Pending</p></div>
+            <div><span>RUN IN ONE BATCH</span><p id="selectedActionAssay">Pending</p></div>
           </div>
-          <div class="selected-action-rule"><span>RESULT REQUIRED TO SUPPORT THE SITE</span><p id="selectedActionRule">Pending</p></div>
-          <p class="selected-action-status" id="selectedActionStatus" role="status">Click any ranked residue or graph node to update this test.</p>
+          <div class="selected-action-rule"><span>CALL THIS SITE-SPECIFIC ONLY IF</span><p id="selectedActionRule">Pending</p></div>
+          <p class="selected-action-status" id="selectedActionStatus" role="status">Choose any ranked residue. The construct list, assay plan and decision rule will update together.</p>
         </article>
         <div class="evidence-lab-grid">
           <article class="residue-audit">
@@ -382,6 +380,6 @@
   <footer><a href="/">← RINet home</a><span>Structure Brief 3.0 · transparent residue-network analysis</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
   <script src="/contact.js?v=5"></script>
-  <script src="/brief/brief.js?v=19"></script>
+  <script src="/brief/brief.js?v=20"></script>
 </body>
 </html>

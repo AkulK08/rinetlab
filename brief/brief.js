@@ -13,8 +13,7 @@ const molecular = { stage: null, component: null, representation: "surface", col
 let activeDiscoveryMode = "biology";
 let activeScoringLens = "general";
 let activeSequenceChain = null;
-let userHypothesis = "";
-let suggestedHypothesisActive = false;
+let customAssay = "";
 const preview = { stage: null, component: null };
 const demoTour = { timer: null, frame: null, active: false };
 const waterNames = new Set(["HOH", "WAT", "DOD"]);
@@ -247,13 +246,14 @@ function mutationSuggestion(residue) {
 
 function mutationLadder(residue) {
   const name = residue?.name || "Residue";
+  const oneLetter = aminoAcidOneLetter[name] || name;
   const conservative = { ARG: "R→K", LYS: "K→R", ASP: "D→E", GLU: "E→D", ASN: "N→Q", GLN: "Q→N", SER: "S→T", THR: "T→S", PHE: "F→Y", TYR: "Y→F", TRP: "W→F", LEU: "L→I", ILE: "I→V", VAL: "V→I", MET: "M→L", CYS: "C→S", HIS: "H→N", ALA: "A→G", GLY: "G→A", PRO: "P→A" };
   const neutral = { ARG: "R→Q", LYS: "K→Q", ASP: "D→N", GLU: "E→Q", HIS: "H→A", SER: "S→A", THR: "T→A", ASN: "N→A", GLN: "Q→A", CYS: "C→A" };
   const stress = { ARG: "R→E", LYS: "K→E", ASP: "D→K", GLU: "E→K", HIS: "H→E", GLY: "G→P", PRO: "P→G" };
   return {
     conservative: conservative[name] || `${name}→similar residue`,
-    neutral: neutral[name] || `${name}→Ala`,
-    stress: residue?.disulfidePartner ? `${residue.disulfidePartner.label.replace("CYS ", "Cys ")}→Ser` : (stress[name] || `${name}→Pro`)
+    neutral: neutral[name] || `${oneLetter}→A`,
+    stress: residue?.disulfidePartner ? `${residue.disulfidePartner.label.replace("CYS ", "Cys ")}→Ser` : (stress[name] || `${oneLetter}→P`)
   };
 }
 
@@ -657,6 +657,37 @@ function biologicalGuidance(report, candidateOverride = report.topResidues[0], c
   };
 }
 
+function assayFor(report, residue, control = null) {
+  return customAssay || biologicalGuidance(report, residue, control).assay;
+}
+
+function experimentConstructs(report, residue) {
+  const control = matchedControlForResidue(report, residue);
+  const candidate = mutationLadder(residue);
+  const comparison = control ? mutationLadder(control) : null;
+  return [
+    { construct: "Wild type", site: "—", substitution: "—", purpose: "same-batch baseline" },
+    { construct: "Candidate first probe", site: residue.label, substitution: candidate.conservative, purpose: "least severe interpretable change" },
+    { construct: "Candidate stronger probe", site: residue.label, substitution: candidate.neutral, purpose: "removes more of the original side-chain chemistry" },
+    control
+      ? { construct: "Matched structural control", site: control.label, substitution: comparison.conservative, purpose: `controls for chemistry and structural context; match ${control.matchQuality.toFixed(0)}/100` }
+      : { construct: "Matched structural control", site: "not available", substitution: "choose manually", purpose: "no credible automatic match in this coordinate record" }
+  ];
+}
+
+function updateAssaySetup(report, residue) {
+  const control = matchedControlForResidue(report, residue);
+  const suggestion = biologicalGuidance(report, residue, control).assay;
+  const input = document.getElementById("assayInput");
+  const feedback = document.getElementById("assayFeedback");
+  if (input && document.activeElement !== input) input.value = customAssay || suggestion;
+  if (!feedback) return;
+  feedback.textContent = customAssay
+    ? `Using your readout: ${customAssay}. The experiment sheet and decision rule below have updated; residue scores are unchanged.`
+    : `Using RINet suggestion: ${suggestion}. Replace it if your laboratory uses a more specific assay.`;
+  feedback.classList.toggle("applied", Boolean(customAssay));
+}
+
 function parsePdb(text, options = {}) {
   const lines = text.replace(/\r/g, "").split("\n");
   const metadata = parseMetadata(lines);
@@ -809,6 +840,7 @@ async function sha256(text) {
 async function analyze(text, sourceName, sourceType) {
   setStatus(`Analyzing ${sourceName} locally…`);
   try {
+    customAssay = "";
     const report = parseCoordinateFile(text, sourceName);
     const digest = await sha256(text);
     const receiptId = `RNB-${digest.slice(0, 12).toUpperCase()}`;
@@ -826,6 +858,7 @@ function buildDiscoveryPrograms(report) {
   const biology = biologicalGuidance(report);
   const candidate = report.topResidues[0];
   const control = report.controlResidue;
+  const assay = assayFor(report, candidate, control);
   const candidateLabel = candidate?.label || "the first ranked site";
   const controlLabel = control?.label || "a matched lower-contact site";
   const firstChange = mutationLadder(candidate).conservative;
@@ -835,28 +868,28 @@ function buildDiscoveryPrograms(report) {
       title: "Structure–function test",
       thesis: `Compare ${candidateLabel} with ${controlLabel} using a protein-specific functional readout.`,
       opportunity: `Test whether the mutation at ${candidateLabel} produces a larger functional effect than the matched lower-score residue ${controlLabel}.`,
-      program: `Test ${firstChange}, a matched perturbation at ${controlLabel}, and wild type. Measure integrity first, then ${biology.assay}.`,
+      program: `Test ${firstChange}, a matched perturbation at ${controlLabel}, and wild type. Measure integrity first, then ${assay}.`,
       question: `Does the candidate change the protein-specific output more than structural background while molecular integrity remains intact?`
     },
     engineering: {
       title: "Protein engineering screen",
       thesis: `Test a graded mutation series at ${candidateLabel} and remove constructs that lose expression or fold.`,
       opportunity: `Compare conservative, neutralizing and stronger mutations at ${candidateLabel}, using ${controlLabel} as the structural control.`,
-      program: `Build a three-step chemistry ladder at ${candidateLabel}. Screen abundance and folding, then advance only intact constructs into ${biology.assay}.`,
+      program: `Build a three-step chemistry ladder at ${candidateLabel}. Screen abundance and folding, then advance only intact constructs into ${assay}.`,
       question: "Can the response be shifted in a graded way without losing expression, assembly or fold quality?"
     },
     translation: {
       title: "Variant classification",
       thesis: "Classify each effect as functional, expression-related, folding-related, or unresolved.",
       opportunity: `Use the candidate and matched control to classify a variant by function, abundance and fold rather than by one score.`,
-      program: `Measure abundance, one orthogonal integrity readout and ${biology.assay} in the same batch. Keep conclusions at the protein level unless clinical evidence is supplied.`,
+      program: `Measure abundance, one orthogonal integrity readout and ${assay} in the same batch. Keep conclusions at the protein level unless clinical evidence is supplied.`,
       question: "Which measurement cleanly distinguishes a functional effect from reduced expression, misfolding or failed assembly?"
     },
     mechanism: {
       title: "Mechanism test",
       thesis: `Use ${candidateLabel} to distinguish local packing, ligand coupling, assembly effects and site-specific functional control.`,
       opportunity: `Compare ${candidateLabel}, ${controlLabel} and the next ranked site across a shared integrity and function panel.`,
-      program: `Predefine predictions for local packing, fold loss and site-specific function. Use ${biology.assay} only after the integrity gate passes.`,
+      program: `Predefine predictions for local packing, fold loss and site-specific function. Use ${assay} only after the integrity gate passes.`,
       question: "Which single outcome would force the leading structural explanation to be abandoned?"
     }
   };
@@ -964,6 +997,7 @@ function renderGuidance(report, candidateOverride = report.topResidues[0]) {
   const contactClass = candidate?.degree >= 8 ? "a highly connected structural hub" : candidate?.degree >= 4 ? "a moderately connected structural junction" : "the strongest available contact signal in this model";
   const disulfide = candidate?.disulfidePartner;
   const biology = biologicalGuidance(report, candidate, control);
+  const assay = assayFor(report, candidate, control);
   const structuralThesis = disulfide
     ? `${candidateLabel} forms a ${disulfide.distance.toFixed(2)} Å sulfur–sulfur contact with ${disulfide.label}, consistent with a disulfide constraint. The decisive question is whether function changes beyond any loss of structural integrity.`
     : `${candidateLabel} is the strongest multi-signal structural contrast in this coordinate model. Test it against ${controlLabel} while holding expression and folding accountable.`;
@@ -976,15 +1010,15 @@ function renderGuidance(report, candidateOverride = report.topResidues[0]) {
   document.getElementById("guidanceMutation").textContent = biology.firstMove;
   document.getElementById("guidanceGate").textContent = disulfide ? "Integrity before function" : "Candidate must beat control";
   document.getElementById("guidanceConfidence").textContent = `${Math.round(completeness * 100)}% coordinate completeness, not biological certainty.`;
-  document.getElementById("guidanceHypothesis").textContent = `${biology.purpose} ${biology.siteReason}${contrast}`;
-  document.getElementById("guidanceExperiment").textContent = biology.experiment;
+  document.getElementById("guidanceHypothesis").textContent = selectedExperimentQuestion(report, candidate);
+  document.getElementById("guidanceExperiment").textContent = `Build the first and stronger chemistry probes at ${candidateLabel}, plus the matched perturbation at ${controlLabel}. Run all constructs beside wild type. Measure ${assay}, abundance, and one orthogonal folding or stability readout in the same batch.`;
   document.getElementById("guidanceAdvance").textContent = `Advance the hypothesis if the ${candidateLabel} perturbation changes the biological readout more than ${controlLabel}, while expression and folding remain acceptably similar to wild type.`;
   document.getElementById("guidanceStop").textContent = `Do not interpret the site as specifically informative if candidate and comparison behave similarly, or if the candidate mainly lowers expression or disrupts folding. In that case, test ${runnerUp?.label || "the next-ranked residue"} or revise the assay.`;
   document.getElementById("mutationConservative").textContent = ladder.conservative;
   document.getElementById("mutationNeutral").textContent = ladder.neutral;
   document.getElementById("mutationStress").textContent = ladder.stress;
   document.getElementById("guidanceIntegrity").textContent = `For ${candidateLabel}, quantify expression or abundance and add one orthogonal folding/stability readout before interpreting function.`;
-  document.getElementById("guidanceFunction").textContent = `Use ${biology.assay}; predefine the smallest effect that would be worth following.`;
+  document.getElementById("guidanceFunction").textContent = `Use ${assay}; predefine the smallest effect that would be worth following.`;
   document.getElementById("guidanceSpecificity").textContent = `Run wild type, ${ladder.conservative}, ${ladder.neutral}, and the matched-site perturbation at ${controlLabel} together.`;
   document.getElementById("diagnosticAdvance").textContent = `${candidateLabel} becomes a stronger site-specific hypothesis if its functional effect exceeds ${controlLabel} without a comparable integrity defect.`;
   document.getElementById("diagnosticFold").textContent = `Do not call mechanism. Reduce perturbation severity, improve expression controls, or test ${ladder.conservative} first.`;
@@ -1002,9 +1036,6 @@ function renderGuidance(report, candidateOverride = report.topResidues[0]) {
   document.getElementById("hudControl").textContent = controlLabel;
   document.getElementById("hudGate").textContent = disulfide ? "INTEGRITY BEFORE FUNCTION" : "CANDIDATE MUST BEAT CONTROL";
   document.getElementById("hudGateNote").textContent = disulfide ? `A functional effect is not site-specific evidence if ${candidateLabel} also loses expression or fold.` : `Advance only if ${candidateLabel} changes the functional readout more than ${controlLabel} without a matching integrity defect.`;
-  const hypothesisElement = document.getElementById("guidanceHypothesis");
-  hypothesisElement.dataset.base = hypothesisElement.textContent;
-  if (userHypothesis) hypothesisElement.textContent = `User-defined question: “${userHypothesis}” ${hypothesisElement.dataset.base}`;
 }
 
 function scoreEquationText(lensName = activeScoringLens) {
@@ -1025,27 +1056,43 @@ function selectedExperimentQuestion(report, residue) {
   const control = matchedControlForResidue(report, residue);
   const candidateMutation = mutationLadder(residue).conservative;
   const controlMutation = control ? mutationLadder(control).conservative : "the matched-site perturbation";
-  const biology = biologicalGuidance(report, residue, control);
-  return `Does ${candidateMutation} at ${residue.label} change the result in ${biology.assay} more than ${control ? `${controlMutation} at ${control.label}` : "a matched lower-score control"}, while expression and folding remain comparable to wild type?`;
+  const assay = assayFor(report, residue, control);
+  return `Does ${candidateMutation} at ${residue.label} change ${assay} more than ${control ? `${controlMutation} at ${control.label}` : "a matched lower-score control"}, while expression and folding remain comparable to wild type?`;
 }
 
 function selectedTestText(report, residue) {
   const control = matchedControlForResidue(report, residue);
-  const candidateMutation = mutationLadder(residue).conservative;
-  const controlMutation = control ? mutationLadder(control).conservative : "matched perturbation";
-  const biology = biologicalGuidance(report, residue, control);
-  const question = userHypothesis || selectedExperimentQuestion(report, residue);
+  const assay = assayFor(report, residue, control);
+  const constructs = experimentConstructs(report, residue);
   return [
-    `RINet controlled residue test — ${current?.sourceName || report.metadata?.pdbId || "structure"}`,
-    `Question: ${question}`,
-    `Candidate: ${residue.label} (rank ${residue.rank}/${report.allResidues.length}; score ${residue.score.toFixed(1)} under the ${scoreLenses[report.scoringLens].label} model).`,
-    `Structural basis: ${residue.rationale}`,
-    `Candidate mutation: ${mutationRationale(residue, candidateMutation)}`,
-    control ? `Matched control: ${control.label}, ${controlMutation} (match ${control.matchQuality.toFixed(0)}/100). ${control.controlRationale}` : "Matched control: none could be constructed from this coordinate record.",
-    `Measure in the same batch: ${biology.assay}; expression or abundance; one orthogonal folding or stability readout. Include wild type, candidate and matched control.`,
-    `Supporting result: the candidate changes the functional readout more than the control while expression and folding remain acceptably similar to wild type.`,
-    `Stop or reinterpret: candidate and control behave similarly, or the candidate primarily lowers expression or disrupts folding.`,
-    `Boundary: structure-derived hypothesis only; confirm numbering, assembly, assay context and external evolutionary or dynamic evidence before assigning mechanism.`
+    `RINet experiment sheet — ${current?.sourceName || report.metadata?.pdbId || "structure"}`,
+    "",
+    "QUESTION",
+    selectedExperimentQuestion(report, residue),
+    "",
+    "WHY THIS SITE",
+    `${residue.label} is rank ${residue.rank}/${report.allResidues.length} (score ${residue.score.toFixed(1)}, ${scoreLenses[report.scoringLens].label} model). ${residue.rationale}`,
+    "",
+    "BEFORE ORDERING",
+    `Confirm that ${residue.label}${control ? ` and ${control.label}` : ""} map to the intended expression construct, author numbering, biological assembly and assay-relevant state.`,
+    "",
+    "CONSTRUCTS TO ORDER",
+    ...constructs.map((row, index) => `${index + 1}. ${row.construct}${row.site === "—" ? "" : `: ${row.site} ${row.substitution}`} — ${row.purpose}`),
+    "",
+    "RUN ALL CONSTRUCTS IN THE SAME BATCH",
+    `1. Primary functional readout: ${assay}.`,
+    "2. Expression or abundance relative to wild type.",
+    "3. One orthogonal folding, stability or assembly readout appropriate to the protein.",
+    "4. Use the same preparation and blinded sample labels where practical; set replicate count and the smallest meaningful effect before collecting data.",
+    "",
+    "CALL THE SITE-SPECIFIC HYPOTHESIS SUPPORTED ONLY IF",
+    `${residue.label} changes the primary readout more than ${control?.label || "the matched structural control"}, while expression and molecular integrity remain acceptably similar to wild type.`,
+    "",
+    "STOP OR REINTERPRET",
+    "If candidate and matched control behave similarly, the ranking has not separated the site from structural background. If expression or integrity falls, treat the result as a stability/production effect before assigning function.",
+    "",
+    "LIMIT",
+    "This is a structure-derived experimental contrast, not biological proof. RINet does not invent assay conditions, replicate counts or effect-size thresholds; set those from the validated assay and laboratory context."
   ].join("\n");
 }
 
@@ -1062,16 +1109,17 @@ function renderEvidenceResiduePicker(report, selected = report.topResidues[0]) {
 function renderSelectedAction(residue, report = current?.report) {
   if (!residue || !report) return;
   const control = matchedControlForResidue(report, residue);
-  const ladder = mutationLadder(residue);
-  const biology = biologicalGuidance(report, residue, control);
+  const assay = assayFor(report, residue, control);
+  const constructs = experimentConstructs(report, residue);
   document.getElementById("selectedActionResidue").textContent = residue.label;
   document.getElementById("selectedActionScore").textContent = `rank ${residue.rank}/${report.allResidues.length} · score ${residue.score.toFixed(1)} · ${scoreLenses[report.scoringLens].label} model`;
   document.getElementById("selectedActionBoundary").textContent = `${residue.percentile.toFixed(1)}th score percentile in this structure. This is not a probability of function.`;
   document.getElementById("selectedActionReason").textContent = residue.rationale;
-  document.getElementById("selectedActionMutation").textContent = mutationRationale(residue, ladder.conservative);
+  document.getElementById("selectedActionMutation").textContent = constructs.map(row => row.site === "—" ? row.construct : `${row.construct}: ${row.site} ${row.substitution}`).join(" · ");
   document.getElementById("selectedActionControl").textContent = control ? `${control.label} · ${mutationLadder(control).conservative} · match ${control.matchQuality.toFixed(0)}/100. ${control.controlRationale}` : "No credible matched control could be constructed from this structure.";
-  document.getElementById("selectedActionAssay").textContent = `${biology.assay}; expression or abundance; one folding or stability readout. Run wild type, candidate and control in the same batch.`;
-  document.getElementById("selectedActionRule").textContent = `${residue.label} changes the functional readout more than ${control?.label || "the matched control"}, while expression and folding remain acceptably similar to wild type.`;
+  document.getElementById("selectedActionAssay").textContent = `1. ${assay}. 2. Expression or abundance. 3. One folding, stability or assembly readout. Compare every construct with wild type in the same batch.`;
+  document.getElementById("selectedActionRule").textContent = `${residue.label} changes ${assay} more than ${control?.label || "the matched control"}, while expression and molecular integrity remain acceptably similar to wild type.`;
+  updateAssaySetup(report, residue);
   renderEvidenceResiduePicker(report, residue);
 }
 
@@ -1407,13 +1455,6 @@ function selectAnalyzedResidue(residue, { button = null, autoView = false, updat
     row.classList.toggle("active", row === button || ranked?.label === residue.label);
   });
   renderContributionAudit(residue,current?.report);
-  if (current && suggestedHypothesisActive) {
-    userHypothesis = selectedExperimentQuestion(current.report, residue);
-    document.getElementById("hypothesisInput").value = userHypothesis;
-    const feedback = document.getElementById("hypothesisFeedback");
-    feedback.textContent = `Suggested question updated for ${residue.label}. Scores and ranks are unchanged.`;
-    feedback.classList.add("applied");
-  }
   if (current) renderGuidance(current.report, residue);
   if (updateDiscovery && current) renderDiscovery(current.report, activeDiscoveryMode);
   const actionStatus = document.getElementById("selectedActionStatus");
@@ -1540,34 +1581,31 @@ function openCopyDialog(title, text) {
   document.getElementById("copyDialogTitle").textContent = title;
   field.value = text;
   if (!dialog.open) dialog.showModal();
-  window.requestAnimationFrame(() => { field.focus(); field.select(); });
+  window.requestAnimationFrame(() => { field.focus(); field.select(); field.scrollTop = 0; });
 }
 
-document.getElementById("applyHypothesis")?.addEventListener("click",()=>{
-  userHypothesis=document.getElementById("hypothesisInput").value.trim();
-  if(!current)return;
-  const residue = currentEvidenceResidue();
-  renderGuidance(current.report, residue || current.report.topResidues[0]);
-  if (residue) renderSelectedAction(residue, current.report);
-  const feedback = document.getElementById("hypothesisFeedback");
-  feedback.textContent=userHypothesis?`Question set: “${userHypothesis}” Scores and ranks are unchanged.`:"Question cleared. Scores and ranks are unchanged.";
-  feedback.classList.toggle("applied", Boolean(userHypothesis));
-  const button = document.getElementById("applyHypothesis");
-  button.textContent=userHypothesis?"Question set":"Question cleared";
-  window.setTimeout(()=>button.textContent="Set experiment question",1500);
-  const status=document.getElementById("analysisStatus");
-  status.textContent=userHypothesis?"Experiment question set. Structural scores are unchanged.":"Experiment question cleared. Structural scores are unchanged.";
-  setLocalActionStatus(userHypothesis?"Experiment question updated. Open the copyable test to export it with the residue evidence.":"Experiment question cleared.",Boolean(userHypothesis));
-});
-
-document.getElementById("suggestHypothesis")?.addEventListener("click",()=>{
+document.getElementById("applyAssay")?.addEventListener("click",()=>{
   if(!current)return;
   const residue=currentEvidenceResidue()||current.report.topResidues[0];
-  suggestedHypothesisActive=true;
-  document.getElementById("hypothesisInput").value=selectedExperimentQuestion(current.report,residue);
-  document.getElementById("applyHypothesis").click();
+  customAssay=document.getElementById("assayInput").value.trim();
+  renderGuidance(current.report,residue);
+  renderDiscovery(current.report,activeDiscoveryMode);
+  renderSelectedAction(residue,current.report);
+  const button=document.getElementById("applyAssay");
+  button.textContent=customAssay?"Readout applied":"Using suggestion";
+  window.setTimeout(()=>button.textContent="Use this readout",1500);
+  setLocalActionStatus(customAssay?`Experiment sheet updated to use: ${customAssay}. Structural scores did not change.`:"RINet's suggested readout restored. Structural scores did not change.",true);
 });
-document.getElementById("hypothesisInput")?.addEventListener("input",()=>{suggestedHypothesisActive=false;});
+
+document.getElementById("resetAssay")?.addEventListener("click",()=>{
+  if(!current)return;
+  customAssay="";
+  const residue=currentEvidenceResidue()||current.report.topResidues[0];
+  renderGuidance(current.report,residue);
+  renderDiscovery(current.report,activeDiscoveryMode);
+  renderSelectedAction(residue,current.report);
+  setLocalActionStatus("RINet's protein-specific assay suggestion restored. Structural scores did not change.",true);
+});
 
 document.getElementById("actionFocusStructure")?.addEventListener("click",()=>{
   const residue=currentEvidenceResidue();
@@ -1588,9 +1626,24 @@ const copySelectedTestButton = document.getElementById("copySelectedTest");
 if (copySelectedTestButton) copySelectedTestButton.onclick = () => {
   const residue=currentEvidenceResidue();
   if(!current||!residue)return;
-  openCopyDialog(`${residue.label} controlled test`, selectedTestText(current.report,residue));
-  setLocalActionStatus("Controlled test opened with candidate, matched control, assay, decision rule and limitations.",true);
+  openCopyDialog(`${residue.label} experiment sheet`, selectedTestText(current.report,residue));
+  setLocalActionStatus("Experiment sheet opened: constructs, measurements, comparison and stop rule are ready to copy.",true);
 };
+
+document.getElementById("downloadConstructs")?.addEventListener("click",()=>{
+  const residue=currentEvidenceResidue();
+  if(!current||!residue)return;
+  const quote=value=>`"${String(value).replaceAll('"','""')}"`;
+  const rows=experimentConstructs(current.report,residue);
+  const csv=["construct,site,substitution,purpose",...rows.map(row=>[row.construct,row.site,row.substitution,row.purpose].map(quote).join(","))].join("\n");
+  const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  const link=document.createElement("a");
+  link.href=url;
+  link.download=`rinet-${residue.label.replace(/[^a-z0-9]+/gi,"-").toLowerCase()}-constructs.csv`;
+  link.click();
+  window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+  setLocalActionStatus("Construct list downloaded as CSV. Confirm every author residue number against the expression construct before ordering.",true);
+});
 
 document.getElementById("actionOpenExperiment")?.addEventListener("click",()=>{
   const residue=currentEvidenceResidue();
@@ -1623,7 +1676,7 @@ document.getElementById("closeCopyDialog")?.addEventListener("click",()=>documen
 document.getElementById("copyDialog")?.addEventListener("click",event=>{if(event.target===event.currentTarget)event.currentTarget.close();});
 
 function receiptPayload() {
-  return { tool: "RINet Structure Intelligence", version: "3.0", receiptId: current.receiptId, analyzedAt: current.analyzedAt, sourceLabel: current.sourceName, sourceType: current.sourceType, structureSha256: current.digest, userHypothesis:userHypothesis||null, scoringLens:current.report.scoringLens, exactScoreWeights:current.report.scoreWeights, contactCutoffAngstrom:current.report.contactCutoff, benchmarkManifest:benchmarkManifest[current.report.metadata?.pdbId]||null, summary: current.report, scientificBoundary: "Static, descriptive coordinate and Cα contact analysis; not an all-atom potential, evolutionary analysis, dynamics calculation, functional proof or causal claim." };
+  return { tool: "RINet Structure Intelligence", version: "3.0", receiptId: current.receiptId, analyzedAt: current.analyzedAt, sourceLabel: current.sourceName, sourceType: current.sourceType, structureSha256: current.digest, selectedAssay:customAssay||null, scoringLens:current.report.scoringLens, exactScoreWeights:current.report.scoreWeights, contactCutoffAngstrom:current.report.contactCutoff, benchmarkManifest:benchmarkManifest[current.report.metadata?.pdbId]||null, summary: current.report, scientificBoundary: "Static, descriptive coordinate and Cα contact analysis; not an all-atom potential, evolutionary analysis, dynamics calculation, functional proof or causal claim." };
 }
 
 document.getElementById("downloadReceipt").addEventListener("click", () => {
