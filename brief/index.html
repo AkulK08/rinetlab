@@ -8,7 +8,7 @@
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=20260816">
   <link rel="image_src" href="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <link rel="stylesheet" href="/contact.css?v=1">
-  <link rel="stylesheet" href="/brief/brief.css?v=27">
+  <link rel="stylesheet" href="/brief/brief.css?v=28">
   <title>Structure Brief | RINet</title>
   <meta name="description" content="Rank residues from a protein structure, inspect every score term, and design a controlled experiment.">
   <meta property="og:type" content="website">
@@ -32,7 +32,7 @@
 <body>
   <header class="app-header">
     <a class="brand" href="/"><img src="/media/rinet-mark.png?v=20260816" alt="">RINet</a>
-    <div class="app-title">Structure Brief <i>3.0</i></div>
+    <div class="app-title">Structure Brief <i>3.1</i></div>
     <div class="header-actions"><a class="header-demo" href="/brief/?demo=1">Demo <span>↗</span></a><div class="privacy"><b></b> Local browser analysis</div></div>
   </header>
 
@@ -221,7 +221,7 @@
               <article><span>05</span><strong>Mixed structural features</strong><p>Represents sites for which no single displayed feature group dominates.</p></article>
             </div>
             <div class="adaptive-metrics" aria-label="Panel design diagnostics">
-              <article><span>STRUCTURAL VARIETY</span><strong id="adaptiveCoverage">—</strong><small>How broadly the panel samples the displayed ten-feature space.</small></article>
+              <article><span>STRUCTURAL VARIETY</span><strong id="adaptiveCoverage">—</strong><small>How broadly the panel samples the displayed atomic, graph, burial and bound-group features.</small></article>
               <article><span>TOP-RANK VARIETY</span><strong id="adaptiveBaseline">—</strong><small>The same calculation if the first N ranked residues were chosen without diversification.</small></article>
               <article><span>PATTERN CONTRAST</span><strong id="adaptiveSeparation">—</strong><small>How differently the five hand-set patterns describe this panel. Not accuracy.</small></article>
               <article><span>PAIRED CONTROLS</span><strong id="adaptiveControls">—</strong><small>Lower-ranked structural matches tested beside candidates.</small></article>
@@ -230,10 +230,11 @@
           <div class="prior-art-boundary">
             <div><span>METHOD SCOPE</span><strong>Established components and the workflow implemented here</strong></div>
             <article><a href="https://doi.org/10.1093/nar/gkac365" target="_blank" rel="noreferrer">RING 3.0 ↗</a><p>Probabilistic interaction networks and contact evolution across structural ensembles.</p></article>
+            <article><a href="https://doi.org/10.1016/j.jmb.2016.12.004" target="_blank" rel="noreferrer">Arpeggio ↗</a><p>Atom typing and geometric rules for classifying protein, ligand and metal contacts. RINet's browser-side interaction audit follows this established idea with simpler disclosed rules.</p></article>
             <article><a href="https://doi.org/10.1093/nar/gky417" target="_blank" rel="noreferrer">HotSpot Wizard 3.0 ↗</a><p>Mutation hotspots, stability filtering and smart-library design.</p></article>
             <article><a href="https://doi.org/10.1038/s41586-022-04586-4" target="_blank" rel="noreferrer">Multi-phenotype DMS ↗</a><br><a href="https://doi.org/10.1038/s41467-026-74517-8" target="_blank" rel="noreferrer">Activity–abundance residuals ↗</a><p>Measured secondary phenotypes separate specific functional effects from loss of protein integrity at large scale.</p></article>
             <article><a href="https://doi.org/10.1126/science.adr6006" target="_blank" rel="noreferrer">EVOLVEpro ↗</a><p>Sequence-embedding active learning after experimental fitness measurements.</p></article>
-            <article><span>WORKFLOW IMPLEMENTED HERE</span><p>RINet joins structure-based panel selection, explicit candidate/control pairs, three measured phenotypes, and follow-up-site ranking in one local workflow. Its prospective performance has not yet been established.</p></article>
+            <article><span>WORKFLOW IMPLEMENTED HERE</span><p>RINet joins atom-level evidence, a local-environment-matched control that directly challenges the added value of graph position, three measured phenotypes, and follow-up-site selection in one local workflow. This integration is the contribution being tested; prospective performance has not yet been established.</p></article>
           </div>
         </section>
 
@@ -251,6 +252,36 @@
           <div class="selected-action-rule"><span>SITE-SPECIFIC INTERPRETATION REQUIRES</span><p id="selectedActionRule">Pending</p></div>
           <p class="selected-action-status" id="selectedActionStatus" role="status">Select a ranked residue to update the construct and measurement plan.</p>
         </article>
+        <section class="atomic-evidence" aria-labelledby="atomic-evidence-title">
+          <div class="atomic-evidence-head">
+            <div><span>COORDINATE EVIDENCE</span><h4 id="atomic-evidence-title">What atoms touch this residue?</h4><p id="atomicEvidenceIntro">Select a residue to inspect its atom-level partners before choosing a mutation.</p></div>
+            <p>These are geometric observations from the supplied model. They are not interaction energies, proof of information flow, or a predicted mutation effect.</p>
+          </div>
+          <div class="atomic-evidence-metrics" aria-label="Atom-level interaction summary">
+            <article><span>ATOMIC PARTNERS</span><strong id="atomicPartnerCount">—</strong><small>unique residue or bound-group partners</small></article>
+            <article><span>POLAR PROXIMITY</span><strong id="atomicPolarCount">—</strong><small>N/O/S geometry; not formal H-bond assignment</small></article>
+            <article><span>IONIC GEOMETRY</span><strong id="atomicIonicCount">—</strong><small>oppositely charged side-chain atoms</small></article>
+            <article><span>HYDROPHOBIC</span><strong id="atomicHydrophobicCount">—</strong><small>non-polar side-chain contacts</small></article>
+            <article><span>AROMATIC</span><strong id="atomicAromaticCount">—</strong><small>ring-atom proximity; not stacking energy</small></article>
+            <article><span>LIGAND / METAL</span><strong id="atomicLigandCount">—</strong><small>direct bound-group contacts</small></article>
+          </div>
+          <div class="atomic-evidence-grid">
+            <article>
+              <div class="panel-head"><span>OBSERVED IN THIS MODEL</span><strong id="atomicEvidenceResidue">Pending</strong></div>
+              <div class="atomic-evidence-rows" id="atomicEvidenceRows"><p>No residue selected.</p></div>
+            </article>
+            <article>
+              <div class="panel-head"><span>FIRST MUTATION: CONTACT CAPABILITIES</span><strong id="atomicMutationLabel">Pending</strong></div>
+              <p class="atomic-mutation-summary" id="atomicMutationSummary">The mutation-specific comparison will appear here.</p>
+              <div class="atomic-change-rows" id="atomicChangeRows"></div>
+              <p class="atomic-boundary" id="atomicBoundary">Side-chain replacement changes atom identity and geometry. A modeled mutant, energetic calculation, and experiment are still required.</p>
+            </article>
+          </div>
+          <div class="atomic-contrast">
+            <div><span>WHY THIS RESIDUE RANKS ABOVE ITS CONTROL</span><strong id="atomicContrastTitle">Pending</strong><p id="atomicContrastSummary">The exact score differences will appear here.</p></div>
+            <div class="atomic-contrast-rows" id="atomicContrastRows"></div>
+          </div>
+        </section>
         <div class="evidence-lab-grid">
           <article class="residue-audit">
             <div class="panel-head"><span>01 / SCORE BREAKDOWN</span><strong id="auditResidue">Pending</strong></div>
@@ -271,13 +302,13 @@
         <div class="contract-copy">
           <p class="eyebrow">Method scope</p>
           <h3 id="scientific-contract-title">What RINet calculates</h3>
-          <p>From one coordinate model, RINet builds a Cα contact graph, calculates the displayed residue scores, selects lower-scoring structural controls, and repeats the ranking at 7, 8, and 9 Å cutoffs. PyMOL and ChimeraX remain the appropriate tools for general structure inspection.</p>
+          <p>From one coordinate model, RINet records typed atom-level contacts, builds a separate Cα contact graph, calculates the displayed residue scores, selects lower-scoring structural controls, and repeats the ranking at 7, 8, and 9 Å cutoffs. The atomic layer explains local geometry; the graph layer describes wider structural position. Neither is treated as an energy calculation or proof of information flow.</p>
         </div>
         <div class="contract-grid">
           <article><span>INPUT</span><strong>Structure</strong><p>Author chain IDs, residue numbering, ligands, missing atoms and quality fields remain visible.</p></article>
-          <article><span>CALCULATION</span><strong>Rank and compare</strong><p>Ten residues, every weighted term, and a matched lower-score control.</p></article>
+          <article><span>CALCULATION</span><strong>Inspect, rank, compare</strong><p>Typed atomic contacts, graph position, every weighted term, and a matched lower-score control.</p></article>
           <article><span>EXPERIMENT OUTPUT</span><strong>Candidate + control</strong><p>Mutation set, protein-quality measurements, functional readout, and interpretation rule.</p></article>
-          <article><span>NOT CALCULATED</span><strong>Additional evidence</strong><p>Evolution, dynamics, energetics, cellular phenotype, and causal mechanism require separate analyses.</p></article>
+          <article><span>NOT CALCULATED</span><strong>Energy or causality</strong><p>ΔG, dynamics, evolution, cellular phenotype, and causal mechanism require separate analyses and experimental evidence.</p></article>
         </div>
       </section>
 
@@ -390,7 +421,7 @@
         <section class="expert-ranking">
           <div class="section-head"><span>05</span><h3>Complete expert ranking</h3><p>All parsed residues · sortable evidence record</p></div>
           <label class="ranking-filter">Filter chain, residue or feature <input id="rankingFilter" type="search" placeholder="Example: chain B, ligand, interchain, HIS"></label>
-          <div class="expert-table-wrap"><table><thead><tr><th>Rank</th><th>Residue</th><th>Score</th><th>Degree</th><th>Closeness</th><th>Betweenness</th><th>Long range</th><th>Interchain</th><th>Ligand Å</th><th>Why</th></tr></thead><tbody id="expertRows"></tbody></table></div>
+          <div class="expert-table-wrap"><table><thead><tr><th>Rank</th><th>Residue</th><th>Score</th><th>Atomic partners</th><th>Polar</th><th>Ionic</th><th>Cα degree</th><th>Closeness</th><th>Betweenness</th><th>Long range</th><th>Interchain</th><th>Ligand Å</th><th>Why</th></tr></thead><tbody id="expertRows"></tbody></table></div>
         </section>
 
         <section class="methods">
@@ -402,7 +433,7 @@
           <div class="section-head"><span>07</span><h3>Interpretation limits</h3><p>Read before ordering constructs</p></div>
           <div class="limitations-grid">
             <article><strong>Static coordinates</strong><p>No dynamics, kinetics, conformational ensemble or energetic coupling is inferred from one model.</p></article>
-            <article><strong>Residue-level graph</strong><p>Cα contacts are a coarse structural description, not an all-atom potential, folding model or free-energy calculation.</p></article>
+            <article><strong>Geometry is not energy</strong><p>Typed atom contacts and the Cα graph describe geometry. They are not an all-atom potential, folding model, free-energy calculation, or evidence that information flows along graph edges.</p></article>
             <article><strong>Biological assembly</strong><p>The supplied coordinate file may contain an asymmetric unit, crystal contacts or an incomplete biological assembly.</p></article>
             <article><strong>Numbering and construct</strong><p>Author numbering, insertion codes, unresolved residues, tags and assay constructs must be reconciled experimentally.</p></article>
             <article><strong>Evolution absent by default</strong><p>Conservation is not invented. Use the FASTA/BLAST route or import external evidence before making evolutionary claims.</p></article>
@@ -445,9 +476,9 @@
     </form>
   </section>
 
-  <footer><a href="/">← RINet home</a><span>Structure Brief 3.0 · transparent residue-network analysis</span></footer>
+  <footer><a href="/">← RINet home</a><span>Structure Brief 3.1 · atom-level evidence and controlled experiment design</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
   <script src="/contact.js?v=5"></script>
-  <script src="/brief/brief.js?v=25"></script>
+  <script src="/brief/brief.js?v=26"></script>
 </body>
 </html>
