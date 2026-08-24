@@ -8,14 +8,14 @@
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=20260816">
   <link rel="image_src" href="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <link rel="stylesheet" href="/contact.css?v=1">
-  <link rel="stylesheet" href="/brief/brief.css?v=19">
+  <link rel="stylesheet" href="/brief/brief.css?v=20">
   <title>Structure Brief | RINet</title>
-  <meta name="description" content="Interrogate a protein structure and turn its strongest structural signals into a falsifiable experiment plan.">
+  <meta name="description" content="Rank residues from a protein structure, inspect every score term, and design a controlled experiment.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://rinetlab.com/brief/">
   <meta property="og:site_name" content="RINet">
   <meta property="og:title" content="RINet | Find the residue worth testing">
-  <meta property="og:description" content="Interrogate a protein structure and turn its strongest structural signals into a falsifiable experiment plan.">
+  <meta property="og:description" content="Rank residues from a protein structure, inspect every score term, and design a controlled experiment.">
   <meta property="og:image" content="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <meta property="og:image:secure_url" content="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <meta property="og:image:type" content="image/png">
@@ -25,36 +25,36 @@
   <meta itemprop="image" content="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="RINet | Find the residue worth testing">
-  <meta name="twitter:description" content="Interrogate a protein structure and turn its strongest structural signals into a falsifiable experiment plan.">
+  <meta name="twitter:description" content="Rank residues from a protein structure, inspect every score term, and design a controlled experiment.">
   <meta name="twitter:image" content="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <meta name="twitter:image:alt" content="RINet protein network mark">
 </head>
 <body>
   <header class="app-header">
     <a class="brand" href="/"><img src="/media/rinet-mark.png?v=20260816" alt="">RINet</a>
-    <div class="app-title">Structure Intelligence <i>3.0</i></div>
+    <div class="app-title">Structure Brief <i>3.0</i></div>
     <div class="header-actions"><a class="header-demo" href="/brief/?demo=1">Demo <span>↗</span></a><div class="privacy"><b></b> Local browser analysis</div></div>
   </header>
 
   <main>
     <section class="launch-screen" id="launchScreen" aria-labelledby="input-title">
       <div class="launch-visual" aria-label="Animated preview of the RINet structure analysis">
-        <div class="preview-toolbar"><span>LIVE STRUCTURE / 1CRN</span><strong>RESIDUE NETWORK INTERROGATION</strong></div>
+        <div class="preview-toolbar"><span>LIVE STRUCTURE / 1CRN</span><strong>Cα CONTACT GRAPH</strong></div>
         <div id="previewMolecule" aria-label="Protein structure preview"></div>
         <div class="preview-reticle" aria-hidden="true"><i></i><i></i></div>
-        <div class="preview-callout"><span>PRIMARY STRUCTURAL SIGNAL</span><strong>NETWORK CONSTRAINT DETECTED</strong><small>ENTER THE DEMO TO RESOLVE THE SITE AND EXPERIMENT</small></div>
+        <div class="preview-callout"><span>EXAMPLE RESULT</span><strong>RANKED RESIDUES AVAILABLE</strong><small>OPEN THE DEMO TO INSPECT SCORES AND CONTROLS</small></div>
         <div class="preview-footer"><span>SUPPLIED COORDINATES</span><span>LOCAL ANALYSIS · NO ACCOUNT</span></div>
       </div>
 
       <div class="launch-console">
-        <p class="eyebrow">RINet / structural intelligence</p>
-        <h1 id="input-title">Interrogate<br>the structure.</h1>
-        <p class="launch-summary">Resolve the strongest structural signal, the safest perturbation, the control that makes it interpretable, and the result that should stop you.</p>
+        <p class="eyebrow">Protein structure analysis</p>
+        <h1 id="input-title">Analyze a protein<br>structure.</h1>
+        <p class="launch-summary">Load a PDB or mmCIF file. RINet builds a residue-contact graph, ranks residues, and shows how each score was calculated.</p>
 
         <button class="demo-button" id="demoButton" type="button">
-          <span>Instant mission · no file required</span>
-          <strong>Enter the live demo</strong>
-          <small>4HHB · human deoxyhemoglobin · experiment decision system <b>→</b></small>
+          <span>Built-in example · no file required</span>
+          <strong>Run the 4HHB demo</strong>
+          <small>Human deoxyhemoglobin · ranked residues and controls <b>→</b></small>
         </button>
 
         <div class="input-main">
@@ -86,7 +86,7 @@
 
     <section class="results hidden" id="results" aria-live="polite">
       <div class="result-head">
-        <div><p class="eyebrow">RINet analysis / supplied structure</p><h2 id="structureName">Pending</h2></div>
+        <div><p class="eyebrow">Analysis result</p><h2 id="structureName">Pending</h2></div>
         <form class="result-quick-form" id="resultPdbForm">
           <label for="resultPdbId">Or type another protein…</label>
           <div><input id="resultPdbId" name="resultPdbId" maxlength="4" autocomplete="off" spellcheck="false" placeholder="PDB ID" aria-label="Four-character PDB ID"><button type="submit" aria-label="Analyze this PDB ID">Analyze <span>→</span></button></div>
@@ -94,12 +94,23 @@
         <div class="result-actions"><div class="receipt-id"><span>REPRODUCIBLE RECEIPT</span><strong id="receiptId">Pending</strong></div><button type="button" id="newAnalysis">Analyze another structure</button></div>
       </div>
 
-      <a class="result-scroll-banner" data-scroll-guidance href="#decisionBrief" aria-label="Scroll to biological guidance and experiment plan"><b>SCROLL</b><span>Biological guidance, research programs and experiment plan</span><i></i></a>
+      <nav class="section-rail" id="sectionRail" aria-label="Analysis sections" tabindex="0">
+        <div class="section-rail-readout"><strong id="sectionCurrent">1</strong><span>/ 5</span><small id="sectionLabel">Structure</small></div>
+        <ol>
+          <li><a class="active" data-section-link data-section-label="Structure" href="#structureSection" aria-current="step"><i></i><span>Structure</span></a></li>
+          <li><a data-section-link data-section-label="Scoring" href="#scoringSection"><i></i><span>Scoring</span></a></li>
+          <li><a data-section-link data-section-label="Sequence" href="#sequenceSection"><i></i><span>Sequence</span></a></li>
+          <li><a data-section-link data-section-label="Checks" href="#validationSection"><i></i><span>Checks</span></a></li>
+          <li><a data-section-link data-section-label="Experiment" href="#decisionBrief"><i></i><span>Experiment</span></a></li>
+        </ol>
+      </nav>
 
-      <section class="molecule-workbench" aria-label="Interactive structure surface">
+      <a class="result-scroll-banner" data-scroll-guidance href="#scoringSection" aria-label="Continue to the next analysis section"><b>SCROLL</b><span>Five sections: structure, scoring, sequence, checks, experiment</span><i></i></a>
+
+      <section class="molecule-workbench" id="structureSection" data-demo-section="Structure" aria-label="Interactive structure surface">
         <div class="molecule-stage-wrap">
           <div class="molecule-toolbar">
-            <div><span>INTERACTIVE STRUCTURE</span><strong id="viewerLabel">Supplied coordinates</strong></div>
+            <div><span>3D STRUCTURE</span><strong id="viewerLabel">Supplied coordinates</strong></div>
             <div class="viewer-controls">
               <button type="button" class="active" data-representation="surface">Surface</button>
               <button type="button" data-representation="cartoon">Cartoon</button>
@@ -113,20 +124,20 @@
           <div class="color-legend" id="colorLegend" aria-live="polite"><strong>CHAIN COLORS</strong><span id="colorLegendItems">Building legend…</span></div>
           <div class="surface-status" id="surfaceStatus" role="status"><i></i><div><span>STRUCTURE MAP</span><strong>BUILDING COLOR-CODED SURFACE</strong></div></div>
           <div class="analysis-reticle" aria-hidden="true"><i></i><i></i></div>
-          <div class="structure-callout"><span>PRIMARY SITE</span><strong id="viewerCandidate">Pending</strong><small id="viewerCandidateReason">CALCULATING CONTACT TOPOLOGY</small></div>
+          <div class="structure-callout"><span>SELECTED RESIDUE</span><strong id="viewerCandidate">Pending</strong><small id="viewerCandidateReason">CALCULATING CONTACT TOPOLOGY</small></div>
           <div class="viewer-readout"><span><b id="viewerCoverage">Pending</b> coordinate coverage</span><span><b id="viewerContacts">Pending</b> non-local contacts</span></div>
           <div class="viewer-boundary">SUPPLIED COORDINATES · STATIC STRUCTURE · NOT A TRAJECTORY</div>
         </div>
         <aside class="best-residues">
-          <div class="intel-intro"><p class="eyebrow">Deterministic graph theory / live</p><h3>Experiment signal.</h3><p id="hudThesis">Resolving the most informative structural contrast.</p></div>
+          <div class="intel-intro"><p class="eyebrow">Residue ranking</p><h3>Ranked residues</h3><p id="hudThesis">Select a residue to inspect its score and proposed control.</p></div>
           <div class="intel-cards">
             <article><span>FIRST MOVE</span><strong id="hudMutation">Pending</strong><small id="hudMutationNote">Waiting for coordinates</small></article>
             <article><span>MATCHED CONTROL</span><strong id="hudControl">Pending</strong><small>Separates a site effect from structural background.</small></article>
             <article class="intel-risk"><span>INTERPRETATION GATE</span><strong id="hudGate">Pending</strong><small id="hudGateNote">Integrity must hold before function is interpreted.</small></article>
           </div>
-          <div class="ranked-title"><span>RANKED TARGETS · TOP 10</span><small>Click to inspect evidence</small></div>
+          <div class="ranked-title"><span>TOP 10 RESIDUES</span><small>Click to inspect the score</small></div>
           <div id="bestResidueRows"></div>
-          <p class="best-boundary">Structural priority generates a testable contrast, not a biological conclusion.</p>
+          <p class="best-boundary">The ranking identifies structural priority, not biological proof.</p>
         </aside>
       </section>
 
@@ -143,23 +154,23 @@
         <div><span>Confidence / B field</span><strong id="bMetric">Pending</strong></div>
       </div>
 
-      <section class="scientific-contract" aria-labelledby="scientific-contract-title">
+      <section class="scientific-contract" id="scoringSection" data-demo-section="Scoring" aria-labelledby="scientific-contract-title">
         <div class="contract-copy">
-          <p class="eyebrow">Why RINet / the scientific contribution</p>
-          <h3 id="scientific-contract-title">A viewer shows where atoms are. RINet builds the controlled experiment.</h3>
-          <p>RINet converts one structural model into an auditable candidate-versus-control test. It exposes the graph, the scoring equation, every residue-level contribution, parameter sensitivity, known-site recovery, mutation chemistry, and the result that would falsify the interpretation. It complements PyMOL, ChimeraX, evolutionary analysis and simulation; it does not replace them.</p>
+          <p class="eyebrow">What this analysis adds</p>
+          <h3 id="scientific-contract-title">From a structure to a controlled residue test.</h3>
+          <p>A structure viewer shows coordinates. RINet adds a reproducible ranking, a matched lower-score control, the contribution of each score term, cutoff sensitivity, mutation chemistry, and criteria for interpreting the experiment. It complements PyMOL, ChimeraX, evolutionary analysis and simulation.</p>
         </div>
         <div class="contract-grid">
-          <article><span>INPUT</span><strong>One coordinate model</strong><p>Author chain IDs, residue numbering, ligands, missing atoms and quality fields remain visible.</p></article>
-          <article><span>ADDED VALUE</span><strong>A traceable contrast</strong><p>Ten candidates, a matched lower-signal control, explicit weights and competing explanations.</p></article>
-          <article><span>OUTPUT</span><strong>A falsifiable experiment</strong><p>Mutation ladder, integrity gates, functional readout, stopping rule and reproducible receipt.</p></article>
-          <article><span>BOUNDARY</span><strong>Not atomistic proof</strong><p>No energy, dynamics, evolution or causal biology is inferred unless those data are supplied separately.</p></article>
+          <article><span>INPUT</span><strong>Structure</strong><p>One coordinate model with author chain IDs, residue numbering, ligands, missing atoms and quality fields.</p></article>
+          <article><span>METHOD</span><strong>Ranking</strong><p>Ten residues, a matched lower-score control, and explicit weights for every score term.</p></article>
+          <article><span>OUTPUT</span><strong>Experiment</strong><p>Candidate and control mutations, integrity checks, a functional readout and a stopping rule.</p></article>
+          <article><span>LIMIT</span><strong>Structure-derived evidence</strong><p>Energy, dynamics, evolution and causal biology require separate data.</p></article>
         </div>
       </section>
 
       <section class="evidence-lab" aria-labelledby="evidence-lab-title">
         <div class="evidence-lab-head">
-          <div><p class="eyebrow">Residue evidence lab</p><h3 id="evidence-lab-title">Why this residue, rather than another?</h3></div>
+          <div><p class="eyebrow">Residue scoring</p><h3 id="evidence-lab-title">Why does this residue rank here?</h3></div>
           <div class="lens-picker" role="tablist" aria-label="Scientific ranking lens">
             <button class="active" type="button" role="tab" aria-selected="true" data-scoring-lens="general">General</button>
             <button type="button" role="tab" aria-selected="false" data-scoring-lens="ligand">Ligand</button>
@@ -170,30 +181,30 @@
           </div>
         </div>
         <div class="lens-context">
-          <label for="hypothesisInput">Your biological hypothesis <span>used to frame the experiment, never to manufacture evidence</span></label>
+          <label for="hypothesisInput">Biological question <span>changes wording only; scores remain fixed</span></label>
           <div><input id="hypothesisInput" maxlength="240" placeholder="Example: Does this interface transmit the deoxy-to-oxy state change?"><button id="applyHypothesis" type="button">Apply framing</button></div>
           <p id="lensDescription">Balanced structure-first ranking. No single metric is treated as function.</p>
           <code id="scoreEquation">Loading exact score equation…</code>
         </div>
         <div class="evidence-lab-grid">
           <article class="residue-audit">
-            <div class="panel-head"><span>01 / SCORE DECOMPOSITION</span><strong id="auditResidue">Pending</strong></div>
+            <div class="panel-head"><span>01 / SCORE BREAKDOWN</span><strong id="auditResidue">Pending</strong></div>
             <p id="auditSummary">Select a ranked residue to inspect every score component.</p>
             <div class="contribution-chart" id="contributionChart"></div>
             <div class="audit-detail"><span>MUTATION CHEMISTRY</span><p id="auditMutation">Pending</p></div>
             <div class="audit-detail"><span>MATCHED CONTROL LOGIC</span><p id="auditControl">Pending</p></div>
           </article>
           <article class="network-panel">
-            <div class="panel-head"><span>02 / NETWORK EMBEDDING</span><strong>Deterministic force-directed map</strong></div>
+            <div class="panel-head"><span>02 / CONTACT GRAPH</span><strong>Force-directed layout</strong></div>
             <svg id="networkMap" viewBox="0 0 620 420" role="img" aria-label="Residue interaction network projection linked to the selected residue"></svg>
-            <p>Edges are Cα contacts under the active cutoff. Position is a deterministic 2D layout of the graph, not a learned embedding and not a physical trajectory.</p>
+            <p>Each edge is a Cα contact under the active cutoff. The 2D positions are a graph layout, not a physical trajectory.</p>
           </article>
         </div>
       </section>
 
-      <section class="sequence-workbench" aria-labelledby="sequence-title">
+      <section class="sequence-workbench" id="sequenceSection" data-demo-section="Sequence" aria-labelledby="sequence-title">
         <div class="sequence-head">
-          <div><p class="eyebrow">Sequence / coordinate reconciliation</p><h3 id="sequence-title">Track every result back to the supplied record.</h3></div>
+          <div><p class="eyebrow">Sequence and coordinates</p><h3 id="sequence-title">Map scores to the supplied residue numbering.</h3></div>
           <div class="sequence-actions"><button type="button" id="copyFasta">Copy FASTA</button><button type="button" id="openBlast">Open BLAST with sequence</button></div>
         </div>
         <div class="sequence-note" id="specialRegionNote">Author chain IDs and residue numbers are preserved. Missing coordinates and insertion codes remain explicit.</div>
@@ -202,41 +213,41 @@
         <div class="sequence-legend"><span><i class="rank-one"></i>primary</span><span><i class="ranked"></i>ranked</span><span><i class="selected"></i>selected</span><span><i class="cdr"></i>CDR heuristic</span><span>Conservation is <b>not scored</b> until an external sequence analysis is supplied.</span></div>
       </section>
 
-      <section class="validation-studio" aria-labelledby="validation-title">
+      <section class="validation-studio" id="validationSection" data-demo-section="Checks" aria-labelledby="validation-title">
         <div class="validation-head">
-          <div><p class="eyebrow">Validation / sensitivity / state comparison</p><h3 id="validation-title">Make the ranking earn confidence.</h3></div>
-          <p>Known-site labels are evaluated after ranking and never enter the score. Parameter sensitivity shows whether a candidate survives reasonable graph choices.</p>
+          <div><p class="eyebrow">Ranking checks</p><h3 id="validation-title">How sensitive is the result?</h3></div>
+          <p>Reference residues are applied after ranking. These panels show reference-site recovery, cutoff sensitivity, and differences between structures.</p>
         </div>
         <div class="validation-grid">
           <article><span>A / KNOWN-SITE RECOVERY</span><h4 id="benchmarkStatus">Checking benchmark manifest…</h4><div id="benchmarkRows"></div><p id="benchmarkBoundary"></p></article>
           <article><span>B / CONTACT-CUTOFF SENSITIVITY</span><h4>Rank stability across 7–9 Å</h4><div id="sensitivityRows"></div><p>Stable ranks are more credible than a single-cutoff winner; instability is evidence to inspect, not an error to hide.</p></article>
           <article><span>C / SECOND CONFORMATION</span><h4>Compare the same protein in another state</h4><input id="stateFileInput" type="file" accept=".pdb,.ent,.cif,.mmcif,text/plain" hidden><button type="button" id="stateFileButton">Choose second PDB/mmCIF</button><div id="stateComparison">No second state loaded. RINet will compare matched chain/residue identifiers, contact changes and rank shifts.</div></article>
-          <article><span>D / VALIDATION STATUS</span><h4>Sanity check, not a universal benchmark</h4><p>The built-in known sites test whether the ranking recovers established structural anchors in selected examples. It is not a substitute for blinded multi-protein benchmarking against mutational, allosteric, evolutionary or MD datasets.</p></article>
+          <article><span>D / SCOPE OF THIS CHECK</span><h4>Reference check, not general validation</h4><p>The built-in known sites test whether the ranking recovers established structural anchors in selected examples. It is not a substitute for blinded multi-protein benchmarking against mutational, allosteric, evolutionary or MD datasets.</p></article>
         </div>
       </section>
 
-      <section class="ai-guidance" id="decisionBrief" aria-labelledby="guidance-title">
+      <section class="ai-guidance" id="decisionBrief" data-demo-section="Experiment" aria-labelledby="guidance-title">
         <div class="guidance-heading">
-          <div><p class="eyebrow">RINet biological decision brief</p><h3 id="guidance-title">What this protein suggests doing next</h3></div>
-          <div class="deterministic-seal"><strong>NO AI MODEL</strong><span>DETERMINISTIC GRAPH THEORY</span><small>Same structure. Same result. Every recommendation is traceable.</small></div>
+          <div><p class="eyebrow">Experiment design</p><h3 id="guidance-title">Turn the ranking into a controlled test.</h3></div>
+          <div class="deterministic-seal"><strong>DETERMINISTIC METHOD</strong><span>NO GENERATIVE TEXT</span><small>The same structure and settings produce the same ranking.</small></div>
         </div>
         <div class="guidance-summary">
-          <article class="summary-identity"><span>WHAT THIS PROTEIN IS</span><strong id="guidanceIdentity">Protein structure</strong><small id="guidanceIdentityNote">Reading the coordinate record.</small></article>
-          <article class="summary-use"><span>WHERE IT COULD BE USEFUL</span><strong id="guidanceUseCase">Experiment design</strong><small id="guidanceUseCaseNote">Grounded in supplied metadata and structure.</small></article>
-          <article class="summary-action"><span>FIRST MOVE</span><strong id="guidanceMutation">Pending</strong><small id="guidancePrimaryReason">Waiting for analysis</small></article>
-          <article class="summary-gate"><span>DECISION GATE</span><strong id="guidanceGate">Pending</strong><small id="guidanceConfidence">Input quality will appear here.</small></article>
+          <article class="summary-identity"><span>PDB ANNOTATION</span><strong id="guidanceIdentity">Protein structure</strong><small id="guidanceIdentityNote">Reading the coordinate record.</small></article>
+          <article class="summary-use"><span>RELEVANT ASSAY</span><strong id="guidanceUseCase">Experiment design</strong><small id="guidanceUseCaseNote">Grounded in supplied metadata and structure.</small></article>
+          <article class="summary-action"><span>PROPOSED MUTATION</span><strong id="guidanceMutation">Pending</strong><small id="guidancePrimaryReason">Waiting for analysis</small></article>
+          <article class="summary-gate"><span>INTERPRETATION RULE</span><strong id="guidanceGate">Pending</strong><small id="guidanceConfidence">Input quality will appear here.</small></article>
         </div>
         <div class="guidance-grid">
-          <article><span>01 / WHY THIS MATTERS</span><p id="guidanceHypothesis">Analyze a structure to generate a biologically readable hypothesis.</p></article>
-          <article><span>02 / DO THIS FIRST</span><p id="guidanceExperiment">The guide will propose a candidate, comparison and practical measurements.</p></article>
-          <article><span>03 / WHAT A USEFUL RESULT LOOKS LIKE</span><p id="guidanceAdvance">A clear decision rule will appear here.</p></article>
-          <article><span>04 / WHEN TO CHANGE COURSE</span><p id="guidanceStop">A falsification rule will appear here.</p></article>
+          <article><span>01 / HYPOTHESIS</span><p id="guidanceHypothesis">The structural hypothesis will appear here.</p></article>
+          <article><span>02 / EXPERIMENT</span><p id="guidanceExperiment">The candidate, control and measurements will appear here.</p></article>
+          <article><span>03 / SUPPORTING RESULT</span><p id="guidanceAdvance">The supporting result will appear here.</p></article>
+          <article><span>04 / STOPPING RULE</span><p id="guidanceStop">The stopping rule will appear here.</p></article>
         </div>
 
         <section class="discovery-radar" aria-labelledby="discovery-title">
           <div class="discovery-head">
-            <div><p class="eyebrow">Discovery radar / one structure, four programs</p><h4 id="discovery-title">Ask a larger biological question.</h4></div>
-            <p>Switch lenses to see how the same coordinate evidence can drive biological discovery, protein engineering, translational classification or mechanism. Every claim remains tied to the supplied structure and deterministic residue graph.</p>
+            <div><p class="eyebrow">Analysis modes</p><h4 id="discovery-title">Frame the ranking around the biological question.</h4></div>
+            <p>The selected mode changes the weighting and experiment wording. It does not add evidence beyond the supplied structure and residue graph.</p>
           </div>
           <div class="discovery-modes" role="tablist" aria-label="Discovery program">
             <button class="active" type="button" role="tab" aria-selected="true" data-discovery-mode="biology"><span>01</span>BIOLOGY</button>
@@ -246,27 +257,27 @@
           </div>
           <div class="discovery-console">
             <div class="discovery-thesis">
-              <span id="discoveryModeLabel">BIOLOGY PROGRAM</span>
-              <h5 id="discoveryTitle">Map where structure becomes phenotype.</h5>
-              <p id="discoveryThesis">The structure can define a broad, falsifiable research program without pretending that geometry is biological proof.</p>
+              <span id="discoveryModeLabel">BIOLOGY MODE</span>
+              <h5 id="discoveryTitle">General structure–function test</h5>
+              <p id="discoveryThesis">Compare the highest-ranked residue with a matched lower-score control.</p>
               <div class="discovery-grounding"><i></i><span id="discoveryGrounding">Grounded in supplied PDB metadata, coordinates and residue graph.</span></div>
             </div>
             <div class="discovery-panels">
-              <article><span>OPPORTUNITY</span><p id="discoveryOpportunity">Compare a prioritized intervention with a matched structural background.</p></article>
-              <article><span>PROGRAM</span><p id="discoveryProgram">Measure molecular integrity before the protein-specific functional readout.</p></article>
-              <article><span>DECISIVE QUESTION</span><p id="discoveryQuestion">Does the candidate alter function more than the matched comparison while the fold remains intact?</p></article>
+              <article><span>TEST</span><p id="discoveryOpportunity">Compare a prioritized intervention with a matched structural background.</p></article>
+              <article><span>MEASURE</span><p id="discoveryProgram">Measure molecular integrity before the protein-specific functional readout.</p></article>
+              <article><span>DECISION</span><p id="discoveryQuestion">Does the candidate alter function more than the matched comparison while the fold remains intact?</p></article>
             </div>
           </div>
-          <div class="deterministic-note"><span>DETERMINISTIC ONLY</span><p>This program is assembled from explicit rules and displayed evidence. No language model writes or deepens the scientific interpretation.</p></div>
+          <div class="deterministic-note"><span>METHOD</span><p>Rules and displayed structural evidence generate this section. No language model is used.</p></div>
         </section>
 
         <section class="experiment-blueprint" aria-labelledby="blueprint-title">
-          <div class="blueprint-head"><span>EXPERIMENT BLUEPRINT / GENERATED LOCALLY</span><h4 id="blueprint-title">From construct design to interpretation.</h4><p>Use the sequence as a staged plan. Earlier gates prevent a folding defect from being mislabeled as mechanism.</p></div>
+          <div class="blueprint-head"><span>EXPERIMENT PLAN</span><h4 id="blueprint-title">Build, measure, compare, interpret.</h4><p>Start with the lowest-risk perturbation. Check expression and folding before interpreting function.</p></div>
           <div class="blueprint-grid">
-            <article class="mutation-ladder"><span>A / PERTURBATION LADDER</span><h5>Change chemistry in interpretable steps.</h5><ol><li><b>First property probe</b><strong id="mutationConservative">Pending</strong><small>Uses the least severe interpretable change available; “conservative” is not assumed.</small></li><li><b>Property-removing probe</b><strong id="mutationNeutral">Pending</strong><small>Removes or reduces the dominant chemical feature.</small></li><li><b>Network-pair control</b><strong id="mutationStress">Pending</strong><small>Tests the linked structural explanation after the first construct is interpretable.</small></li></ol></article>
+            <article class="mutation-ladder"><span>A / MUTATION SERIES</span><h5>Test one chemical property at a time.</h5><ol><li><b>First property probe</b><strong id="mutationConservative">Pending</strong><small>Uses the least severe interpretable change available; “conservative” is not assumed.</small></li><li><b>Property-removing probe</b><strong id="mutationNeutral">Pending</strong><small>Removes or reduces the dominant chemical feature.</small></li><li><b>Network-pair control</b><strong id="mutationStress">Pending</strong><small>Tests the linked structural explanation after the first construct is interpretable.</small></li></ol></article>
             <article class="assay-gates"><span>B / MEASUREMENT GATES</span><h5>Measure in this order.</h5><ol><li><b>Gate 0</b><p>Confirm numbering, construct sequence and assay dynamic range.</p></li><li><b>Gate 1</b><p id="guidanceIntegrity">Check abundance plus one folding or stability readout.</p></li><li><b>Gate 2</b><p id="guidanceFunction">Measure the protein-specific functional output.</p></li><li><b>Gate 3</b><p id="guidanceSpecificity">Compare candidate, matched residue and wild type in the same batch.</p></li></ol></article>
-            <article class="diagnostic-matrix"><span>C / RESULT INTERPRETER</span><h5>What the pattern would mean.</h5><div><b>Function changes; integrity holds</b><p id="diagnosticAdvance">Structural hypothesis survives the first specificity gate.</p></div><div><b>Function and integrity both fall</b><p id="diagnosticFold">Treat as a stability or expression explanation first.</p></div><div><b>Candidate equals comparison</b><p id="diagnosticControl">The site is not more informative than structural background.</p></div><div><b>No measurable effect</b><p id="diagnosticNext">Move to the next-ranked residue or improve assay sensitivity.</p></div></article>
-            <article class="alternative-models"><span>D / COMPETING EXPLANATIONS</span><h5>Keep these alive until the data separate them.</h5><ul><li id="alternatePacking">Local packing change rather than a specific functional pathway.</li><li id="alternateExpression">Expression, trafficking or folding loss rather than site-specific biology.</li><li id="alternateContext">The supplied static state may not represent the assay-relevant conformation.</li></ul><div class="next-site"><span>NEXT SITE IF INCONCLUSIVE</span><strong id="guidanceNext">Pending</strong></div></article>
+            <article class="diagnostic-matrix"><span>C / RESULT TABLE</span><h5>Interpret the four common outcomes.</h5><div><b>Function changes; integrity holds</b><p id="diagnosticAdvance">Structural hypothesis survives the first specificity gate.</p></div><div><b>Function and integrity both fall</b><p id="diagnosticFold">Treat as a stability or expression explanation first.</p></div><div><b>Candidate equals comparison</b><p id="diagnosticControl">The site is not more informative than structural background.</p></div><div><b>No measurable effect</b><p id="diagnosticNext">Move to the next-ranked residue or improve assay sensitivity.</p></div></article>
+            <article class="alternative-models"><span>D / ALTERNATIVE EXPLANATIONS</span><h5>Test these before assigning mechanism.</h5><ul><li id="alternatePacking">Local packing change rather than a specific functional pathway.</li><li id="alternateExpression">Expression, trafficking or folding loss rather than site-specific biology.</li><li id="alternateContext">The supplied static state may not represent the assay-relevant conformation.</li></ul><div class="next-site"><span>NEXT SITE IF INCONCLUSIVE</span><strong id="guidanceNext">Pending</strong></div></article>
           </div>
         </section>
 
@@ -274,7 +285,7 @@
       </section>
 
       <details class="technical-details">
-        <summary><span>Methods + technical details</span><small>Coordinate record · quality flags · contact table · reproducible methods</small></summary>
+        <summary><span>Methods and full results</span><small>Coordinate record · quality flags · contact table · reproducible methods</small></summary>
         <div class="analysis-grid">
           <section class="analysis-section">
             <div class="section-head"><span>02</span><h3>Coordinate record</h3></div>
@@ -323,8 +334,8 @@
 
       <section class="receipt private-export" id="analysisEnd">
         <div class="receipt-intro">
-          <p class="eyebrow">Private analysis export</p>
-          <h2>Keep the analysis.</h2>
+          <p class="eyebrow">Export</p>
+          <h2>Save the analysis</h2>
           <p>Download a local JSON record of the structure summary, ranked targets and reproducibility details. Nothing is published.</p>
           <button class="download-button" id="downloadReceipt" type="button">Download private analysis JSON</button>
         </div>
@@ -349,9 +360,9 @@
     </form>
   </section>
 
-  <footer><a href="/">← RINet home</a><span>Structure Intelligence 3.0 · transparent residue-network analysis</span></footer>
+  <footer><a href="/">← RINet home</a><span>Structure Brief 3.0 · transparent residue-network analysis</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
   <script src="/contact.js?v=5"></script>
-  <script src="/brief/brief.js?v=17"></script>
+  <script src="/brief/brief.js?v=18"></script>
 </body>
 </html>

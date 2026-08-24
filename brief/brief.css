@@ -375,15 +375,30 @@ body.analysis-mode main { width: 100%; }
 .receipt-id strong { color: #cbd5cf; }
 .result-actions > button { border: 1px solid #4b5b52; padding: 10px 12px; background: #111812; color: #c9d3cd; font: 8px var(--mono); text-transform: uppercase; cursor: pointer; }
 .result-actions > button:hover { border-color: var(--acid); color: var(--acid); }
-.result-scroll-banner { width: min(390px, calc(100vw - 28px)); min-height: 66px; display: grid; grid-template-columns: 72px 1fr 30px; align-items: center; gap: 14px; margin: 14px auto; padding: 10px 16px; border: 1px solid rgba(201,251,60,.6); color: #d6e0da; background: linear-gradient(115deg, rgba(201,251,60,.14), rgba(6,9,7,.96) 52%); box-shadow: 0 12px 42px rgba(0,0,0,.35), inset 3px 0 0 #c9fb3c; font: 8px/1.5 var(--mono); letter-spacing: .09em; text-decoration: none; text-transform: uppercase; }
+.result-scroll-banner { width: min(520px, calc(100vw - 28px)); min-height: 58px; display: grid; grid-template-columns: 72px 1fr 30px; align-items: center; gap: 14px; margin: 14px auto; padding: 10px 16px; border: 1px solid rgba(201,251,60,.46); color: #d6e0da; background: linear-gradient(115deg, rgba(201,251,60,.1), rgba(6,9,7,.96) 52%); box-shadow: 0 12px 42px rgba(0,0,0,.35), inset 3px 0 0 #c9fb3c; font: 9px/1.5 var(--mono); letter-spacing: .06em; text-decoration: none; text-transform: uppercase; }
 .result-scroll-banner b { align-self: stretch; display: flex; align-items: center; border-right: 1px solid rgba(201,251,60,.3); color: #c9fb3c; font: 9px var(--mono); letter-spacing: .16em; }
-.result-scroll-banner span { max-width: 225px; }
+.result-scroll-banner span { max-width: 360px; }
 .result-scroll-banner i { width: 11px; height: 11px; display: block; border-right: 1px solid #c9fb3c; border-bottom: 1px solid #c9fb3c; transform: rotate(45deg); }
 .result-scroll-banner:hover { border-color: var(--acid); color: #efffc1; }
-body.demo-mode .result-scroll-banner { display: none; }
-.molecule-workbench { min-height: min(720px, calc(100svh - 82px)); grid-template-columns: minmax(0, 1.52fr) minmax(320px, .48fr); border-bottom-color: #344139; }
+.section-rail { position: fixed; z-index: 24; top: 98px; right: 18px; width: 104px; border: 1px solid rgba(113,136,123,.42); outline: 0; background: rgba(6,10,7,.86); box-shadow: 0 18px 54px rgba(0,0,0,.34); backdrop-filter: blur(16px); opacity: 0; pointer-events: none; transform: translateY(-8px); transition: opacity .25s ease, transform .25s ease, border-color .25s ease; }
+body.analysis-mode .section-rail { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.section-rail-readout { display: grid; grid-template-columns: auto 1fr; align-items: baseline; padding: 10px 12px 9px; }
+.section-rail-readout strong { color: var(--acid); font: 560 22px/1 var(--mono); }
+.section-rail-readout > span { margin-left: 4px; color: #718078; font: 10px var(--mono); }
+.section-rail-readout small { grid-column: 1/-1; margin-top: 5px; color: #dbe4de; font: 7px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.section-rail ol { position: absolute; top: calc(100% + 6px); right: -1px; width: 132px; display: none; margin: 0; padding: 7px 0; border: 1px solid rgba(113,136,123,.42); background: rgba(6,10,7,.94); box-shadow: 0 18px 54px rgba(0,0,0,.34); backdrop-filter: blur(16px); list-style: none; }
+.section-rail:hover, .section-rail:focus, .section-rail:focus-within { border-color: rgba(201,251,60,.58); }
+.section-rail:hover ol, .section-rail:focus ol, .section-rail:focus-within ol { display: block; }
+.section-rail a { display: grid; grid-template-columns: 12px 1fr; align-items: center; gap: 8px; min-height: 30px; padding: 0 12px; color: #74837a; font: 8px var(--mono); letter-spacing: .05em; text-decoration: none; text-transform: uppercase; transition: color .2s ease, background .2s ease; }
+.section-rail a i { width: 5px; height: 5px; border: 1px solid currentColor; border-radius: 50%; }
+.section-rail a:hover { color: #dbe4de; background: rgba(255,255,255,.025); }
+.section-rail a.active { color: var(--acid); background: rgba(201,251,60,.045); }
+.section-rail a.active i { border-color: var(--acid); background: var(--acid); box-shadow: 0 0 10px rgba(201,251,60,.55); }
+[data-demo-section] { scroll-margin-top: 18px; }
+.molecule-workbench { height: clamp(560px, calc(100svh - 168px), 720px); min-height: 0; grid-template-columns: minmax(0, 1.52fr) minmax(320px, .48fr); border-bottom-color: #344139; }
 .molecule-stage-wrap { background: radial-gradient(circle at 50% 44%, #10241b 0, #09110d 48%, #050706 100%); }
 #moleculeStage { background: transparent; }
+.best-residues { min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #4c5d53 #0b100d; }
 .surface-status { position: absolute; z-index: 6; top: 67px; left: 22px; display: flex; align-items: center; gap: 10px; min-width: 235px; padding: 10px 13px; border: 1px solid rgba(102,215,255,.35); background: rgba(4,9,7,.78); backdrop-filter: blur(12px); color: #a8b8af; transition: opacity .35s ease, border-color .35s ease; pointer-events: none; }
 .surface-status i { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: #66d7ff; box-shadow: 0 0 13px rgba(102,215,255,.85); animation: surfacePulse 1.2s ease-in-out infinite; }
 .surface-status span, .surface-status strong { display: block; }
@@ -393,7 +408,7 @@ body.demo-mode .result-scroll-banner { display: none; }
 .surface-status.ready i { background: #c9fb3c; box-shadow: 0 0 13px rgba(201,251,60,.7); animation: none; }
 .surface-status.ready strong { color: #dfff7d; }
 @keyframes surfacePulse { 50% { opacity: .25; transform: scale(.72); } }
-.analysis-reticle { width: 108px; height: 108px; }
+.analysis-reticle { width: 108px; height: 108px; opacity: .48; }
 .structure-callout { position: absolute; z-index: 4; left: 24px; bottom: 58px; min-width: 260px; padding: 12px 14px; border-left: 2px solid var(--acid); background: rgba(5,9,6,.76); backdrop-filter: blur(10px); }
 .structure-callout span, .structure-callout strong, .structure-callout small { display: block; }
 .structure-callout span { color: var(--acid); font: 7px var(--mono); letter-spacing: .1em; }
@@ -519,7 +534,7 @@ footer { border-color: #344139; }
 .ai-guidance::before { content: ""; position: absolute; z-index: -1; inset: 0; opacity: .2; pointer-events: none; background-image: linear-gradient(rgba(126,168,146,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(126,168,146,.075) 1px, transparent 1px); background-size: 72px 72px; mask-image: linear-gradient(to bottom, transparent, #000 8%, #000 92%, transparent); }
 .guidance-heading { position: relative; min-height: 330px; overflow: hidden; padding: 66px 54px 52px; background: radial-gradient(circle at 78% 48%, rgba(102,215,255,.11), transparent 23%), radial-gradient(circle at 94% 8%, rgba(201,251,60,.08), transparent 24%), #07100c; }
 .guidance-heading::before { content: ""; position: absolute; right: 6vw; top: 50%; width: 220px; height: 220px; border: 1px solid rgba(102,215,255,.14); border-radius: 50%; transform: translateY(-50%); box-shadow: inset 0 0 0 36px rgba(102,215,255,.018), inset 0 0 0 72px rgba(102,215,255,.012); }
-.guidance-heading::after { content: "DECISION ENGINE / TRACEABLE OUTPUT"; position: absolute; right: 30px; bottom: 22px; color: #587269; font: 7px var(--mono); letter-spacing: .15em; }
+.guidance-heading::after { content: "STRUCTURE-DERIVED / TRACEABLE OUTPUT"; position: absolute; right: 30px; bottom: 22px; color: #587269; font: 7px var(--mono); letter-spacing: .15em; }
 .guidance-heading > * { position: relative; z-index: 1; }
 .guidance-summary { position: relative; background: #060a08; }
 .guidance-summary article { min-height: 218px; padding: 28px; transition: background .28s ease, transform .28s ease; }
@@ -595,7 +610,7 @@ footer { border-color: #344139; }
   .launch-screen { height: auto; min-height: calc(100svh - 62px); grid-template-columns: 1fr; }
   .launch-visual { min-height: 58svh; border-right: 0; border-bottom: 1px solid #344139; }
   .launch-console { min-height: 620px; }
-  .molecule-workbench { grid-template-columns: 1fr; }
+  .molecule-workbench { height: auto; min-height: 0; grid-template-columns: 1fr; }
   .molecule-stage-wrap { min-height: 650px; }
   .best-residues { min-height: 430px; }
   .result-quick-form { width: min(300px, 34vw); margin: 0 12px; }
@@ -603,6 +618,12 @@ footer { border-color: #344139; }
   .discovery-thesis { border-right: 0; border-bottom: 1px solid #2b3d33; }
   .guidance-heading, .blueprint-head { min-height: 0; }
   .research-contact { grid-template-columns: 1fr; gap: 48px; }
+  .section-rail { top: 94px; right: 10px; width: 56px; }
+  .section-rail-readout { grid-template-columns: auto auto; justify-content: center; padding: 10px 6px 9px; }
+  .section-rail-readout strong { font-size: 17px; }
+  .section-rail-readout > span { font-size: 8px; }
+  .section-rail-readout small { display: none; }
+  .section-rail ol { right: -1px; width: 124px; }
 }
 @media (max-width: 700px) {
   .app-header { padding: 0 16px; }
@@ -622,7 +643,7 @@ footer { border-color: #344139; }
   .launch-console .id-form button { padding: 0 16px; }
   .launch-console .id-form small { margin-top: 6px; font-size: 7px; }
   .launch-console .boundary { display: none; }
-  .result-head { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .result-head { align-items: flex-start; flex-direction: column; gap: 12px; padding-right: 78px; }
   .result-quick-form { width: 100%; margin: 0; }
   .result-actions { width: 100%; justify-content: space-between; }
   .molecule-stage-wrap { min-height: 560px; }
@@ -636,6 +657,8 @@ footer { border-color: #344139; }
   .technical-details, .receipt { padding-left: 18px; padding-right: 18px; }
   .surface-status { top: 62px; left: 12px; min-width: 210px; }
   .result-scroll-cue { bottom: 10px; }
+  .section-rail { top: 12px; right: 10px; }
+  .result-scroll-banner { grid-template-columns: 62px 1fr 22px; gap: 10px; margin: 10px auto; padding: 9px 12px; font-size: 8px; }
   .discovery-head { gap: 26px; padding: 40px 22px 30px; }
   .discovery-modes { grid-template-columns: 1fr 1fr; }
   .discovery-modes button:nth-child(2) { border-right: 0; }

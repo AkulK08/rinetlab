@@ -34,6 +34,40 @@ const benchmarkManifest = {
 };
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 
+const sectionLinks = [...document.querySelectorAll("[data-section-link]")];
+const sectionTargets = sectionLinks.map(link => document.querySelector(link.getAttribute("href"))).filter(Boolean);
+
+function setActiveSection(index) {
+  const bounded = Math.max(0, Math.min(index, sectionLinks.length - 1));
+  sectionLinks.forEach((link, linkIndex) => {
+    const active = linkIndex === bounded;
+    link.classList.toggle("active", active);
+    if (active) link.setAttribute("aria-current", "step");
+    else link.removeAttribute("aria-current");
+  });
+  const currentElement = document.getElementById("sectionCurrent");
+  const labelElement = document.getElementById("sectionLabel");
+  if (currentElement) currentElement.textContent = String(bounded + 1);
+  if (labelElement) labelElement.textContent = sectionLinks[bounded]?.dataset.sectionLabel || "Structure";
+}
+
+function updateSectionRail() {
+  if (!document.body.classList.contains("analysis-mode") || !sectionTargets.length) return;
+  const marker = window.scrollY + Math.min(window.innerHeight * .34, 300);
+  let active = 0;
+  sectionTargets.forEach((section, index) => {
+    if (section.offsetTop <= marker) active = index;
+  });
+  setActiveSection(active);
+}
+
+sectionLinks.forEach((link, index) => link.addEventListener("click", event => {
+  event.preventDefault();
+  stopDemoTour();
+  setActiveSection(index);
+  sectionTargets[index]?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+}));
+
 function switchSource(source, focusInput = true) {
   const file = source === "file";
   els.fileTab.classList.toggle("active", file);
@@ -76,13 +110,7 @@ function stopDemoTour() {
 }
 
 function demoTourStops() {
-  return [
-    document.querySelector(".guidance-heading"),
-    document.querySelector(".discovery-radar"),
-    document.querySelector(".experiment-blueprint"),
-    document.querySelector(".technical-details"),
-    document.getElementById("analysisEnd")
-  ].filter(Boolean);
+  return [...sectionTargets.slice(1), document.getElementById("analysisEnd")].filter(Boolean);
 }
 
 function atPageBottom() {
@@ -797,29 +825,29 @@ function buildDiscoveryPrograms(report) {
   const isOxygenAssembly = /oxygen|hemoglobin|haemoglobin|heme assembly/i.test(`${biology.identity} ${biology.useCase} ${report.metadata?.title || ""} ${report.metadata?.compound || ""}`);
   const generic = {
     biology: {
-      title: "Map where structure becomes phenotype.",
-      thesis: `Treat ${biology.identity.toLowerCase()} as a biological system with a measurable output, not only as a ranked list of residues.`,
-      opportunity: `Use ${candidateLabel} and ${controlLabel} to ask whether a structurally distinct intervention produces a distinct biological response.`,
+      title: "Structure–function test",
+      thesis: `Compare ${candidateLabel} with ${controlLabel} using a protein-specific functional readout.`,
+      opportunity: `Test whether ${candidateLabel} produces a larger functional effect than the matched lower-score residue ${controlLabel}.`,
       program: `Test ${firstChange}, a matched perturbation at ${controlLabel}, and wild type. Measure integrity first, then ${biology.assay}.`,
       question: `Does the candidate change the protein-specific output more than structural background while molecular integrity remains intact?`
     },
     engineering: {
-      title: "Tune function without breaking the fold.",
-      thesis: "Turn the structure into a small design ladder that separates useful tuning from generic destabilization.",
+      title: "Protein engineering screen",
+      thesis: `Test a graded mutation series at ${candidateLabel} and remove constructs that lose expression or fold.`,
       opportunity: `Explore conservative, neutralizing and stronger changes around ${candidateLabel} while using ${controlLabel} as a structural baseline.`,
       program: `Build a three-step chemistry ladder at ${candidateLabel}. Screen abundance and folding, then advance only intact constructs into ${biology.assay}.`,
       question: "Can the response be shifted in a graded way without losing expression, assembly or fold quality?"
     },
     translation: {
-      title: "Separate tractable intervention sites from structural liabilities.",
-      thesis: "A useful structural brief distinguishes a specific change in protein behavior from a general loss of molecular integrity.",
+      title: "Variant classification",
+      thesis: "Classify each effect as functional, expression-related, folding-related, or unresolved.",
       opportunity: `Use the candidate and matched control to classify observed variants or interventions by function, abundance and fold rather than by one score.`,
       program: `Measure abundance, one orthogonal integrity readout and ${biology.assay} in the same batch. Keep conclusions at the protein level unless clinical evidence is supplied.`,
       question: "Which measurement cleanly distinguishes a functional effect from reduced expression, misfolding or failed assembly?"
     },
     mechanism: {
-      title: "Find the shortest experiment that separates competing models.",
-      thesis: `Use ${candidateLabel} as a perturbation, not as a conclusion. The goal is to distinguish local packing, ligand coupling, assembly effects and genuine functional control.`,
+      title: "Mechanism test",
+      thesis: `Use ${candidateLabel} to distinguish local packing, ligand coupling, assembly effects and site-specific functional control.`,
       opportunity: `Compare ${candidateLabel}, ${controlLabel} and the next ranked site across a shared integrity and function panel.`,
       program: `Predefine predictions for local packing, fold loss and site-specific function. Use ${biology.assay} only after the integrity gate passes.`,
       question: "Which single outcome would force the leading structural explanation to be abandoned?"
@@ -828,32 +856,32 @@ function buildDiscoveryPrograms(report) {
   if (!isOxygenAssembly) return generic;
   return {
     biology: {
-      title: "Treat oxygen delivery as a coupled system.",
-      thesis: "This tetramer connects local heme chemistry, subunit interfaces and cooperative oxygen binding. The most valuable question spans all three scales.",
+      title: "Hemoglobin structure–function test",
+      thesis: "Compare heme-proximal, interface and lower-score control residues in the same preparation.",
       opportunity: "Measure which interventions preserve heme occupancy but alter oxygen affinity or cooperativity. This separates oxygen handling from generic protein damage.",
       program: `Compare ${candidateLabel}, an interface-ranked site and ${controlLabel}. Measure heme spectra, oxygen equilibrium and tetramer integrity in the same preparation.`,
-      question: "Where does local heme chemistry become cooperative behavior across subunits?"
+      question: "Does the candidate alter oxygen affinity or cooperativity while heme loading and tetramer integrity remain intact?"
     },
     engineering: {
-      title: "Engineer the response curve, not only stability.",
-      thesis: "The design objective is a controlled change in oxygen affinity or cooperativity while heme loading and tetramer assembly remain intact.",
+      title: "Oxygen-affinity engineering screen",
+      thesis: "Screen for a change in oxygen affinity or cooperativity without loss of heme loading or tetramer assembly.",
       opportunity: `Use ${candidateLabel} as the chemistry-linked anchor, then compare graded perturbations at a subunit interface and matched structural background.`,
       program: "Build a small perturbation ladder across heme-contact, interface and network sites. Measure heme occupancy, oxygen curves and oligomeric state before choosing a lead.",
       question: "Can an intervention shift oxygen response without altering heme loading or tetramer integrity?"
     },
     translation: {
-      title: "Separate variant mechanism from generic protein damage.",
-      thesis: "A variant can alter heme binding, cooperative response, assembly or fold. Those are different molecular classes and require different evidence.",
+      title: "Hemoglobin variant classification",
+      thesis: "Classify a variant as affecting heme binding, oxygen response, assembly, fold, or none of these measured properties.",
       opportunity: "Classify oxygen-transport variants with a compact panel instead of treating every functional loss as the same mechanism.",
       program: "Measure abundance, heme occupancy, the oxygen equilibrium curve and oligomerization. Keep the output as molecular evidence, not medical advice.",
       question: "Which readout distinguishes altered oxygen behavior from heme loss, assembly failure or destabilization?"
     },
     mechanism: {
-      title: "Find where local chemistry becomes collective motion.",
-      thesis: "The proximal heme environment and the subunit interfaces offer two competing routes from a local contact to a cooperative state change.",
+      title: "Heme–interface coupling test",
+      thesis: "Compare a proximal-heme residue with a subunit-interface residue across deoxy and oxy states.",
       opportunity: `Use ${candidateLabel} and an interface site to compare local heme coupling with cross-subunit communication.`,
       program: "Compare deoxy and oxy structural states, identify contacts that change with state, then perturb one heme-linked and one interface-linked site with matched integrity controls.",
-      question: "Which contact change is state-linked, perturbable and necessary for cooperative behavior?"
+      question: "Which contact changes with oxygenation and produces a specific functional effect when perturbed?"
     }
   };
 }
@@ -876,7 +904,7 @@ function renderDiscovery(report, mode = activeDiscoveryMode) {
     button.classList.toggle("active", active);
     button.setAttribute("aria-selected", String(active));
   });
-  document.getElementById("discoveryModeLabel").textContent = `${mode.toUpperCase()} PROGRAM`;
+  document.getElementById("discoveryModeLabel").textContent = `${mode.toUpperCase()} MODE`;
   document.getElementById("discoveryTitle").textContent = program.title;
   document.getElementById("discoveryThesis").textContent = program.thesis;
   document.getElementById("discoveryOpportunity").textContent = program.opportunity;
@@ -1123,7 +1151,7 @@ function render(data) {
   document.getElementById("resultScrollCue")?.classList.remove("dismissed");
   preview.stage?.setSpin(false);
   window.scrollTo({ top: 0, behavior: "auto" });
-  requestAnimationFrame(updateResultScrollCue);
+  requestAnimationFrame(() => { updateResultScrollCue(); updateSectionRail(); });
   renderMolecule(data.rawText, data.sourceName, r.topResidues);
   stopDemoTour();
 }
@@ -1215,6 +1243,18 @@ function addTargetRepresentations() {
   molecular.component.addRepresentation("spacefill", { sele: `${residueSelection(candidate)} and .CA`, color: "#d9ff58", scale: 1.15, quality: "high" });
 }
 
+function fitStructureWithPadding(stage, component, duration = 500, padding = 1.32) {
+  if (!stage || !component) return;
+  component.autoView(0);
+  window.setTimeout(() => {
+    if (!stage.animationControls || (stage === molecular.stage && component !== molecular.component)) return;
+    const center = stage.getCenter?.();
+    const zoom = stage.getZoom?.();
+    if (!center || !Number.isFinite(zoom)) return;
+    stage.animationControls.zoomMove(center, zoom * padding, duration);
+  }, 40);
+}
+
 async function renderMolecule(text, label, topResidues) {
   if (!window.NGL) return;
   if (!molecular.stage) {
@@ -1232,7 +1272,7 @@ async function renderMolecule(text, label, topResidues) {
   try {
     molecular.component = await molecular.stage.loadFile(blob, { ext: label.toLowerCase().endsWith(".cif") || label.toLowerCase().endsWith(".mmcif") ? "cif" : "pdb", defaultRepresentation: false });
     setMolecularRepresentation(molecular.representation);
-    molecular.component.autoView(500);
+    fitStructureWithPadding(molecular.stage, molecular.component, 500, 1.32);
     molecular.stage.setSpin(false);
     molecular.spinning = false;
     document.getElementById("viewerSpin").textContent = "Start rotation";
@@ -1257,7 +1297,7 @@ async function initPreview() {
     preview.component.addRepresentation("surface", { sele: "protein", surfaceType: "av", probeRadius: 1.4, scaleFactor: 2.0, color: "#285947", opacity: .92, roughness: .3 });
     preview.component.addRepresentation("cartoon", { sele: "protein", color: "#85efcb", opacity: .2, quality: "high" });
     preview.component.addRepresentation("ball+stick", { sele: "32:A", color: "#d9ff58", scale: 1.5, quality: "high" });
-    preview.component.autoView(0);
+    fitStructureWithPadding(preview.stage, preview.component, 0, 1.18);
     preview.stage.setSpin(false);
     window.addEventListener("resize", () => preview.stage?.handleResize());
   } catch (_) {
@@ -1360,7 +1400,7 @@ document.getElementById("viewerFit").addEventListener("click", () => {
   if (molecular.highlight) molecular.highlight.forEach(representation=>molecular.component.removeRepresentation(representation));
   molecular.highlight=null;molecular.selectedResidue=null;
   setMolecularRepresentation(molecular.representation);
-  molecular.component.autoView(450);
+  fitStructureWithPadding(molecular.stage, molecular.component, 450, 1.32);
   document.querySelectorAll(".best-residue-row,.sequence-residue").forEach(element=>element.classList.remove("active","selected"));
   updateSurfaceStatus("FULL STRUCTURE RESTORED",true);
 });
@@ -1373,7 +1413,7 @@ document.getElementById("viewerSpin").addEventListener("click", event => {
 document.getElementById("newAnalysis").addEventListener("click", () => { window.location.href = "/brief/"; });
 document.querySelector("[data-scroll-guidance]")?.addEventListener("click", event => {
   event.preventDefault();
-  document.getElementById("decisionBrief")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  document.getElementById("scoringSection")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
 });
 document.getElementById("resultScrollCue")?.addEventListener("click", event => {
   event.preventDefault();
@@ -1387,8 +1427,8 @@ function updateResultScrollCue() {
   const pageBottom = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
   cue.classList.toggle("dismissed", window.scrollY >= pageBottom - 2);
 }
-window.addEventListener("scroll", updateResultScrollCue, { passive: true });
-window.addEventListener("resize", updateResultScrollCue, { passive: true });
+window.addEventListener("scroll", () => { updateResultScrollCue(); updateSectionRail(); }, { passive: true });
+window.addEventListener("resize", () => { updateResultScrollCue(); updateSectionRail(); }, { passive: true });
 
 document.querySelectorAll("[data-scoring-lens]").forEach(button=>button.addEventListener("click",()=>{
   if(!current)return;
