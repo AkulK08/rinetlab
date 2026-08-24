@@ -2,169 +2,235 @@
 
 Last updated: 2026-08-25
 
-## Objective
+## Current objective
 
-Make RINet useful to a working protein researcher without presenting a residue contact graph as an energetic model, a mechanism, or evidence that information flows through a protein. The product should move from a coordinate model to a residue-level experiment that can disconfirm its own structural rationale.
+RINet should take a structural-biologist's question—"what site do I care about, which mutation should perturb it, and what control would make the result interpretable?"—and turn it into a traceable experiment. It must not present contact centrality as a molecular mechanism or hide assumptions behind prose.
 
-This file is the handoff point for future work. Read it before changing the scoring, scientific language, or experiment-selection logic.
+This file is the continuation log. Read it before changing the scientific calculation, ranking, validation panels, or public novelty statement.
 
-## Criticism this rebuild addresses
+## The criticism being addressed
 
-Rama's central objection was that contacts do not establish the net free energy of amino-acid interactions, and that a contact graph is not by itself a sound basis for claiming information flow in proteins.
+Rama's central concern was scientific, not stylistic:
 
-The response implemented here is not to rename contact scores as energy. RINet now separates three layers:
+- residue networks and centrality are established;
+- a residue contact graph does not establish energetic communication or information flow;
+- a useful contribution requires experimentally meaningful validation, comparison with baselines and existing methods, and sensitivity analysis;
+- experienced structural bioinformaticians need access to targets, parameters, complete rankings, sequence mapping, and alternative states rather than a single guided answer.
 
-1. **Observed local geometry:** typed heavy-atom contacts, atom names, partners, and distances from the supplied coordinate model.
-2. **Wider structural position:** a separate Cα graph and explicitly weighted graph descriptors.
-3. **Experimental test:** a candidate mutation, a local-environment-matched lower-graph control, function plus protein-quality measurements, and a stopping rule.
+The rebuild therefore changes the architecture. The primary ranking is no longer contact degree, betweenness, closeness, or an unexplained weighted sum of graph descriptors.
 
-If candidate and control behave similarly, the workflow explicitly reports that the graph-position hypothesis was not supported. If function changes while abundance and fold/assembly remain intact and the control has less effect, the site becomes a stronger experimental hypothesis. Neither outcome is labelled proof of a mechanism.
+## Implemented scientific architecture
 
-## What the literature says
+The implemented method is named **RINet Targeted Mechanochemical Contrast (TMC) 1.0**. The name identifies an integration being tested; it is not a claim of prospective validation.
 
-The research review used primary method papers and project documentation.
+### 1. The researcher defines a physical target
 
-- RING 2.0 and RING 3.0 establish residue interaction networks with typed physicochemical interactions, all-atom options, and ensemble/frequency information. This means typed interaction networks are established prior art, not a RINet invention.
-  - https://doi.org/10.1093/nar/gkw315
-  - https://doi.org/10.1093/nar/gkac365
-- Arpeggio establishes atom typing plus geometric rules for classifying protein, ligand, and metal contacts. The RINet browser audit follows this established concept with simpler disclosed rules.
-  - https://doi.org/10.1016/j.jmb.2016.12.004
-- NAPS shows that residue-network construction, centrality analysis, and distance/energy network variants are established.
-  - https://doi.org/10.1093/nar/gkw383
-- FoldX and localized-frustration work show why mutation and energetic claims require an energy model, structural relaxation/decoys, and careful error interpretation. Geometry alone is insufficient for ΔG.
-  - https://doi.org/10.1093/nar/gkh332
-  - https://doi.org/10.1073/pnas.0709915105
+The calculation begins with the place where a perturbation should be measured:
 
-## What is implemented in Structure Brief 3.1
+- a combined set of equivalent ligand pockets;
+- an individual ligand or metal pocket;
+- a chain interface resolved from cross-chain atom contacts; or
+- user-entered author residue identifiers such as `A:87, A:92`.
 
-### 1. Browser-local atom-level evidence
+Changing the target rebuilds the mechanical model and reranks every residue. The functional assay is entered separately because the assay changes the experiment sheet, not the structure calculation.
 
-Polymer heavy atoms are indexed in spatial cells. For every residue, the interface reports mutation-relevant side-chain partners and retains the exact atom pair and minimum observed distance.
+For the built-in 4HHB demo, the default target is **All HEM pockets** (83 resolved target residues), which matches a global oxygen-equilibrium or heme-spectral experiment better than one arbitrarily selected heme.
 
-Displayed rules:
+### 2. Three-dimensional anisotropic elastic network
 
-- heavy-atom contact: at most 4.5 Å
-- polar N/O/S proximity: 2.35–3.60 Å
-- ionic geometry: oppositely charged Asp/Glu and Arg/Lys side-chain atoms at most 4.0 Å
-- hydrophobic side-chain C/S contact: 3.0–4.6 Å
-- aromatic ring-atom proximity: 3.2–5.5 Å
-- cysteine Sγ pair: 1.7–2.3 Å
-- polymer–hetero contact: at most 4.5 Å
-- ligand polar proximity: at most 3.6 Å
-- N/O/S-to-metal proximity: at most 3.0 Å
+RINet builds a Cα anisotropic network with uniform harmonic springs for pairs separated by no more than 8.5 Å. It also repeats the complete calculation at 8.0 and 9.0 Å.
 
-The UI deliberately says “polar proximity,” not “hydrogen bond,” because hydrogens and angular geometry are not evaluated. It says “aromatic proximity,” not stacking energy. Protonation, solvent, relaxation, and energy are not calculated.
+The regularized linear system is:
 
-### 2. Mutation-specific capability audit
+`(H + λI)u = fT`
 
-For the selected first mutation, RINet identifies which broad side-chain capabilities are preserved, removed, or geometrically changed. Examples include charge, polarity, aromaticity, hydrophobic packing, disulfide sulfur, and imidazole coordination geometry.
+where `H` is the 3N × 3N anisotropic-network Hessian. Net-zero forces load the selected target against the remaining network along x, y, and z. Each system is solved with diagonally preconditioned conjugate gradients. The interface exposes node count, spring count, ridge, maximum residual, and all three cutoffs.
 
-This is a transparent capability comparison, not a predicted mutant structure or ΔΔG. The UI states that a retained capability does not guarantee retention of the original contact.
+Research basis:
 
-### 3. Chemistry-aware residue ranking
+- anisotropic network model: https://doi.org/10.1016/S0006-3495(01)76033-X
+- perturbation-response scanning: https://pmc.ncbi.nlm.nih.gov/articles/PMC2913187/
+- PRS applications to allosteric response: https://pmc.ncbi.nlm.nih.gov/articles/PMC3188487/
+- ENM cutoff evaluation supporting an 8.5 Å balance: https://doi.org/10.1016/j.jmb.2022.167696
 
-All six scientific questions now combine disclosed atom-level features with the existing graph and structural-context features. The exact equation and per-residue contribution remain visible. Each question's weights sum to 1.0.
+### 3. Primary output: first-order target-compliance sensitivity
 
-New score terms:
+The primary mechanical value is not centrality and is not the normalized cross-compliance descriptor.
 
-- typed side-chain atomic partners
-- polar-contact geometry
-- ionic-contact geometry
-- direct ligand/metal partners
+For spring `e=(p,q)` with unit direction `ne`, target-load extension is:
 
-Existing Cα features remain visible and are explicitly labelled as Cα graph descriptors.
+`δe = ne · (up − uq)`
 
-### 4. Local-environment-matched graph falsification control
+For residue `i`, RINet sums strain energy over springs incident to that residue and averages the three target-load directions:
 
-This is the most important scientific change.
+`Si(T) = Σe∋i meanx,y,z(δe²)`
 
-For a selected candidate, RINet searches lower-scoring residues and minimizes a matching penalty based on:
+If the local springs incident to residue `i` are weakened by a small fraction `ε`, the first-order target-compliance change is:
 
-- residue chemistry class
-- typed atomic-partner profile
-- polar and ionic context
-- direct ligand/metal context
-- bound-group distance and metal flag
-- burial
-- B-factor field
-- chain context
-- absence of a disulfide constraint
+`ΔJtarget ≈ ε Si(T)`
 
-Controls within three sequence positions are excluded. Among credible local matches, RINet favors a lower Cα-graph contribution. The output reports:
+with:
 
-- local-environment match quality
-- candidate versus control atomic-partner counts
-- polar and bound-group counts
-- burial comparison
-- exact difference in weighted graph points
-- largest term-by-term score differences
+`Jtarget = fT (H + λI)^−1 f`
 
-The experiment sheet states the falsification rule: if candidate and control behave alike, the graph-position rationale is not supported.
+This gives the experimental ranking a direct interpretation: the higher the value, the more the selected target's mechanical compliance is expected to change under a small local loss of stiffness at that residue in this near-native linear model.
 
-### 5. Complete residue-to-experiment cycle
+Structural compliance derivatives and spring-sensitivity analysis are established ideas in mechanics and protein elastic-network analysis. RINet's contribution being tested is their target-specific, mutation-audited, candidate-control integration—not invention of the underlying mathematics.
 
-The main path remains:
+Related evidence:
 
-1. Question
-2. Candidate
-3. Matched control
-4. Function, abundance, and fold/assembly measurements
-5. Specific-effect versus protein-quality interpretation
-6. Next construct chosen to distinguish the remaining explanations
+- structural compliance and allosteric communication: https://pmc.ncbi.nlm.nih.gov/articles/PMC7649752/
+- spring perturbations for allosteric sites: https://pubmed.ncbi.nlm.nih.gov/35778086/
+- elastic-network perturbation and allosteric control: https://pmc.ncbi.nlm.nih.gov/articles/PMC5873042/
+- AlloPred elastic-network perturbation: https://pmc.ncbi.nlm.nih.gov/articles/PMC4619270/
 
-The built-in 4HHB example values are synthetic and labelled as such.
+### 4. Robustness and supporting descriptors
 
-### 6. Visual and language cleanup
+Sensitivity robustness is:
 
-- The results page is now a continuous dark surface; the previous white scientific, sequence, and prior-art blocks are dark.
-- The optional white molecular-viewer background remains available for figure preparation.
-- Atom-level evidence appears directly beneath the selected residue plan.
-- Prior art is named in the interface rather than being implied to be new.
-- The expert table now exposes atomic, polar, and ionic counts.
+`1 / (1 + coefficient of variation)`
+
+across 8.0, 8.5, and 9.0 Å. The UI also reports top-10 site overlap and the selected candidate's sensitivity rank at every cutoff.
+
+Normalized target-region cross-compliance is retained as a supporting response descriptor. Centrality, packing, interface contacts, and bound-group distance remain visible and receive small or question-specific score weights; none is represented as evidence of causal information flow.
+
+### 5. Mutation-specific local constraint audit
+
+The proposed substitution is checked against explicit side-chain-involving atom contacts. The interface shows the observed atom pair, partner, type, and distance, then states which broad side-chain capabilities the substitution retains, loses, or changes.
+
+Rules are disclosed:
+
+- heavy-atom contact: at most 4.5 Å;
+- polar N/O/S proximity: 2.35–3.60 Å;
+- opposite-charge side-chain geometry: at most 4.0 Å;
+- hydrophobic C/S contact: 3.0–4.6 Å;
+- aromatic atom proximity: 3.2–5.5 Å;
+- metal-donor proximity: at most 3.0 Å;
+- probable disulfide Sγ pair: 1.7–2.3 Å.
+
+This layer estimates mutation constraint leverage. It is not ΔΔG and does not relax a mutant structure.
+
+### 6. Construct-level assembly handling
+
+Identical-sequence chain copies are collapsed into a single construct-level site. Sensitivity is summed across equivalent copies, and highlighting selects all equivalent residues in 3D.
+
+For 4HHB, this produces 287 independently rankable construct positions rather than pretending that the 574 coordinate-chain residues can be mutated independently. Labels such as `ARG A/C:141` and `ASP B/D:99` make the construct scope explicit.
+
+### 7. Matched low-sensitivity control
+
+For every candidate, RINet searches for a lower-sensitivity mutation matched on:
+
+- the same wild-type amino acid and therefore the same proposed substitution when possible;
+- side-chain atomic partners;
+- polar, ionic, ligand, and metal contact context;
+- burial;
+- B-factor field;
+- chain context; and
+- absence of a disulfide constraint.
+
+The selected control must have substantially lower first-order target-compliance sensitivity. One shared control-matching implementation is used in the selected-residue plan and multi-construct panel, so match quality and sensitivity ratio do not differ across screens.
+
+The decision rule is candidate-minus-control, with abundance and fold/assembly gates. Similar candidate and control outcomes count against the target-sensitivity explanation.
+
+### 8. Experiment and next-experiment loop
+
+The visible workflow is:
+
+1. Question: choose the functional target and readout.
+2. Candidate: select a high-sensitivity residue and substitution.
+3. Control: use a locally matched lower-sensitivity mutation.
+4. Measurements: function, abundance, and fold/assembly for every construct.
+5. Interpretation: classify a specific functional contrast, protein-quality confound, unresolved contrast, or no effect.
+6. Next experiment: increase mutation severity at a supported site, select a different local environment after a quality confound, or test the next independent high-sensitivity site.
+
+The built-in demo results are synthetic, already filled, and visibly labelled as interface demonstration data rather than 4HHB measurements.
+
+### 9. Validation machinery
+
+The demo now contains four distinct checks:
+
+1. **Post-ranking 4HHB anchors.** Known labels do not enter the score. The default 4HHB result ranks `ARG A/C:141` first. αArg141→Ser has experimentally observed high oxygen affinity and reduced cooperativity and is implicated in T-state stabilization and the Bohr effect (PMID 7338473). `ASP B/D:99`, the Hb Kempsey site, is shown separately; βAsp99→Asn produces high oxygen affinity and markedly reduced cooperativity (PMID 1427427). Proximal heme histidines check coordinate/ligand assignment.
+2. **Cutoff challenge.** Full target sensitivity is repeated at 8.0, 8.5, and 9.0 Å.
+3. **Second-conformation import.** A second PDB/mmCIF can be compared using exact author identifiers, target sensitivity, degree, and rank shifts.
+4. **Lab benchmark CSV.** Researchers can import `chain,residue,insertion,known_functional` labels. With explicit positives and negatives, RINet calculates AUROC for the complete score, target sensitivity, target distance, and Cα degree. Optional `conservation_score`, `md_score`, and `external_score` columns are evaluated beside them. It also reports resolved labels, top-10 positive recovery, and enrichment. Unlabelled residues are never silently treated as negatives.
+
+Relevant benchmark literature:
+
+- bond-to-bond propensity and allosteric-site evaluation: https://pmc.ncbi.nlm.nih.gov/articles/PMC5007447/
+- scalable bond-propensity analysis: https://pmc.ncbi.nlm.nih.gov/articles/PMC6056424/
+- allosteric-site benchmark comparison: https://pmc.ncbi.nlm.nih.gov/articles/PMC8767309/
+- ASBench: https://academic.oup.com/bioinformatics/article/31/15/2598/188062
+- CASBench: https://pmc.ncbi.nlm.nih.gov/articles/PMC6475866/
+
+The 4HHB recovery is a retrospective anchor, not general validation. The imported-label evaluator is benchmarking machinery, not a substitute for a frozen multi-protein test set.
+
+### 10. Large-assembly policy
+
+For structures above 1,400 residues, the interactive mechanical domain is restricted to the 1,400 residues nearest the selected target. Excluded residues receive no mechanical rank. This scope is disclosed in the target panel and exported methods. A production backend should support sparse factorization for complete assemblies rather than relying on this browser-time cap.
 
 ## Defensible novelty statement
 
-Do **not** claim that RINet invented residue graphs, graph centrality, typed atomic contacts, mutation hot-spot ranking, or active learning. Those areas have substantial prior art.
+Do not claim that RINet invented residue networks, centrality, elastic-network models, perturbation-response scanning, dynamic coupling, spring sensitivity, or mutation ranking.
 
-The contribution being tested is the integrated workflow:
+The contribution being implemented and tested is:
 
-> RINet turns one structure into an inspectable candidate mutation and a local-environment-matched control that directly tests whether wider graph position adds experimental value, then uses function and protein-quality measurements to classify the result and choose the next discriminating construct.
+> RINet starts from a user-selected functional site, calculates the first-order change in that site's compliance under local residue-level weakening, audits an experimentally interpretable substitution against observed atom contacts, and generates a locally matched low-sensitivity mutation that directly challenges the mechanical explanation. The same workflow interprets function, protein quantity, and fold/assembly results and selects the next discriminating construct.
 
-This is presently a workflow and experimental-design contribution. It is not yet a validated predictive breakthrough. The interface says that prospective performance has not been established.
+This is materially different from returning a list of "important residues." It makes a target-specific quantitative prediction and supplies the control required to test whether that prediction adds value beyond local chemistry and generic protein damage.
 
-## Validation performed in this phase
+It is not yet defensible to call the method a validated breakthrough or to assign a business valuation. That requires held-out prospective performance.
+
+## Current 4HHB demonstration result
+
+- target: All HEM pockets, 83 target residues;
+- model: 574 Cα nodes, target-loaded 3D anisotropic network, three cutoffs;
+- independently rankable construct positions: 287;
+- top default candidate: `ARG A/C:141`, `R→K` first probe;
+- matched control: `ARG A/C:92`, also `R→K`;
+- control local-environment match: approximately 89/100;
+- control target-compliance sensitivity: approximately 46% of the candidate;
+- required experiment: oxygen-equilibrium or heme-spectral function, protein abundance, and fold/tetramer integrity in the same batch;
+- interpretation: candidate function must differ from control while protein quality remains acceptable.
+
+Values should be rechecked after any change to target definition, spring construction, target force convention, construct grouping, score weights, or control matching.
+
+## QA completed in this phase
 
 - JavaScript syntax check passes.
 - Patch whitespace check passes.
-- All six question lenses sum to exactly 1.0 and were exercised in the local browser.
-- The built-in 4HHB demo loads successfully.
-- Top candidates, matched controls, atom counts, and mutation audits update when a residue or question is changed.
-- The heme-coordinating HIS A:87 example exposes NE2–FE at 2.14 Å and identifies that H→N changes imidazole coordination geometry.
-- The local-environment control displays its match score and graph-point contrast.
-- Desktop and 390 × 844 phone-viewport visual reviews confirm a continuous dark results page and readable stacked interaction/mutation panels.
+- The built-in 4HHB demo loads locally and shows the whole molecule on desktop and 390 × 844 mobile viewports.
+- Rotation start/stop, reset view, surface/cartoon representation, chain/priority color, black/white background, residue selection, 3D focus, and experiment-sheet dialog were exercised.
+- All six scientific questions recalculate and return a candidate/control pair.
+- Combined heme, individual heme, and manual residue targets recalculate the networks and ranking.
+- Manual targets no longer duplicate the residue count in the selector label.
+- The section indicator displays 1/5 through 5/5 and the original scroll cue is present.
+- The visible page contains none of the previous "working models," "model fit," "model separation," or hand-set mechanism-pattern language.
+- The homepage is not modified by this rebuild; `/brief/` and `/brief/?demo=1` share the rebuilt app code.
 
-## Scientific work still required before strong performance claims
+## Work still required before strong performance claims
 
-The following is a validation program, not optional copy polish:
-
-1. Freeze an external benchmark before tuning. Include experimentally established catalytic, ligand-contact, interface, allosteric, antibody CDR/antigen-contact, and null residues.
-2. Compare against simple baselines: solvent exposure, distance to ligand, degree, conservation alone, and random matched residues.
-3. Compare against established tools where licensing and reproducibility permit: RING/Arpeggio contact evidence, FoldX/Rosetta stability estimates, evolutionary scores, and MD/ensemble methods.
-4. Report top-k recall, enrichment, calibration where applicable, protein-family splits, and failure cases. Do not tune and report on the same proteins.
-5. Test the matched-control design prospectively. The key question is whether candidate–control separation exceeds candidate-only selection and simple baselines.
-6. Measure sensitivity to structure state, biological assembly, missing atoms, protonation, alternate conformers, cutoffs, and chain mapping.
-7. Add a real energy/relaxation layer only as a separately named external calculation. Never infer ΔG from contact counts.
-8. Add conservation only from an explicit sequence analysis with accession, database version, alignment settings, and exportable provenance.
+1. Freeze a multi-protein benchmark before any further weight tuning. Use family-separated train/development/test partitions.
+2. Include experimentally characterized functional, catalytic, interface, allosteric, antibody, stability-sensitive, and null residues.
+3. Compare against distance to target, solvent exposure, degree, conservation, random matched controls, FoldX/Rosetta stability estimates, bond-propensity methods, MD/ensemble response, and available mutational-effect predictors.
+4. Report AUROC/AUPRC when negatives are valid, top-k recall, enrichment, uncertainty, protein-family stratification, cutoff/state sensitivity, and every failure case.
+5. Prospectively test whether the matched-control contrast outperforms candidate-only selection and simple baselines.
+6. Add biological-assembly verification, protonation/alternate-state handling, and explicit biological unit selection.
+7. Add a separate mutant-relaxation/energy layer only with method/version/provenance; never convert contact counts into ΔΔG.
+8. Add conservation only from an explicit alignment with database release and parameters.
+9. Replace the browser large-domain cap with a sparse backend for very large complexes.
+10. Publish benchmark protocols and frozen outputs before claiming general predictive value.
 
 ## Resume checklist
 
-1. Open `/Users/me/rinetlab`.
-2. Read this file and inspect the latest commits on `main`.
-3. Run the local site and open `/brief/?demo=1`.
-4. Exercise all six structural questions and select at least one ligand/metal residue and one ordinary residue.
-5. Keep the homepage unchanged unless the user explicitly requests another homepage edit.
-6. Before changing any scientific claim, classify it as: directly observed geometry, calculated descriptor, model output, external annotation, or experimental result.
-7. Update this log whenever a scoring term, cutoff, control-matching rule, benchmark, or public novelty statement changes.
+1. Open `/Users/me/rinetlab` and read this file.
+2. Inspect the latest commit on `main` and run `/brief/?demo=1` locally.
+3. Confirm the default target is All HEM pockets and the first candidate remains `ARG A/C:141` unless an intentional method change explains otherwise.
+4. Exercise all six scientific questions, one individual ligand target, and a manual target.
+5. Verify the same control match appears in the selected plan and multi-construct panel.
+6. Test desktop and 390 × 844 layouts; reset any temporary browser viewport afterward.
+7. Keep the homepage unchanged unless the user explicitly requests a homepage edit.
+8. Classify every public statement as observed coordinate evidence, calculated model output, external annotation, or experimental result.
+9. Update this log whenever the force convention, Hessian, spring cutoff, sensitivity derivative, construct grouping, score weights, control logic, benchmark, or novelty statement changes.
 
 ## Files changed in this phase
 

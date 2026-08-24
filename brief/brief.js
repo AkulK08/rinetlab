@@ -12,36 +12,51 @@ let current = null;
 const molecular = { stage: null, component: null, representation: "surface", colorMode: "chain", background: "black", spinning: false, highlight: null, topResidues: [], resultScheme: null, selectedResidue: null };
 let activeDiscoveryMode = "biology";
 let activeScoringLens = "general";
+let activeTargetId = null;
 let activeSequenceChain = null;
 let customAssay = "";
-const adaptiveRound = { panelSize: 8, panel: [], results: new Map(), example: false, posteriors: [] };
+const adaptiveRound = { panelSize: 8, panel: [], results: new Map(), example: false };
 const preview = { stage: null, component: null };
 const demoTour = { timer: null, frame: null, active: false };
 const waterNames = new Set(["HOH", "WAT", "DOD"]);
 const metalElements = new Set(["LI", "NA", "MG", "AL", "K", "CA", "MN", "FE", "CO", "NI", "CU", "ZN", "SR", "MO", "CD", "CS", "BA", "HG"]);
 const aminoAcidOneLetter = { ALA:"A", ARG:"R", ASN:"N", ASP:"D", CYS:"C", GLN:"Q", GLU:"E", GLY:"G", HIS:"H", ILE:"I", LEU:"L", LYS:"K", MET:"M", PHE:"F", PRO:"P", SER:"S", THR:"T", TRP:"W", TYR:"Y", VAL:"V", SEC:"U", PYL:"O" };
-const featureLabels = { degree:"Cα contact degree", weighted:"Cα distance-weighted packing", longRange:"Cα long-range contacts", interchain:"Cα cross-chain contacts", closeness:"Cα closeness centrality", betweenness:"Cα betweenness centrality", burial:"Radial burial", ligand:"Nearest bound-group distance", coordination:"Direct metal coordination", cdr:"CDR-region evidence", atomic:"Typed atomic partners", polar:"Polar-contact geometry", ionic:"Ionic-contact geometry", ligandAtomic:"Direct ligand / metal contacts" };
+const featureLabels = { mechanical:"Target-compliance sensitivity", robustness:"Sensitivity stability across cutoffs", perturbation:"Mutation constraint leverage", degree:"Cα contact degree", weighted:"Cα distance-weighted packing", longRange:"Cα long-range contacts", interchain:"Cα cross-chain contacts", closeness:"Cα closeness centrality", betweenness:"Cα betweenness centrality", burial:"Radial burial", ligand:"Nearest bound-group distance", coordination:"Direct metal coordination", cdr:"CDR-region evidence", atomic:"Typed atomic partners", polar:"Polar-contact geometry", ionic:"Ionic-contact geometry", ligandAtomic:"Direct ligand / metal contacts" };
 const graphFeatureNames = ["degree","weighted","longRange","interchain","closeness","betweenness"];
 const localFeatureNames = ["atomic","polar","ionic","ligandAtomic","coordination","ligand","burial"];
 const scoreLenses = {
-  general: { label:"Broad screen", description:"Broad structural screen: atom-level partners, local chemistry, wider Cα graph position, burial and bound-group contacts all contribute with the displayed weights.", weights:{ degree:.08, weighted:.06, longRange:.07, interchain:.09, closeness:.06, betweenness:.05, burial:.04, ligand:.08, coordination:.07, cdr:0, atomic:.14, polar:.10, ionic:.08, ligandAtomic:.08 } },
-  ligand: { label:"Bound ligand", description:"Bound-ligand question: prioritizes direct atom-level ligand, metal, polar and ionic geometry; nearest-distance and wider graph position remain secondary.", weights:{ degree:.04, weighted:.04, longRange:.02, interchain:.03, closeness:.03, betweenness:.02, burial:.03, ligand:.15, coordination:.15, cdr:0, atomic:.07, polar:.10, ionic:.10, ligandAtomic:.22 } },
-  interface: { label:"Chain interface", description:"Interface question: prioritizes cross-chain geometry, typed atomic partners and graph bottlenecks. Confirm the biological assembly rather than assuming every crystal contact is biological.", weights:{ degree:.07, weighted:.05, longRange:.06, interchain:.30, closeness:.05, betweenness:.09, burial:.05, ligand:0, coordination:0, cdr:0, atomic:.14, polar:.08, ionic:.07, ligandAtomic:.04 } },
-  allostery: { label:"Distant coupling", description:"Distant-coupling question: prioritizes long-range Cα graph position while retaining local atomic evidence. It proposes a perturbation test; it does not establish energy transfer or allostery.", weights:{ degree:.05, weighted:.04, longRange:.20, interchain:.10, closeness:.15, betweenness:.22, burial:.03, ligand:.02, coordination:0, cdr:0, atomic:.07, polar:.05, ionic:.04, ligandAtomic:.03 } },
-  stability: { label:"Packing / stability", description:"Packing question: prioritizes atom-level contacts, Cα packing and burial. Expression and fold must be measured before a functional effect is interpreted.", weights:{ degree:.10, weighted:.15, longRange:.07, interchain:.07, closeness:.07, betweenness:.05, burial:.16, ligand:.01, coordination:0, cdr:0, atomic:.14, polar:.06, ionic:.04, ligandAtomic:.08 } },
-  antibody: { label:"Antibody binding", description:"Antibody-binding question: combines cross-chain atom contacts with a variable-loop heuristic. Verify IMGT/Kabat numbering, the biological assembly and antigen contacts externally.", weights:{ degree:.05, weighted:.03, longRange:.03, interchain:.20, closeness:.04, betweenness:.05, burial:.02, ligand:.03, coordination:0, cdr:.22, atomic:.13, polar:.08, ionic:.05, ligandAtomic:.07 } }
+  general: { label:"Target sensitivity", description:"Target-sensitivity question: ranks mutations outside the selected functional site by the first-order change in target compliance expected when local springs are weakened, stability across three network cutoffs, and the side-chain constraints the proposed substitution can change.", weights:{ mechanical:.58, robustness:.17, perturbation:.10, interchain:.03, longRange:.03, burial:.02, atomic:.03, polar:.02, ionic:.01, ligandAtomic:.01 } },
+  ligand: { label:"Direct pocket", description:"Direct-pocket question: ranks residues that touch the selected bound group, combining target response with explicit ligand/metal geometry and mutation constraint leverage.", weights:{ mechanical:.30, robustness:.10, perturbation:.15, ligandAtomic:.20, coordination:.10, ligand:.05, atomic:.04, polar:.03, ionic:.03 } },
+  interface: { label:"Interface sensitivity", description:"Interface question: asks which mutation should most change compliance of the selected chain interface while retaining explicit cross-chain contact evidence. Confirm that the interface belongs to the biological assembly.", weights:{ mechanical:.50, robustness:.15, perturbation:.10, interchain:.15, atomic:.05, polar:.03, ionic:.02 } },
+  allostery: { label:"Remote sensitivity", description:"Remote-sensitivity question: excludes the selected site and residues within 10 Å, then ranks remote residues by target-compliance sensitivity and cutoff robustness. This is the clearest candidate-versus-control test of long-range mechanical leverage.", weights:{ mechanical:.64, robustness:.19, perturbation:.10, longRange:.03, betweenness:.02, atomic:.02 } },
+  stability: { label:"Mechanical integrity", description:"Mechanical-integrity question: combines target-compliance sensitivity with packing, burial and mutation leverage. Protein quantity and fold/assembly remain mandatory measurements.", weights:{ mechanical:.34, robustness:.11, perturbation:.15, weighted:.12, burial:.12, degree:.06, atomic:.10 } },
+  antibody: { label:"Antibody interface", description:"Antibody-interface question: combines target-compliance sensitivity at the selected interface with cross-chain contacts and a variable-loop heuristic. Verify IMGT/Kabat numbering and antigen identity before ordering constructs.", weights:{ mechanical:.38, robustness:.12, perturbation:.10, interchain:.16, cdr:.14, atomic:.05, polar:.03, ionic:.02 } }
 };
 const workflowQuestions = {
-  general:"Which structurally prominent residue is worth a controlled first test?",
+  general:"Which mutation should most change the mechanical compliance of the functional site?",
   ligand:"Which residue most directly perturbs bound ligand or metal chemistry?",
   interface:"Which residue most clearly tests a chain or partner interface?",
-  allostery:"Which distant site provides a test of coupling without assuming that coupling exists?",
+  allostery:"Which distant mutation should most change the mechanical compliance of the functional site?",
   stability:"Which residue provides a clean test of packing or structural tolerance?",
   antibody:"Which residue most clearly tests antigen-contact or CDR-region function?"
 };
 const benchmarkManifest = {
-  "4HHB": { status:"Curated structural-anchor sanity check", source:"https://www.rcsb.org/structure/4HHB", citation:"4HHB primary structure and heme coordination", sites:["HIS A:87","HIS B:92","HIS C:87","HIS D:92"], note:"Proximal F8 histidines coordinate heme iron. Labels are evaluated after ranking and contribute no score." },
-  "5DTL": { status:"Curated published-site sanity check", source:"https://doi.org/10.1021/jacs.5b09923", citation:"Arginine 66 controls dark-state formation in mEos2", sites:["ARG A:66","ARG B:66","ARG C:66","ARG D:66","ARG E:66"], note:"Published Arg66 site. Chain copies are evaluated independently and contribute no score." }
+  "4HHB": {
+    status:"Three independent 4HHB anchors · evaluated after ranking",
+    note:"These labels never enter the target-compliance score. Recovery in one protein is a retrospective sanity check, not general validation.",
+    groups:[
+      { label:"αArg141 · C-terminal T-state contact", sites:["ARG A:141","ARG C:141"], perturbation:"R141S", outcome:"Raised oxygen affinity and reduced cooperativity; implicated in T-state stabilization and the Bohr effect.", source:"https://pubmed.ncbi.nlm.nih.gov/7338473/", citation:"Experimental α141 Arg→Ser hemoglobin" },
+      { label:"βAsp99 · α1β2 allosteric interface", sites:["ASP B:99","ASP D:99"], perturbation:"D99N (Hb Kempsey)", outcome:"High oxygen affinity with markedly reduced cooperativity; disrupts a T-state interface contact.", source:"https://pubmed.ncbi.nlm.nih.gov/1427427/", citation:"Functional study of Hb Kempsey β99 Asp→Asn" },
+      { label:"Proximal F8 histidines · heme anchor", sites:["HIS A:87","HIS B:92","HIS C:87","HIS D:92"], perturbation:"Direct structural anchor", outcome:"Coordinates the heme iron; used here to check residue/ligand assignment, not long-range ranking.", source:"https://www.rcsb.org/structure/4HHB", citation:"4HHB structure and heme coordination" }
+    ]
+  },
+  "5DTL": {
+    status:"One independent mEos2 anchor · evaluated after ranking",
+    note:"The published label never enters the score. This is a retrospective sanity check, not general validation.",
+    groups:[
+      { label:"Arg66 · chromophore-state control", sites:["ARG A:66","ARG B:66","ARG C:66","ARG D:66","ARG E:66"], perturbation:"Published Arg66 variants", outcome:"Arg66 controls dark-state formation in mEos2.", source:"https://doi.org/10.1021/jacs.5b09923", citation:"Arginine 66 controls dark-state formation in mEos2" }
+    ]
+  }
 };
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 
@@ -523,12 +538,166 @@ function computeBetweenness(cas, adjacency) {
   return { values, calculated:true };
 }
 
+function buildMechanicalTargets(metrics) {
+  const nuisance = new Set(["HOH","WAT","DOD","PO4","SO4","GOL","EDO","PEG","ACT","FMT","TRS","MES","HEP","CL","NA"]);
+  const groups = new Map();
+  metrics.forEach(residue => (residue.interactionEvidence || []).filter(row => row.hetero && row.distance <= 4.5).forEach(row => {
+    if (!groups.has(row.partnerKey)) groups.set(row.partnerKey,{ id:`hetero:${row.partnerKey}`, type:"bound-group", label:`${row.partnerLabel} pocket`, residueKeys:new Set(), metal:false, nearest:Infinity });
+    const group=groups.get(row.partnerKey); group.residueKeys.add(residue.key); group.metal ||= row.type === "metal" || metalElements.has(row.element); group.nearest=Math.min(group.nearest,row.distance);
+  }));
+  const interfaces = new Map();
+  metrics.forEach(residue => (residue.interactionEvidence || []).filter(row => row.interchain && row.sidechain && row.type === "direct").forEach(row => {
+    const partner=metrics.find(item=>item.key===row.partnerKey); if (!partner) return;
+    const pair=[residue.chain,partner.chain].sort(); const id=`interface:${pair[0]}:${pair[1]}`;
+    if(!interfaces.has(id))interfaces.set(id,{id,type:"interface",label:`Chains ${pair[0]}–${pair[1]} interface`,residueKeys:new Set(),contacts:0});
+    interfaces.get(id).residueKeys.add(residue.key); interfaces.get(id).residueKeys.add(partner.key); interfaces.get(id).contacts+=1;
+  }));
+  const bound=[...groups.values()].filter(group=>group.residueKeys.size).sort((a,b)=>Number(b.metal)-Number(a.metal)+Number(nuisance.has(a.label.split(" ")[0]))-Number(nuisance.has(b.label.split(" ")[0]))||b.residueKeys.size-a.residueKeys.size||a.label.localeCompare(b.label));
+  const chainInterfaces=[...interfaces.values()].filter(group=>group.residueKeys.size>=2).sort((a,b)=>b.contacts-a.contacts||a.label.localeCompare(b.label));
+  const combinedByName=new Map();
+  bound.forEach(group=>{const name=group.label.split(" ")[0];if(nuisance.has(name))return;if(!combinedByName.has(name))combinedByName.set(name,[]);combinedByName.get(name).push(group);});
+  const combined=[...combinedByName.entries()].filter(([,items])=>items.length>1).map(([name,items])=>({id:`hetero-set:${name}`,type:"bound-group-set",label:`All ${name} pockets`,residueKeys:new Set(items.flatMap(item=>[...item.residueKeys])),metal:items.some(item=>item.metal),members:items.map(item=>item.id)})).sort((a,b)=>Number(b.metal)-Number(a.metal)||b.residueKeys.size-a.residueKeys.size);
+  const targets=[...combined,...bound,...chainInterfaces].map(target=>({...target,residueKeys:[...target.residueKeys]}));
+  if (!targets.length && metrics.length) {
+    const anchor=[...metrics].sort((a,b)=>b.atomicPartners-a.atomicPartners||b.degree-a.degree)[0];
+    const keys=metrics.filter(row=>distance(row.ca,anchor.ca)<=8.5).map(row=>row.key);
+    targets.push({id:`anchor:${anchor.key}`,type:"exploratory",label:`Neighborhood around ${anchor.label}`,residueKeys:keys,note:"No bound group or chain interface was resolved; replace this exploratory anchor with residues from the known functional site."});
+  }
+  return targets;
+}
+
+function buildAnmOperator(metrics, cutoff) {
+  const nodes=metrics, n=nodes.length, edges=[], diagonal=new Float64Array(3*n), cells=new Map(), cellKey=(x,y,z)=>`${x},${y},${z}`;
+  nodes.forEach((node,i)=>{
+    const cell=[Math.floor(node.ca.x/cutoff),Math.floor(node.ca.y/cutoff),Math.floor(node.ca.z/cutoff)];
+    for(let dx=-1;dx<=1;dx+=1)for(let dy=-1;dy<=1;dy+=1)for(let dz=-1;dz<=1;dz+=1)(cells.get(cellKey(cell[0]+dx,cell[1]+dy,cell[2]+dz))||[]).forEach(j=>{
+      const other=nodes[j],vx=node.ca.x-other.ca.x,vy=node.ca.y-other.ca.y,vz=node.ca.z-other.ca.z,d=Math.hypot(vx,vy,vz);
+      if(d<1e-6||d>cutoff)return;
+      const nx=vx/d,ny=vy/d,nz=vz/d; edges.push({i,j,nx,ny,nz});
+      [nx,ny,nz].forEach((value,axis)=>{const term=value*value;diagonal[3*i+axis]+=term;diagonal[3*j+axis]+=term;});
+    });
+    const own=cellKey(...cell);if(!cells.has(own))cells.set(own,[]);cells.get(own).push(i);
+  });
+  const positive=[...diagonal].filter(value=>value>0), meanDiagonal=positive.reduce((sum,value)=>sum+value,0)/Math.max(positive.length,1), ridge=Math.max(1e-7,meanDiagonal*1e-3);
+  const apply=input=>{
+    const output=new Float64Array(input.length);
+    edges.forEach(edge=>{const ix=3*edge.i,jx=3*edge.j,d=(input[ix]-input[jx])*edge.nx+(input[ix+1]-input[jx+1])*edge.ny+(input[ix+2]-input[jx+2])*edge.nz,fx=d*edge.nx,fy=d*edge.ny,fz=d*edge.nz;output[ix]+=fx;output[ix+1]+=fy;output[ix+2]+=fz;output[jx]-=fx;output[jx+1]-=fy;output[jx+2]-=fz;});
+    for(let i=0;i<output.length;i+=1)output[i]+=ridge*input[i];
+    return output;
+  };
+  return {nodes,edges,diagonal,ridge,apply,cutoff};
+}
+
+function dotProduct(a,b){let sum=0;for(let i=0;i<a.length;i+=1)sum+=a[i]*b[i];return sum;}
+
+function solvePcg(operator,b,tolerance=1e-7,maxIterations=700){
+  const n=b.length,x=new Float64Array(n),r=new Float64Array(b),z=new Float64Array(n),p=new Float64Array(n);
+  for(let i=0;i<n;i+=1){z[i]=r[i]/(operator.diagonal[i]+operator.ridge);p[i]=z[i];}
+  let rz=dotProduct(r,z),bNorm=Math.sqrt(Math.max(dotProduct(b,b),1e-30)),iterations=0,residual=Math.sqrt(Math.max(dotProduct(r,r),0))/bNorm;
+  for(;iterations<maxIterations&&residual>tolerance;iterations+=1){
+    const ap=operator.apply(p),denominator=dotProduct(p,ap);if(Math.abs(denominator)<1e-30)break;
+    const alpha=rz/denominator;for(let i=0;i<n;i+=1){x[i]+=alpha*p[i];r[i]-=alpha*ap[i];}
+    residual=Math.sqrt(Math.max(dotProduct(r,r),0))/bNorm;if(residual<=tolerance)break;
+    for(let i=0;i<n;i+=1)z[i]=r[i]/(operator.diagonal[i]+operator.ridge);
+    const next=dotProduct(r,z),beta=next/Math.max(Math.abs(rz),1e-30);for(let i=0;i<n;i+=1)p[i]=z[i]+beta*p[i];rz=next;
+  }
+  return {x,iterations,residual};
+}
+
+function balancedTargetForce(nodeCount,targetIndices,axis){
+  const force=new Float64Array(3*nodeCount),targetSet=new Set(targetIndices),targetWeight=1/Math.max(targetIndices.length,1),backgroundCount=Math.max(1,nodeCount-targetIndices.length),backgroundWeight=-1/backgroundCount;
+  for(let i=0;i<nodeCount;i+=1)force[3*i+axis]=targetSet.has(i)?targetWeight:backgroundWeight;
+  return force;
+}
+
+function deterministicProbe(length,seed){
+  let state=(seed*2654435761)>>>0;const values=new Float64Array(length);
+  for(let i=0;i<length;i+=1){state^=state<<13;state^=state>>>17;state^=state<<5;values[i]=(state>>>0)&1?1:-1;}
+  for(let axis=0;axis<3;axis+=1){let mean=0;for(let i=axis;i<length;i+=3)mean+=values[i];mean/=length/3;for(let i=axis;i<length;i+=3)values[i]-=mean;}
+  return values;
+}
+
+function calculateTargetResponse(metrics,target,cutoff,{estimateCompliance=false}={}){
+  const fullNodeCount=metrics.length,targetRows=metrics.filter(row=>target.residueKeys.includes(row.key));
+  if(!targetRows.length)return null;
+  const targetDistanceByKey=metrics.length>1400?new Map(metrics.map(row=>[row.key,Math.min(...targetRows.map(targetRow=>distance(row.ca,targetRow.ca)))])):null;
+  const modelMetrics=metrics.length>1400?[...metrics].sort((a,b)=>targetDistanceByKey.get(a.key)-targetDistanceByKey.get(b.key)).slice(0,1400):metrics;
+  const operator=buildAnmOperator(modelMetrics,cutoff),indexByKey=new Map(modelMetrics.map((row,index)=>[row.key,index])),targetIndices=target.residueKeys.map(key=>indexByKey.get(key)).filter(Number.isInteger);
+  if(!targetIndices.length)return null;
+  const responses=[],solverRuns=[];
+  for(let axis=0;axis<3;axis+=1){const force=balancedTargetForce(modelMetrics.length,targetIndices,axis),solution=solvePcg(operator,force);responses.push(solution.x);solverRuns.push(solution);}
+  const targetCompliance=responses.reduce((sum,response,axis)=>sum+dotProduct(balancedTargetForce(modelMetrics.length,targetIndices,axis),response),0)/3;
+  const localCompliance=new Float64Array(modelMetrics.length);
+  if(estimateCompliance){
+    const probeCount=8;
+    for(let probe=1;probe<=probeCount;probe+=1){const vector=deterministicProbe(3*modelMetrics.length,probe),solution=solvePcg(operator,vector);solverRuns.push(solution);for(let i=0;i<modelMetrics.length;i+=1)for(let axis=0;axis<3;axis+=1)localCompliance[i]+=vector[3*i+axis]*solution.x[3*i+axis]/probeCount;}
+  } else {
+    for(let i=0;i<modelMetrics.length;i+=1)localCompliance[i]=3/(operator.diagonal[3*i]+operator.diagonal[3*i+1]+operator.diagonal[3*i+2]+3*operator.ridge);
+  }
+  const edgeLeverage=new Float64Array(modelMetrics.length);let totalEdgeLeverage=0;
+  operator.edges.forEach(edge=>{let sensitivity=0;for(let forceAxis=0;forceAxis<3;forceAxis+=1){const response=responses[forceAxis],ix=3*edge.i,jx=3*edge.j,extension=(response[ix]-response[jx])*edge.nx+(response[ix+1]-response[jx+1])*edge.ny+(response[ix+2]-response[jx+2])*edge.nz;sensitivity+=extension*extension/3;}edgeLeverage[edge.i]+=sensitivity;edgeLeverage[edge.j]+=sensitivity;totalEdgeLeverage+=sensitivity;});
+  const coupling=modelMetrics.map((row,i)=>{
+    let crossSquared=0;for(let forceAxis=0;forceAxis<3;forceAxis+=1)for(let responseAxis=0;responseAxis<3;responseAxis+=1)crossSquared+=responses[forceAxis][3*i+responseAxis]**2;
+    const local=Math.max(Math.abs(localCompliance[i]),1e-12),normalized=Math.sqrt(crossSquared)/Math.sqrt(Math.max(local*targetCompliance,1e-18));
+    return {key:row.key,raw:Math.sqrt(crossSquared),normalized,localCompliance:local,leverage:edgeLeverage[i],leverageFraction:edgeLeverage[i]/Math.max(2*totalEdgeLeverage,1e-18)};
+  });
+  return {coupling,cutoff,edges:operator.edges.length,ridge:operator.ridge,targetCompliance,iterations:Math.max(...solverRuns.map(run=>run.iterations)),residual:Math.max(...solverRuns.map(run=>run.residual)),modelNodeCount:modelMetrics.length,fullNodeCount};
+}
+
+function mutationConstraintLeverage(residue){
+  const forecast=mutationInteractionForecast(residue,mutationLadder(residue).conservative),changes=forecast.changes||[];
+  if(!changes.length)return .18;
+  const changed=changes.reduce((sum,row)=>sum+(row.retained===false?1:row.retained===true ? .2 : .65),0);
+  return Math.max(.05,Math.min(1,changed/Math.max(changes.length,1)));
+}
+
+function applyMechanicalTarget(report,targetId=activeTargetId){
+  const target=report.targetOptions.find(item=>item.id===targetId)||report.targetOptions[0];if(!target)return report;
+  activeTargetId=target.id;report.activeTarget=target;
+  const cutoffs=[8,8.5,9],profiles=cutoffs.map(cutoff=>calculateTargetResponse(report.residueMetrics,target,cutoff,{estimateCompliance:cutoff===8.5})).filter(Boolean),central=profiles.find(profile=>profile.cutoff===8.5)||profiles[0];
+  if(!central)return report;
+  const byCutoff=profiles.map(profile=>new Map(profile.coupling.map(row=>[row.key,row]))),centralMap=byCutoff[profiles.indexOf(central)],targetRows=report.residueMetrics.filter(row=>target.residueKeys.includes(row.key));
+  report.mechanicalModel={cutoffs,profiles:profiles.map(({coupling,...rest})=>rest),targetResidues:targetRows.length};
+  report.residueMetrics.forEach(row=>{
+    row.label=row.authorLabel||row.label;row.constructRepresentative=true;row.equivalentAuthors=[row.authorLabel||row.label];
+    const values=byCutoff.map(map=>map.get(row.key)?.leverage||0),mean=values.reduce((sum,value)=>sum+value,0)/values.length,variance=values.reduce((sum,value)=>sum+(value-mean)**2,0)/values.length;
+    row.mechanicalModeled=centralMap.has(row.key);
+    row.mechanicalCoupling=centralMap.get(row.key)?.normalized||0;
+    row.mechanicalRaw=centralMap.get(row.key)?.raw||0;
+    row.mechanicalLeverage=centralMap.get(row.key)?.leverage||0;
+    row.mechanicalLeverageFraction=centralMap.get(row.key)?.leverageFraction||0;
+    row.mechanicalByCutoff=profiles.map((profile,index)=>({cutoff:profile.cutoff,coupling:byCutoff[index].get(row.key)?.normalized||0,leverage:byCutoff[index].get(row.key)?.leverage||0}));
+    row.mechanicalRobustness=row.mechanicalModeled?1/(1+Math.sqrt(variance)/Math.max(mean,1e-12)):0;
+    row.mutationLeverage=mutationConstraintLeverage(row);
+    row.targetDistance=Math.min(...targetRows.map(targetRow=>distance(row.ca,targetRow.ca)),Infinity);
+    row.inTarget=target.residueKeys.includes(row.key);
+  });
+  const constructGroups=new Map();
+  report.residueMetrics.forEach(row=>{if(!constructGroups.has(row.constructGroupKey))constructGroups.set(row.constructGroupKey,[]);constructGroups.get(row.constructGroupKey).push(row);});
+  constructGroups.forEach(group=>{
+    if(group.length<2)return;
+    const representative=[...group].sort((a,b)=>b.mechanicalLeverage-a.mechanicalLeverage||a.chain.localeCompare(b.chain))[0],authors=group.map(row=>row.authorLabel),chains=[...new Set(group.map(row=>row.chain))],seqs=[...new Set(group.map(row=>`${row.seq}${row.insertion||""}`))];
+    const summedByCutoff=profiles.map((profile,index)=>({cutoff:profile.cutoff,coupling:Math.max(...group.map(row=>row.mechanicalByCutoff[index]?.coupling||0)),leverage:group.reduce((sum,row)=>sum+(row.mechanicalByCutoff[index]?.leverage||0),0)}));
+    const leverageValues=summedByCutoff.map(item=>item.leverage),leverageMean=mean(leverageValues),leverageVariance=mean(leverageValues.map(value=>(value-leverageMean)**2));
+    representative.mechanicalLeverage=group.reduce((sum,row)=>sum+row.mechanicalLeverage,0);representative.mechanicalLeverageFraction=group.reduce((sum,row)=>sum+row.mechanicalLeverageFraction,0);representative.mechanicalCoupling=Math.max(...group.map(row=>row.mechanicalCoupling));representative.mechanicalByCutoff=summedByCutoff;representative.mechanicalRobustness=1/(1+Math.sqrt(leverageVariance)/Math.max(leverageMean,1e-18));representative.targetDistance=Math.min(...group.map(row=>row.targetDistance));representative.inTarget=group.some(row=>row.inTarget);representative.equivalentAuthors=authors;
+    ["atomicPartners","polarContacts","ionicContacts","hydrophobicContacts","aromaticContacts","ligandAtomicContacts","metalContacts","degree","weighted","longRange","interchain","closeness","betweenness","burial","bMean","mutationLeverage"].forEach(feature=>{representative[feature]=mean(group.map(row=>row[feature]||0));});
+    representative.directMetalCoordination=group.some(row=>row.directMetalCoordination);representative.disulfidePartner=group.find(row=>row.disulfidePartner)?.disulfidePartner||null;representative.interactionEvidence=group.flatMap(row=>row.interactionEvidence||[]);
+    representative.label=seqs.length===1?`${representative.name} ${chains.join("/")}:${seqs[0]}`:`${representative.name} equivalent position ${representative.sequenceIndex} · ${authors.join(", ")}`;
+    group.filter(row=>row!==representative).forEach(row=>{row.constructRepresentative=false;row.mechanicalModeled=false;row.mechanicalLeverage=0;row.mechanicalLeverageFraction=0;row.mechanicalRobustness=0;row.mechanicalPercentile=0;row.duplicateOf=representative.key;});
+  });
+  report.residueMetrics.forEach(row=>{row.mechanicalPercentile=0;});
+  const sorted=report.residueMetrics.filter(row=>row.mechanicalModeled).sort((a,b)=>b.mechanicalLeverage-a.mechanicalLeverage);sorted.forEach((row,index)=>{row.mechanicalPercentile=sorted.length>1?(sorted.length-index-1)/(sorted.length-1):1;});
+  return report;
+}
+
 function scoreResidues(metrics, lensName = "general") {
   const lens = scoreLenses[lensName] || scoreLenses.general;
   const maxima = {};
-  ["degree","weighted","longRange","interchain","closeness","betweenness","atomicPartners","polarContacts","ionicContacts","ligandAtomicContacts"].forEach(feature => { maxima[feature] = Math.max(...metrics.map(row => row[feature] || 0), 1e-12); });
+  const rankableMetrics=metrics.filter(row=>row.constructRepresentative!==false);
+  ["degree","weighted","longRange","interchain","closeness","betweenness","atomicPartners","polarContacts","ionicContacts","ligandAtomicContacts"].forEach(feature => { maxima[feature] = Math.max(...rankableMetrics.map(row => row[feature] || 0), 1e-12); });
   const ranked = metrics.map(row => {
     const normalized = {
+      mechanical:row.mechanicalPercentile || 0, robustness:row.mechanicalRobustness || 0, perturbation:row.mutationLeverage || 0,
       degree:(row.degree || 0) / maxima.degree, weighted:(row.weighted || 0) / maxima.weighted,
       longRange:(row.longRange || 0) / maxima.longRange, interchain:(row.interchain || 0) / maxima.interchain,
       closeness:(row.closeness || 0) / maxima.closeness, betweenness:(row.betweenness || 0) / maxima.betweenness,
@@ -537,8 +706,14 @@ function scoreResidues(metrics, lensName = "general") {
       ionic:(row.ionicContacts || 0) / maxima.ionicContacts, ligandAtomic:(row.ligandAtomicContacts || 0) / maxima.ligandAtomicContacts
     };
     const contributions = Object.fromEntries(Object.entries(lens.weights).map(([feature, weight]) => [feature, 100 * weight * (normalized[feature] || 0)]));
-    const score = Object.values(contributions).reduce((sum, value) => sum + value, 0);
+    let eligibility=1;
+    if(row.constructRepresentative===false)eligibility=0;
+    if(lensName==="general"&&(row.inTarget||row.targetDistance<6))eligibility=row.inTarget?0:.35;
+    if(lensName==="allostery"&&(row.inTarget||row.targetDistance<10))eligibility=0;
+    if(lensName==="ligand"&&row.targetDistance>7)eligibility=.35;
+    const score = eligibility*Object.values(contributions).reduce((sum, value) => sum + value, 0);
     const signals = [];
+    if(Number.isFinite(row.targetDistance)) signals.push(`${row.targetDistance.toFixed(1)} Å from the selected target; compliance-sensitivity percentile ${(100*(row.mechanicalPercentile||0)).toFixed(0)}; ${(100*(row.mechanicalRobustness||0)).toFixed(0)}/100 cutoff robustness`);
     if (row.directMetalCoordination) signals.push(`${row.ligandDistance.toFixed(1)} Å direct ${row.nearestLigandElement} coordination in ${row.nearestLigand}`);
     else if (row.ligandDistance !== null && row.ligandDistance <= 6) signals.push(`${row.ligandDistance.toFixed(1)} Å from ${row.nearestLigand || "a bound group"}`);
     if (row.atomicPartners) signals.push(`${row.atomicPartners} atom-level partner${row.atomicPartners === 1 ? "" : "s"}`);
@@ -551,41 +726,44 @@ function scoreResidues(metrics, lensName = "general") {
     if (row.disulfidePartner) signals.push(`probable disulfide to ${row.disulfidePartner.label} (${row.disulfidePartner.distance.toFixed(2)} Å; no score bonus)`);
     if (row.burial >= .58) signals.push("buried structural context");
     if (!signals.length) signals.push("strongest available contact context");
-    return { ...row, normalized, contributions, score, context:signals[0], rationale:`Observed: ${signals.join("; ")}. Wider Cα graph: ${row.degree} non-local contacts.` };
-  }).sort((a,b) => b.score - a.score || b.degree - a.degree || a.label.localeCompare(b.label));
-  ranked.forEach((row, index) => { row.rank = index + 1; row.percentile = ranked.length > 1 ? 100 * (ranked.length - index - 1) / (ranked.length - 1) : 100; });
+    return { ...row, normalized, contributions, score, context:signals[0], rationale:`Target-directed response: ${signals.join("; ")}. The proposed substitution changes an estimated ${(100*(row.mutationLeverage||0)).toFixed(0)}% of the tracked local constraint capacity. Wider Cα graph: ${row.degree} non-local contacts.` };
+  }).sort((a,b) => Number(b.constructRepresentative!==false)-Number(a.constructRepresentative!==false) || b.score - a.score || b.degree - a.degree || a.label.localeCompare(b.label));
+  const rankable=ranked.filter(row=>row.constructRepresentative!==false);rankable.forEach((row,index)=>{row.rank=index+1;row.percentile=rankable.length>1?100*(rankable.length-index-1)/(rankable.length-1):100;});ranked.filter(row=>row.constructRepresentative===false).forEach(row=>{row.rank=null;row.percentile=0;});
   return ranked;
 }
 
-function pickMatchedControl(ranked, candidate) {
+function pickMatchedControl(ranked, candidate, excluded = new Set()) {
   if (!candidate) return null;
   const contributionSum=(row,features)=>features.reduce((sum,feature)=>sum+(row.contributions?.[feature]||0),0);
   const candidateGraph=contributionSum(candidate,graphFeatureNames);
-  const eligible=ranked.filter(row=>row.label!==candidate.label&&row.score<candidate.score-1&&!row.disulfidePartner&&!(row.chain===candidate.chain&&Math.abs(row.sequenceIndex-candidate.sequenceIndex)<=3));
-  const graphSeparated=eligible.filter(row=>contributionSum(row,graphFeatureNames)<candidateGraph-1);
-  const pool=graphSeparated.length>=3?graphSeparated:eligible.length?eligible:ranked.filter(row=>row.label!==candidate.label);
+  const eligible=ranked.filter(row=>row.constructRepresentative!==false&&row.label!==candidate.label&&!excluded.has(row.label)&&row.mechanicalLeverage<candidate.mechanicalLeverage*.62&&!row.inTarget&&!row.disulfidePartner&&!(row.chain===candidate.chain&&Math.abs(row.sequenceIndex-candidate.sequenceIndex)<=3));
+  const expanded=eligible.length>=3?eligible:ranked.filter(row=>row.constructRepresentative!==false&&row.label!==candidate.label&&!excluded.has(row.label)&&row.mechanicalLeverage<candidate.mechanicalLeverage*.82&&!row.inTarget&&!row.disulfidePartner),sameResidue=expanded.filter(row=>row.name===candidate.name),pool=sameResidue.length?sameResidue:expanded;
   const localPenalty = row => {
-    const chemistry = row.residueClass === candidate.residueClass ? 0 : 1.8;
+    const chemistry = row.name===candidate.name?0:row.residueClass === candidate.residueClass ? 1.2 : 2.4;
     const localDistance=localFeatureNames.reduce((sum,feature)=>sum+Math.abs((row.normalized?.[feature]||0)-(candidate.normalized?.[feature]||0)),0)/localFeatureNames.length;
     const quality=.7*Math.min(1,Math.abs((row.bMean||0)-(candidate.bMean||0))/40);
     const chain=row.chain===candidate.chain?0:.9;
     const disulfide=row.disulfidePartner?2:0;
-    return chemistry+2.6*localDistance+quality+chain+disulfide;
+    const burial=1.8*Math.abs((row.burial||0)-(candidate.burial||0));
+    const contactMatch=.55*Math.abs((row.atomicPartners||0)-(candidate.atomicPartners||0))/Math.max(candidate.atomicPartners,1)+.35*Math.abs((row.polarContacts||0)-(candidate.polarContacts||0))/Math.max(candidate.polarContacts,1);
+    return chemistry+2.1*localDistance+burial+contactMatch+quality+.35*chain+disulfide;
   };
-  const selectionPenalty=row=>localPenalty(row)+.35*(contributionSum(row,graphFeatureNames)/Math.max(candidateGraph,1));
-  const control = [...pool].sort((a,b) => selectionPenalty(a) - selectionPenalty(b))[0] || ranked.at(-1) || null;
+  const selectionPenalty=row=>localPenalty(row)+.35*(row.mechanicalLeverage/Math.max(candidate.mechanicalLeverage,1e-18));
+  const control = [...pool].sort((a,b) => selectionPenalty(a) - selectionPenalty(b))[0] || ranked.filter(row=>row.constructRepresentative!==false&&!excluded.has(row.label)).at(-1) || null;
   if (!control) return null;
-  const quality = Math.max(0, Math.min(100, 100 - 22 * localPenalty(control)));
+  const quality = Math.max(0, Math.min(100, 100 - 18 * localPenalty(control)));
   const controlGraph=contributionSum(control,graphFeatureNames);
   const candidateLocal=contributionSum(candidate,localFeatureNames),controlLocal=contributionSum(control,localFeatureNames);
-  return { ...control, matchQuality:quality, graphContrast:candidateGraph-controlGraph, candidateGraphScore:candidateGraph, controlGraphScore:controlGraph, candidateLocalScore:candidateLocal, controlLocalScore:controlLocal, controlRationale:`Local-environment match ${quality.toFixed(0)}/100: ${control.residueClass === candidate.residueClass ? "same residue chemistry" : "nearest available chemistry"}; side-chain atomic partners ${control.atomicPartners} vs ${candidate.atomicPartners}; polar contacts ${control.polarContacts} vs ${candidate.polarContacts}; bound-group contacts ${control.ligandAtomicContacts} vs ${candidate.ligandAtomicContacts}; burial ${control.burial.toFixed(2)} vs ${candidate.burial.toFixed(2)}. The candidate has ${(candidateGraph-controlGraph).toFixed(1)} more weighted Cα-graph points. If candidate and control behave alike, the graph-position hypothesis is not supported by this experiment.` };
+  const leverageRatio=control.mechanicalLeverage/Math.max(candidate.mechanicalLeverage,1e-18);
+  return { ...control, matchQuality:quality, leverageRatio, graphContrast:candidateGraph-controlGraph, candidateGraphScore:candidateGraph, controlGraphScore:controlGraph, candidateLocalScore:candidateLocal, controlLocalScore:controlLocal, controlRationale:`Local-environment match ${quality.toFixed(0)}/100: ${control.name===candidate.name?"same wild-type residue and substitution":"nearest available residue chemistry"}; side-chain atomic partners ${control.atomicPartners} vs ${candidate.atomicPartners}; polar contacts ${control.polarContacts} vs ${candidate.polarContacts}; bound-group contacts ${control.ligandAtomicContacts} vs ${candidate.ligandAtomicContacts}; burial ${control.burial.toFixed(2)} vs ${candidate.burial.toFixed(2)}. In the same target-loaded network, the control has ${(100*leverageRatio).toFixed(0)}% of the candidate's first-order target-compliance sensitivity. If candidate and control behave alike, the mechanical-sensitivity hypothesis is not supported.` };
 }
 
 function rerankReport(report, lensName = activeScoringLens) {
   report.scoringLens = lensName;
   report.scoreWeights = { ...scoreLenses[lensName].weights };
   report.allResidues = scoreResidues(report.residueMetrics, lensName);
-  report.topResidues = report.allResidues.slice(0, 10);
+  report.rankableCount=report.allResidues.filter(row=>row.constructRepresentative!==false).length;
+  report.topResidues = report.allResidues.filter(row=>row.constructRepresentative!==false).slice(0, 10);
   report.controlResidue = pickMatchedControl(report.allResidues, report.topResidues[0]);
   return report;
 }
@@ -691,11 +869,18 @@ function buildReportFromAtoms({ allAtoms, metadata, models = 1, format = "PDB", 
       bMean:row.atoms.length?row.atoms.reduce((sum,atom)=>sum+(Number.isFinite(atom.b)?atom.b:0),0)/row.atoms.length:null,residueClass:residueClass(row.name),disulfidePartner:disulfidePartners.get(row.key)||null,cdrHeuristic:row.cdrHeuristic,ca:{x:row.ca.x,y:row.ca.y,z:row.ca.z}
     };
   });
+  const sequenceGroupByChain=new Map();
+  const sequenceGroups=new Map();
+  chainReports.forEach(chain=>{if(!sequenceGroups.has(chain.sequence))sequenceGroups.set(chain.sequence,[]);sequenceGroups.get(chain.sequence).push(chain.chain);});
+  [...sequenceGroups.values()].forEach((group,index)=>group.forEach(chain=>sequenceGroupByChain.set(chain,`sequence-group-${index+1}`)));
+  residueMetrics.forEach(row=>{row.authorLabel=row.label;row.chainCopies=sequenceGroups.get(chainReports.find(chain=>chain.chain===row.chain)?.sequence)||[row.chain];row.constructGroupKey=`${sequenceGroupByChain.get(row.chain)||row.chain}:${row.sequenceIndex}:${row.name}`;});
   const report={ residues:residues.length,polymerAtoms:polymerAtoms.length,chainReports,contacts:edges.length,alternateCount,lowOccupancy,missingCa,disulfides:Math.floor(disulfidePartners.size/2),waters:waters.length,
     hetero:[...hetero.values()].map(group=>`${group.name} ${group.chain}:${group.seq}`),metals:metals.map(group=>`${group.name} ${group.chain}:${group.seq}`),bMean:bValues.length?bValues.reduce((sum,value)=>sum+value,0)/bValues.length:null,bMedian:median(bValues),
     residueMetrics,edges,models,metadata,format,contactCutoff,betweennessCalculated:betweennessResult.calculated,antibodyContext,antibodyChains:[...antibodyChains],
     typedInteractionPairs:typedInteractions.typedResiduePairs,typedHeteroPairs:typedInteractions.typedHeteroPairs,typedHeavyAtoms:typedInteractions.heavyAtoms
   };
+  report.targetOptions=buildMechanicalTargets(residueMetrics);
+  applyMechanicalTarget(report,activeTargetId);
   return rerankReport(report,activeScoringLens);
 }
 
@@ -772,15 +957,9 @@ function biologicalGuidance(report, candidateOverride = report.topResidues[0], c
     purpose: "The coordinate model supports a controlled structure-function test. Protein-specific use should be confirmed from the supplied annotation and laboratory context.",
   };
   const identityNote = `${proteinLabel}${metadata.organism ? ` · ${metadata.organism}` : ""}. ${assembly}${ligandContext}.`;
-  const siteReason = candidate?.directMetalCoordination
-    ? `${candidate.label} makes a ${candidate.ligandDistance.toFixed(1)} Å direct contact to ${candidate.nearestLigandElement} in ${candidate.nearestLigand}; this is explicit coordinate evidence for a metal-linked structural role, not a prediction of the mutation outcome.`
-    : candidate?.interchain
-    ? `${candidate.label} has ${candidate.interchain} cross-chain contact${candidate.interchain===1?"":"s"} at the active cutoff and ranks ${candidate.rank}/${report.allResidues.length}.`
-    : candidate?.ligandDistance !== null && candidate?.ligandDistance <= 6
-      ? `${candidate.label} is ${candidate.ligandDistance.toFixed(1)} Å from ${candidate.nearestLigand || "a bound group"} and can test whether that local ligand contact matters.`
-      : candidate?.disulfidePartner
-        ? `${candidate.label} participates in a probable disulfide constraint, making structural integrity the first biological question.`
-        : `${candidate?.label || "The first site"} is rank ${candidate?.rank || "—"}/${report.allResidues.length}. ${candidate?.rationale || "No residue-level rationale is available."}`;
+  const siteReason = candidate
+    ? `${candidate.label} is ${candidate.targetDistance.toFixed(1)} Å from ${report.activeTarget?.label||"the selected target"}, at target-compliance-sensitivity percentile ${(100*(candidate.mechanicalPercentile||0)).toFixed(0)} with ${(100*(candidate.mechanicalRobustness||0)).toFixed(0)}/100 cutoff robustness.${candidate.directMetalCoordination?` It also makes a ${candidate.ligandDistance.toFixed(1)} Å direct ${candidate.nearestLigandElement} contact.`:candidate.interchain?` It has ${candidate.interchain} cross-chain contact${candidate.interchain===1?"":"s"}.`:candidate.ligandDistance!==null&&candidate.ligandDistance<=6?` It is ${candidate.ligandDistance.toFixed(1)} Å from ${candidate.nearestLigand||"a bound group"}.`:""}`
+    : "No rankable residue was resolved.";
   return {
     ...category,
     identityNote,
@@ -821,14 +1000,6 @@ function updateAssaySetup(report, residue) {
   feedback.classList.toggle("applied", Boolean(customAssay));
 }
 
-const adaptiveHypotheses = [
-  { id:"network", label:"Long-range graph position", short:"long-range" },
-  { id:"local", label:"Direct local contact", short:"local contact" },
-  { id:"destabilization", label:"Protein-quality sensitivity", short:"protein quality" },
-  { id:"hub", label:"Packing", short:"packing" },
-  { id:"mixed", label:"Mixed structural features", short:"mixed features" }
-];
-
 function bounded(value, minimum = 0, maximum = 1) {
   return Math.max(minimum, Math.min(maximum, Number(value) || 0));
 }
@@ -837,127 +1008,53 @@ function mean(values) {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 }
 
-function variance(values, weights = null) {
-  if (!values.length) return 0;
-  if (!weights) {
-    const center = mean(values);
-    return mean(values.map(value => (value - center) ** 2));
-  }
-  const total = weights.reduce((sum, value) => sum + value, 0) || 1;
-  const center = values.reduce((sum, value, index) => sum + value * weights[index], 0) / total;
-  return values.reduce((sum, value, index) => sum + weights[index] * (value - center) ** 2, 0) / total;
-}
-
 function structuralVector(residue) {
   const n = residue?.normalized || {};
-  return [n.degree,n.weighted,n.longRange,n.interchain,n.closeness,n.betweenness,n.burial,n.ligand,n.coordination,n.cdr,n.atomic,n.polar,n.ionic,n.ligandAtomic].map(value => bounded(value));
+  return [n.mechanical,n.robustness,n.perturbation,n.degree,n.weighted,n.longRange,n.interchain,n.burial,n.ligand,n.coordination,n.cdr,n.atomic,n.polar,n.ionic,n.ligandAtomic].map(value => bounded(value));
 }
 
 function vectorDistance(left, right) {
   return Math.sqrt(left.reduce((sum, value, index) => sum + (value - (right[index] || 0)) ** 2, 0));
 }
 
-function adaptiveSignatures(residue) {
-  const n = residue?.normalized || {};
-  const network = bounded(.42*n.longRange + .23*n.betweenness + .20*n.closeness + .15*n.interchain);
-  const local = bounded(.27*n.ligandAtomic + .18*n.ligand + .15*n.coordination + .14*n.atomic + .10*n.polar + .08*n.ionic + .08*n.interchain);
-  const hub = bounded(.30*n.atomic + .25*n.degree + .18*n.weighted + .14*n.burial + .13*n.betweenness);
-  const qualityField = bounded((residue?.bMean || 0) / 100);
-  const specialRisk = residue?.disulfidePartner || residue?.directMetalCoordination ? 1 : 0;
-  const risk = bounded(.40*n.burial + .30*n.degree + .12*n.weighted + .10*qualityField + .08*specialRisk);
-  const mixed = bounded(.27*network + .25*local + .25*risk + .23*hub);
-  return [
-    [bounded(.72*network + .18*n.betweenness + .10*n.interchain), bounded(.18*risk + .06*hub), bounded(.22*risk + .06*hub)],
-    [bounded(.80*local + .20*n.weighted), bounded(.18*risk + .08*local), bounded(.20*risk + .08*local)],
-    [bounded(.56*risk + .24*hub + .20*n.burial), bounded(.78*risk + .22*hub), bounded(.82*risk + .18*hub)],
-    [hub, bounded(.34*hub + .22*risk), bounded(.38*hub + .25*risk)],
-    [mixed, bounded(.38*mixed + .25*risk), bounded(.42*mixed + .25*risk)]
-  ];
-}
-
-function adaptiveCounterfactualValue(residue) {
-  const signatures = adaptiveSignatures(residue);
-  const channelDisagreement = [0,1,2].map(channel => variance(signatures.map(row => row[channel])));
-  return bounded(3.2 * mean(channelDisagreement) + .7 * variance(signatures.flat()));
-}
-
-function dominantMechanism(residue) {
-  const signatures = adaptiveSignatures(residue);
-  const index = signatures.map(row => row[0] - .45*mean(row.slice(1))).reduce((best, value, current, values) => value > values[best] ? current : best, 0);
-  return adaptiveHypotheses[index];
-}
-
-function mechanismContrast(residue) {
-  const ranked=adaptiveSignatures(residue).map((channels,index)=>({mechanism:adaptiveHypotheses[index],activitySpecific:channels[0]-.5*mean(channels.slice(1))})).sort((a,b)=>b.activitySpecific-a.activitySpecific);
-  return { high:ranked[0].mechanism, low:ranked.at(-1).mechanism, gap:bounded(ranked[0].activitySpecific-ranked.at(-1).activitySpecific) };
-}
-
 function adaptiveControlFor(report, candidate, excluded = new Set()) {
-  const pool = report.allResidues.slice(Math.min(10, report.allResidues.length), Math.max(11, Math.ceil(report.allResidues.length * .9))).filter(row => row.label !== candidate.label && !excluded.has(row.label) && !row.disulfidePartner && !row.directMetalCoordination);
-  const penalty = row => (row.residueClass === candidate.residueClass ? 0 : 2) + 2*Math.abs(row.burial-candidate.burial) + Math.min(1,Math.abs((row.bMean||0)-(candidate.bMean||0))/40) + (row.chain===candidate.chain?0:.35) + row.score/100;
-  const control = [...pool].sort((a,b)=>penalty(a)-penalty(b))[0];
-  if (!control) return null;
-  return { ...control, matchQuality:bounded(100-24*penalty(control),0,100), controlRationale:`Matched on ${control.residueClass===candidate.residueClass?"residue chemistry":"nearest available chemistry"}, burial, B field and ${control.chain===candidate.chain?"chain":"available chain"} context; deliberately lower structural score.` };
+  return pickMatchedControl(report.allResidues,candidate,excluded);
 }
 
 function buildAdaptivePanel(report, requestedSize = adaptiveRound.panelSize) {
   const panelSize = [6,8,12].includes(Number(requestedSize)) ? Number(requestedSize) : 8;
   adaptiveRound.panelSize = panelSize;
-  const controlTarget = panelSize === 6 ? 1 : panelSize === 8 ? 2 : 3;
-  const candidateTarget = panelSize - 1 - controlTarget;
-  const eligible=report.allResidues.filter(row=>!row.disulfidePartner);
+  const pairTarget = panelSize === 6 ? 2 : panelSize === 8 ? 3 : 5;
+  const candidateTarget = Math.min(pairTarget,Math.floor((panelSize-1)/2));
+  const eligible=report.allResidues.filter(row=>!row.disulfidePartner&&!row.inTarget&&row.score>0);
   const pool = eligible.slice(0, Math.min(180, eligible.length));
   const selected = [pool[0]||report.topResidues[0]].filter(Boolean);
   while (selected.length < candidateTarget) {
     const selectedVectors = selected.map(structuralVector);
     const remaining = pool.filter(row => !selected.some(item => item.label === row.label));
     const choice = remaining.map(row => {
-      const diversity = Math.min(...selectedVectors.map(vector => vectorDistance(structuralVector(row), vector))) / Math.sqrt(10);
-      const priority = row.percentile / 100;
-      const information = adaptiveCounterfactualValue(row);
-      return { row, score:.36*information + .34*diversity + .30*priority };
+      const diversity = Math.min(...selectedVectors.map(vector => vectorDistance(structuralVector(row), vector))) / Math.sqrt(15);
+      const distanceDiversity=Math.min(...selected.map(item=>Math.abs(row.targetDistance-item.targetDistance)))/30;
+      return { row, score:.52*(row.mechanicalPercentile||0)+.18*(row.mechanicalRobustness||0)+.18*bounded(diversity)+.12*bounded(distanceDiversity) };
     }).sort((a,b)=>b.score-a.score || a.row.rank-b.row.rank)[0]?.row;
     if (!choice) break;
     selected.push(choice);
   }
   const excluded = new Set(selected.map(row=>row.label));
   const controls = [];
-  selected.slice(0,controlTarget).forEach(candidate => {
+  selected.forEach(candidate => {
     const control = adaptiveControlFor(report,candidate,excluded);
     if (control) { excluded.add(control.label); controls.push({ residue:control, candidate }); }
   });
-  while (selected.length + controls.length < panelSize - 1) {
-    const extra = pool.find(row => !excluded.has(row.label));
-    if (!extra) break;
-    excluded.add(extra.label); selected.push(extra);
-  }
   const entries = [{ type:"wt", key:"WT", role:"WT reference", residue:null, mutation:"—", why:"Same-batch normalization for every assay channel." }];
-  selected.forEach((residue,index) => {
-    const mechanism = dominantMechanism(residue);
-    const contrast=mechanismContrast(residue);
-    entries.push({ type:"candidate", key:residue.label, role:"Candidate", residue, mutation:mutationLadder(residue).conservative, mechanism, information:adaptiveCounterfactualValue(residue), contrast, why:`Chosen because the ${contrast.high.short} and ${contrast.low.short} reference patterns disagree most at this site (${(100*contrast.gap).toFixed(0)}/100). Structural rank ${residue.rank}/${report.allResidues.length}; its displayed feature profile is not duplicated in the panel.` });
+  selected.forEach(residue => {
+    entries.push({ type:"candidate", key:residue.label, role:"High-leverage candidate", residue, mutation:mutationLadder(residue).conservative, why:`Target-compliance-sensitivity percentile ${(100*(residue.mechanicalPercentile||0)).toFixed(0)} for ${report.activeTarget.label}; ${residue.targetDistance.toFixed(1)} Å from the target; ${(100*(residue.mechanicalRobustness||0)).toFixed(0)}/100 cutoff robustness.` });
     const pair = controls.find(item => item.candidate.label === residue.label);
-    if (pair) entries.push({ type:"control", key:pair.residue.label, role:"Matched lower-rank control", residue:pair.residue, mutation:mutationLadder(pair.residue).conservative, candidateFor:residue, information:adaptiveCounterfactualValue(pair.residue), why:`Comparable chemistry and structural context to ${residue.label}, but a lower structural score; automatic match ${pair.residue.matchQuality.toFixed(0)}/100.` });
+    if (pair) entries.push({ type:"control", key:pair.residue.label, role:"Matched low-leverage control", residue:pair.residue, mutation:mutationLadder(pair.residue).conservative, candidateFor:residue, why:`Local match ${pair.residue.matchQuality.toFixed(0)}/100 to ${residue.label}; retains ${(100*pair.residue.leverageRatio).toFixed(0)}% of its target-compliance sensitivity. This is the falsification control.` });
   });
+  while(entries.length<panelSize){const extra=pool.find(row=>!entries.some(entry=>entry.residue?.label===row.label));if(!extra)break;entries.push({type:"candidate",key:extra.label,role:"Independent high-sensitivity site",residue:extra,mutation:mutationLadder(extra).conservative,why:`Adds an independent high-sensitivity site at ${extra.targetDistance.toFixed(1)} Å to test whether the target response repeats beyond one residue.`});}
   adaptiveRound.panel = entries.slice(0,panelSize);
   return adaptiveRound.panel;
-}
-
-function adaptiveCoverage(report, residues) {
-  if (!residues.length) return 0;
-  const selected = residues.map(structuralVector);
-  const universe = report.allResidues.slice(0,Math.min(120,report.allResidues.length));
-  return 100 * mean(universe.map(row => 1 - Math.min(...selected.map(vector=>vectorDistance(structuralVector(row),vector))) / Math.sqrt(10)));
-}
-
-function adaptiveMechanismSeparation(entries) {
-  const residues = entries.filter(entry=>entry.residue).map(entry=>entry.residue);
-  if (!residues.length) return 0;
-  const vectors = adaptiveHypotheses.map((_,hypothesis) => residues.flatMap(residue=>adaptiveSignatures(residue)[hypothesis]));
-  const distances = [];
-  for (let left=0;left<vectors.length;left+=1) for (let right=left+1;right<vectors.length;right+=1) distances.push(vectorDistance(vectors[left],vectors[right])/Math.sqrt(vectors[left].length));
-  const closestPair = distances.length ? Math.min(...distances) : 0;
-  return 100 * (1-Math.exp(-2.4*closestPair));
 }
 
 function resetAdaptiveAnalysisUI() {
@@ -967,7 +1064,7 @@ function resetAdaptiveAnalysisUI() {
     status.innerHTML="<strong>Panel generated.</strong><span>Enter normalized measurements in the table, or export and re-import the CSV template.</span>";
   }
   const summary = document.getElementById("adaptivePosteriorSummary");
-  if (summary) summary.textContent="Complete all three measurements for at least two candidates and one additional construct.";
+  if (summary) summary.textContent="Complete function, abundance and fold/assembly for at least two candidates and one of their matched controls.";
   const posterior = document.getElementById("adaptivePosterior");
   if (posterior) posterior.innerHTML="<span>No measurements entered</span>";
   const nextRows = document.getElementById("adaptiveNextRows");
@@ -992,7 +1089,7 @@ function adaptiveResultClass(result) {
 
 function renderAdaptivePanel(report, { rebuild = true, clearResults = false } = {}) {
   if (!report || !document.getElementById("adaptivePanelRows")) return;
-  if (clearResults) { adaptiveRound.results.clear(); adaptiveRound.example=false; adaptiveRound.posteriors=[]; resetAdaptiveAnalysisUI(); }
+  if (clearResults) { adaptiveRound.results.clear(); adaptiveRound.example=false; resetAdaptiveAnalysisUI(); }
   if (rebuild || !adaptiveRound.panel.length) buildAdaptivePanel(report,document.getElementById("adaptivePanelSize")?.value || adaptiveRound.panelSize);
   const body = document.getElementById("adaptivePanelRows");
   body.innerHTML = adaptiveRound.panel.map((entry,index) => {
@@ -1007,12 +1104,14 @@ function renderAdaptivePanel(report, { rebuild = true, clearResults = false } = 
   body.querySelectorAll("[data-adaptive-field]").forEach(input=>input.addEventListener("input",()=>{
     const key=decodeURIComponent(input.dataset.adaptiveKey); const result=adaptiveRound.results.get(key)||{}; const value=Number(input.value); result[input.dataset.adaptiveField]=Number.isFinite(value)&&input.value!==""?value:NaN; adaptiveRound.results.set(key,result);
   }));
-  const selectedResidues = adaptiveRound.panel.filter(entry=>entry.residue).map(entry=>entry.residue);
-  const baselineResidues = report.allResidues.slice(0,selectedResidues.length);
-  document.getElementById("adaptiveCoverage").textContent=`${adaptiveCoverage(report,selectedResidues).toFixed(0)}%`;
-  document.getElementById("adaptiveBaseline").textContent=`${adaptiveCoverage(report,baselineResidues).toFixed(0)}%`;
-  document.getElementById("adaptiveSeparation").textContent=`${adaptiveMechanismSeparation(adaptiveRound.panel).toFixed(0)}/100`;
-  document.getElementById("adaptiveControls").textContent=String(adaptiveRound.panel.filter(entry=>entry.type==="control").length);
+  const candidates=adaptiveRound.panel.filter(entry=>entry.type==="candidate"&&entry.residue).map(entry=>entry.residue),controls=adaptiveRound.panel.filter(entry=>entry.type==="control");
+  const distances=candidates.map(row=>row.targetDistance).filter(Number.isFinite),distanceSpan=distances.length>1?Math.max(...distances)-Math.min(...distances):0;
+  const robustness=100*mean(candidates.map(row=>row.mechanicalRobustness||0));
+  const couplingContrast=100*mean(controls.map(entry=>1-(entry.residue.leverageRatio||0)));
+  document.getElementById("adaptiveCoverage").textContent=`${distanceSpan.toFixed(1)} Å`;
+  document.getElementById("adaptiveBaseline").textContent=`${robustness.toFixed(0)}/100`;
+  document.getElementById("adaptiveSeparation").textContent=`${couplingContrast.toFixed(0)}%`;
+  document.getElementById("adaptiveControls").textContent=String(controls.length);
   document.getElementById("adaptivePanelSize").value=String(adaptiveRound.panelSize);
 }
 
@@ -1023,36 +1122,20 @@ function adaptivePosteriorAnalysis(report) {
     return { entry, result:completed.get(entry.key), controlEntry, controlResult:controlEntry?completed.get(controlEntry.key):null };
   });
   if (completed.size < 3 || measured.length < 2) return null;
-  const fits = adaptiveHypotheses.map((hypothesis,hypothesisIndex) => {
-    const squared = measured.flatMap(({entry,result,controlEntry,controlResult}) => {
-      const observedRaw=[bounded(Math.abs(result.function-100)/100),bounded((100-result.abundance)/100),bounded((100-result.integrity)/100)];
-      const expectedRaw=adaptiveSignatures(entry.residue)[hypothesisIndex];
-      const observedControl=controlResult?[bounded(Math.abs(controlResult.function-100)/100),bounded((100-controlResult.abundance)/100),bounded((100-controlResult.integrity)/100)]:[0,0,0];
-      const expectedControl=controlEntry?adaptiveSignatures(controlEntry.residue)[hypothesisIndex]:[0,0,0];
-      const observed=observedRaw.map((value,index)=>bounded(value-observedControl[index],-1,1));
-      const expected=expectedRaw.map((value,index)=>bounded(value-expectedControl[index],-1,1));
-      return observed.map((value,index)=>(value-expected[index])**2);
-    });
-    return { ...hypothesis, sse:mean(squared) };
+  const functionalThreshold=bounded(document.getElementById("adaptiveFunctionThreshold")?.value||20,1,100),integrityFloor=bounded(document.getElementById("adaptiveIntegrityFloor")?.value||75,1,100);
+  const pairs=measured.map(row=>{
+    const candidateEffect=Math.abs(row.result.function-100),controlEffect=row.controlResult?Math.abs(row.controlResult.function-100):0,specificContrast=candidateEffect-controlEffect,quality=Math.min(row.result.abundance,row.result.integrity),controlQuality=row.controlResult?Math.min(row.controlResult.abundance,row.controlResult.integrity):100;
+    const classification=!row.controlResult?"unpaired":quality<integrityFloor?"confounded":specificContrast>=functionalThreshold&&controlQuality>=integrityFloor?"supported":"not-supported";
+    return {...row,candidateEffect,controlEffect,specificContrast,quality,controlQuality,classification};
   });
-  const raw=fits.map(row=>Math.exp(-8*row.sse)); const total=raw.reduce((sum,value)=>sum+value,0)||1;
-  fits.forEach((row,index)=>{row.probability=raw[index]/total;});
-  fits.sort((a,b)=>b.probability-a.probability);
-  adaptiveRound.posteriors=fits;
+  if(!pairs.some(row=>row.controlEntry))return null;
   const tested=new Set(adaptiveRound.panel.filter(entry=>entry.residue).map(entry=>entry.residue.label));
-  const weights=adaptiveHypotheses.map(hypothesis=>fits.find(row=>row.id===hypothesis.id)?.probability||0);
-  const candidates=report.allResidues.slice(0,Math.min(220,report.allResidues.length)).filter(row=>!tested.has(row.label)&&!row.disulfidePartner).map(row=>{
-    const signatures=adaptiveSignatures(row);
-    const disagreement=mean([0,1,2].map(channel=>variance(signatures.map(item=>item[channel]),weights)));
-    return { residue:row, gain:bounded(4*disagreement), score:.72*bounded(4*disagreement)+.28*adaptiveCounterfactualValue(row) };
-  }).sort((a,b)=>b.score-a.score||a.residue.rank-b.residue.rank);
-  const next=[];
-  for (const candidate of candidates) {
-    const diversity=next.length?Math.min(...next.map(item=>vectorDistance(structuralVector(item.residue),structuralVector(candidate.residue))))/Math.sqrt(10):1;
-    if (next.length<4 && (diversity>.12 || next.length<2)) next.push({...candidate,diversity});
-    if (next.length===4) break;
-  }
-  return { measured, completed, fits, next };
+  const completedPairs=pairs.filter(row=>row.controlEntry),supported=completedPairs.filter(row=>row.classification==="supported"),confounded=completedPairs.filter(row=>row.classification==="confounded"),next=[];
+  supported.slice(0,2).forEach(row=>next.push({residue:row.entry.residue,mutation:mutationLadder(row.entry.residue).neutral,reason:`The first probe produced a ${row.specificContrast.toFixed(0)}-point candidate-minus-control functional contrast with protein quality retained. A stronger substitution tests dose dependence at the same site.`,kind:"severity series"}));
+  const pool=report.allResidues.filter(row=>!tested.has(row.label)&&!row.disulfidePartner&&!row.inTarget&&row.score>0).sort((a,b)=>b.score-a.score);
+  if(next.length<4&&pool[0])next.push({residue:pool[0],mutation:mutationLadder(pool[0]).conservative,reason:supported.length?`Independent high-sensitivity site for replication of the target response; ${(100*pool[0].mechanicalRobustness).toFixed(0)}/100 cutoff robustness.`:confounded.length?`The first sites were limited by protein quality. This site retains high target-compliance sensitivity with a different local environment and may give a cleaner perturbation.`:`No completed pair cleared the candidate-minus-control threshold. Test the next high-sensitivity site before rejecting the target response.`,kind:"independent site"});
+  if(next.length<4&&pool[1])next.push({residue:pool[1],mutation:mutationLadder(pool[1]).conservative,reason:`Samples a second untested high-sensitivity residue at ${pool[1].targetDistance.toFixed(1)} Å from the same target.`,kind:"replication site"});
+  return { measured, completed, pairs, completedPairs, supported, confounded, next:next.slice(0,4),functionalThreshold,integrityFloor };
 }
 
 function analyzeAdaptiveResults(report=current?.report) {
@@ -1064,29 +1147,29 @@ function analyzeAdaptiveResults(report=current?.report) {
   renderAdaptivePanel(report,{rebuild:false});
   const status=document.getElementById("adaptiveStatus");
   if (!analysis) {
-    status.className="adaptive-status"; status.innerHTML="<strong>Insufficient results.</strong><span>Complete all three measurements for at least two candidates and one additional non-WT construct.</span>";
+    status.className="adaptive-status"; status.innerHTML="<strong>Insufficient results.</strong><span>Complete all three measurements for at least two candidates and at least one of their matched controls.</span>";
     const interpretation=document.getElementById("workflowInterpretation");
     if(interpretation)interpretation.textContent="More complete measurements required";
     return;
   }
   status.className=`adaptive-status ${adaptiveRound.example?"example":""}`;
-  const paired=analysis.measured.filter(row=>row.controlEntry).length;
+  const paired=analysis.completedPairs.length;
   status.innerHTML=adaptiveRound.example?"<strong>Synthetic example values loaded.</strong><span>These are for interface demonstration only; they are not measured 4HHB data.</span>":`<strong>${analysis.completed.size} constructs interpreted.</strong><span>The comparison used ${paired} complete candidate-control pair${paired===1?"":"s"}.</span>`;
-  document.getElementById("adaptivePosteriorSummary").textContent=`After subtracting matched-control effects, the measurements are closest to the hand-set “${analysis.fits[0].label}” pattern. Its relative comparison weight is ${(100*analysis.fits[0].probability).toFixed(0)}% among the five patterns shown here; this is neither a probability of mechanism nor a causal conclusion.`;
-  document.getElementById("adaptivePosterior").innerHTML=analysis.fits.map(row=>`<div class="posterior-row"><span>${esc(row.label)}</span><i><b style="width:${(100*row.probability).toFixed(1)}%"></b></i><strong>${(100*row.probability).toFixed(0)}%</strong></div>`).join("");
-  document.getElementById("adaptiveNextRows").innerHTML=analysis.next.map(({residue,gain})=>{const contrast=mechanismContrast(residue);return `<div class="next-experiment-row"><button type="button" data-next-site="${esc(residue.label)}">${esc(residue.label)}<br>${esc(mutationLadder(residue).conservative)}</button><span>Next test because ${esc(contrast.high.short)} and ${esc(contrast.low.short)} give different expectations here. Structural rank ${residue.rank}.</span><strong>contrast ${(100*gain).toFixed(0)}</strong></div>`;}).join("");
+  document.getElementById("adaptivePosteriorSummary").textContent=`${analysis.supported.length} of ${analysis.completedPairs.length} completed candidate-control pairs cleared the ${analysis.functionalThreshold}-point functional-contrast threshold while protein quantity and fold/assembly remained at or above ${analysis.integrityFloor}% WT. ${analysis.confounded.length} pair${analysis.confounded.length===1?" was":"s were"} limited by protein quality.`;
+  document.getElementById("adaptivePosterior").innerHTML=analysis.pairs.map(row=>{const label=row.classification==="supported"?"mechanical-sensitivity contrast supported":row.classification==="confounded"?"protein-quality confound":row.classification==="unpaired"?"no completed paired control":"contrast not resolved";const width=Math.max(0,Math.min(100,Math.abs(row.specificContrast)));return `<div class="posterior-row"><span>${esc(row.entry.residue.label)} · ${esc(label)}</span><i><b style="width:${width.toFixed(1)}%"></b></i><strong>${row.classification==="unpaired"?"—":`${row.specificContrast>=0?"+":""}${row.specificContrast.toFixed(0)} pts`}</strong></div>`;}).join("");
+  document.getElementById("adaptiveNextRows").innerHTML=analysis.next.map(({residue,mutation,reason,kind})=>`<div class="next-experiment-row"><button type="button" data-next-site="${esc(residue.label)}">${esc(residue.label)}<br>${esc(mutation)}</button><span>${esc(reason)}</span><strong>${esc(kind)}</strong></div>`).join("");
   const interpretation=document.getElementById("workflowInterpretation");
-  if(interpretation)interpretation.textContent=`Closest reference pattern: ${analysis.fits[0].label}`;
+  if(interpretation)interpretation.textContent=analysis.supported.length?`${analysis.supported.length} paired target-response contrast${analysis.supported.length===1?"":"s"} supported`:analysis.confounded.length?"Results confounded by protein quality":"No paired target-response contrast resolved";
   const next=document.getElementById("workflowNext");
-  if(next)next.textContent=analysis.next[0]?`${analysis.next[0].residue.label} ${mutationLadder(analysis.next[0].residue).conservative}`:"No follow-up site available";
+  if(next)next.textContent=analysis.next[0]?`${analysis.next[0].residue.label} ${analysis.next[0].mutation}`:"No follow-up site available";
   document.querySelectorAll("[data-next-site]").forEach(button=>button.addEventListener("click",()=>selectAnalyzedResidue(report.allResidues.find(row=>row.label===button.dataset.nextSite),{autoView:true})));
 }
 
 function loadAdaptiveExample(report=current?.report) {
   if (!report) return;
-  const examples=[[55,96,93],[68,61,58],[101,98,97],[136,94,91],[84,90,89],[97,96,94],[108,99,96],[76,82,79],[112,91,88],[93,97,95],[64,70,68]];
   adaptiveRound.results.clear();
-  adaptiveRound.panel.filter(entry=>entry.residue).forEach((entry,index)=>adaptiveRound.results.set(entry.key,{function:examples[index%examples.length][0],abundance:examples[index%examples.length][1],integrity:examples[index%examples.length][2]}));
+  let candidateIndex=0,controlIndex=0;
+  adaptiveRound.panel.filter(entry=>entry.residue).forEach(entry=>{let values;if(entry.type==="control"){values=controlIndex++===0?[97,96,94]:[96,97,96];}else{values=candidateIndex===0?[55,96,93]:candidateIndex===1?[68,61,58]:candidateIndex===2?[101,98,97]:[86,94,92];candidateIndex+=1;}adaptiveRound.results.set(entry.key,{function:values[0],abundance:values[1],integrity:values[2]});});
   adaptiveRound.example=true;
   renderAdaptivePanel(report,{rebuild:false});
   analyzeAdaptiveResults(report);
@@ -1286,7 +1369,6 @@ async function analyze(text, sourceName, sourceType) {
     adaptiveRound.panel = [];
     adaptiveRound.results.clear();
     adaptiveRound.example = false;
-    adaptiveRound.posteriors = [];
     const report = parseCoordinateFile(text, sourceName);
     const digest = await sha256(text);
     const receiptId = `RNB-${digest.slice(0, 12).toUpperCase()}`;
@@ -1446,7 +1528,7 @@ function renderGuidance(report, candidateOverride = report.topResidues[0]) {
   const assay = assayFor(report, candidate, control);
   const structuralThesis = disulfide
     ? `${candidateLabel} forms a ${disulfide.distance.toFixed(2)} Å sulfur–sulfur contact with ${disulfide.label}, consistent with a disulfide constraint. The decisive question is whether function changes beyond any loss of structural integrity.`
-    : `${candidateLabel} is rank ${candidate.rank}/${report.allResidues.length} under the active score. Compare it with ${controlLabel} and measure protein quality alongside function.`;
+    : `${candidateLabel} is rank ${candidate.rank}/${report.rankableCount||report.allResidues.length} under the active score. Compare it with ${controlLabel} and measure protein quality alongside function.`;
 
   document.getElementById("guidanceIdentity").textContent = biology.identity;
   document.getElementById("guidanceIdentityNote").textContent = biology.identityNote;
@@ -1468,7 +1550,7 @@ function renderGuidance(report, candidateOverride = report.topResidues[0]) {
   document.getElementById("guidanceSpecificity").textContent = `Run wild type, ${ladder.conservative}, ${ladder.neutral}, and the matched-site perturbation at ${controlLabel} together.`;
   document.getElementById("diagnosticAdvance").textContent = `${candidateLabel} becomes a stronger site-specific hypothesis if its functional effect exceeds ${controlLabel} without a comparable integrity defect.`;
   document.getElementById("diagnosticFold").textContent = `Do not call mechanism. Reduce perturbation severity, improve expression controls, or test ${ladder.conservative} first.`;
-  document.getElementById("diagnosticControl").textContent = `The contact ranking has not separated ${candidateLabel} from structural background; deprioritize or redesign the contrast.`;
+  document.getElementById("diagnosticControl").textContent = `${candidateLabel} did not outperform the matched low-sensitivity control; the target-directed mechanical contrast was not supported. Change the target, mutation severity, or assay before assigning mechanism.`;
   document.getElementById("diagnosticNext").textContent = `Confirm assay sensitivity, then move to ${runnerUp?.label || "the next-ranked structural site"}.`;
   document.getElementById("alternatePacking").textContent = `${candidateLabel} may report local packing stress because it is ${contactClass}, rather than a specific functional pathway.`;
   document.getElementById("alternateExpression").textContent = `${ladder.neutral} may change abundance, folding or trafficking; those explanations must be measured before a site-specific interpretation.`;
@@ -1486,7 +1568,7 @@ function renderGuidance(report, candidateOverride = report.topResidues[0]) {
 
 function scoreEquationText(lensName = activeScoringLens) {
   const lens = scoreLenses[lensName] || scoreLenses.general;
-  return `score = 100 × [${Object.entries(lens.weights).filter(([,weight])=>weight>0).map(([feature,weight])=>`${weight.toFixed(2)}·${featureLabels[feature]}`).join(" + ")}]; each feature is normalized to the maximum observed in this structure.`;
+  return `rank score = target-zone gate × 100 × [${Object.entries(lens.weights).filter(([,weight])=>weight>0).map(([feature,weight])=>`${weight.toFixed(2)}·${featureLabels[feature]}`).join(" + ")}]. Target-compliance sensitivity is converted to a within-structure percentile; the other terms are normalized within this structure.`;
 }
 
 function mutationLabelForResidue(residue) {
@@ -1538,7 +1620,7 @@ function renderAtomicEvidence(residue, report) {
   document.getElementById("atomicLigandCount").textContent=`${residue.ligandAtomicContacts}${residue.metalContacts?` / ${residue.metalContacts}`:""}`;
   document.getElementById("atomicEvidenceResidue").textContent=residue.label;
   document.getElementById("atomicEvidenceIntro").textContent=`${residue.label} has ${residue.atomicPartners} residue partner${residue.atomicPartners===1?"":"s"} with a side-chain-involving heavy-atom contact at 4.5 Å or less${residue.ligandAtomicContacts?` and ${residue.ligandAtomicContacts} bound-group partner${residue.ligandAtomicContacts===1?"":"s"}`:""}.`;
-  document.getElementById("atomicEvidenceRows").innerHTML=displayed.length?displayed.map(row=>`<div class="atomic-evidence-row"><i>${esc(interactionTypeLabel(row.type))}</i><strong>${esc(row.partnerLabel)}</strong><span>${esc(row.atom)}–${esc(row.partnerAtom)} · ${row.distance.toFixed(2)} Å${row.interchain?" · other chain":""}</span></div>`).join(""):`<p>No side-chain-involving heavy-atom partner was found within 4.5 Å in this coordinate model. This residue can still rank through wider Cα graph position, burial, or bound-group distance.</p>`;
+  document.getElementById("atomicEvidenceRows").innerHTML=displayed.length?displayed.map(row=>`<div class="atomic-evidence-row"><i>${esc(interactionTypeLabel(row.type))}</i><strong>${esc(row.partnerLabel)}</strong><span>${esc(row.atom)}–${esc(row.partnerAtom)} · ${row.distance.toFixed(2)} Å${row.interchain?" · other chain":""}</span></div>`).join(""):`<p>No side-chain-involving heavy-atom partner was found within 4.5 Å in this coordinate model. The residue can still rank through target-compliance sensitivity, but the mutation has a weaker local-contact rationale.</p>`;
   const substitution=mutationLadder(residue).conservative;
   const forecast=mutationInteractionForecast(residue,substitution);
   document.getElementById("atomicMutationLabel").textContent=`${residue.label} ${substitution}`;
@@ -1550,7 +1632,7 @@ function renderAtomicEvidence(residue, report) {
   const graphFeatures=new Set(["degree","weighted","longRange","interchain","closeness","betweenness"]);
   const differences=control?Object.keys(residue.contributions||{}).map(feature=>({ feature, delta:(residue.contributions[feature]||0)-(control.contributions?.[feature]||0), group:atomicFeatures.has(feature)?"atom-level":graphFeatures.has(feature)?"Cα graph":"structure context" })).filter(row=>row.delta>0.05).sort((a,b)=>b.delta-a.delta).slice(0,3):[];
   document.getElementById("atomicContrastTitle").textContent=control?`${residue.label} (${residue.score.toFixed(1)}) vs ${control.label} (${control.score.toFixed(1)})`:"No automatic control available";
-  document.getElementById("atomicContrastSummary").textContent=control?`The candidate is ${(residue.score-control.score).toFixed(1)} score points higher. This pair matches local chemistry and atom-level context as closely as the structure allows while reducing wider graph position. The terms at right are the largest exact score differences. If the pair behaves alike experimentally, the graph-position rationale is not supported.`:"Choose a lower-ranked residue with comparable chemistry, burial, B field and local atom-level context before interpreting this candidate.";
+  document.getElementById("atomicContrastSummary").textContent=control?`The candidate is ${(residue.score-control.score).toFixed(1)} rank points higher. This pair matches chemistry and local atom-level context while the control retains only ${(100*(control.leverageRatio??control.mechanicalLeverage/Math.max(residue.mechanicalLeverage,1e-18))).toFixed(0)}% of the candidate's first-order target-compliance sensitivity. The terms at right are the largest exact rank differences. If the pair behaves alike experimentally, the mechanical-sensitivity rationale is not supported.`:"Choose a lower-sensitivity residue with comparable chemistry, burial, B field and local atom-level context before interpreting this candidate.";
   document.getElementById("atomicContrastRows").innerHTML=differences.length?differences.map(row=>`<div class="atomic-contrast-row"><span>${esc(row.group)} · ${esc(featureLabels[row.feature]||row.feature)}</span><strong>+${row.delta.toFixed(1)} pts</strong><small>candidate contribution minus matched control</small></div>`).join(""):`<div class="atomic-contrast-row"><span>no resolved score gap</span><strong>—</strong><small>The selected control does not provide a positive term-by-term contrast.</small></div>`;
 }
 
@@ -1577,10 +1659,10 @@ function selectedTestText(report, residue) {
     selectedExperimentQuestion(report, residue),
     "",
     "WHY THIS SITE",
-    `${residue.label} is rank ${residue.rank}/${report.allResidues.length} (score ${residue.score.toFixed(1)}, ${scoreLenses[report.scoringLens].label} model). ${residue.rationale}`,
+    `${residue.label} is rank ${residue.rank}/${report.rankableCount||report.allResidues.length} (score ${residue.score.toFixed(1)}, ${scoreLenses[report.scoringLens].label} model). ${residue.rationale}`,
     "",
     "WHAT THE MATCHED CONTROL TESTS",
-    control ? `${control.controlRationale}` : "No automatic local-environment match was available; choose and document a manual control before interpreting graph position.",
+    control ? `${control.controlRationale}` : "No automatic local-environment match was available; choose and document a chemistry-matched low-sensitivity control before interpreting the target response.",
     "",
     "BEFORE ORDERING",
     `Confirm that ${residue.label}${control ? ` and ${control.label}` : ""} map to the intended expression construct, author numbering, biological assembly and assay-relevant state.`,
@@ -1621,8 +1703,8 @@ function renderSelectedAction(residue, report = current?.report) {
   const assay = assayFor(report, residue, control);
   const constructs = experimentConstructs(report, residue);
   document.getElementById("selectedActionResidue").textContent = residue.label;
-  document.getElementById("selectedActionScore").textContent = `rank ${residue.rank}/${report.allResidues.length} · score ${residue.score.toFixed(1)} · ${scoreLenses[report.scoringLens].label} question`;
-  document.getElementById("selectedActionBoundary").textContent = `${residue.percentile.toFixed(1)}th score percentile in this structure. This is not a probability of function.`;
+  document.getElementById("selectedActionScore").textContent = `rank ${residue.rank}/${report.rankableCount||report.allResidues.length} · target-compliance-sensitivity percentile ${(100*(residue.mechanicalPercentile||0)).toFixed(1)} · ${scoreLenses[report.scoringLens].label} question`;
+  document.getElementById("selectedActionBoundary").textContent = `${residue.targetDistance.toFixed(1)} Å from ${report.activeTarget?.label||"the target"} · ${(100*(residue.mechanicalRobustness||0)).toFixed(0)}/100 cutoff robustness. These are model outputs, not a probability of function.`;
   document.getElementById("selectedActionReason").textContent = residue.rationale;
   document.getElementById("selectedActionMutation").textContent = constructs.map(row => row.site === "—" ? row.construct : `${row.construct}: ${row.site} ${row.substitution}`).join(" · ");
   document.getElementById("selectedActionControl").textContent = control ? `${control.label} · ${mutationLadder(control).conservative} · match ${control.matchQuality.toFixed(0)}/100. ${control.controlRationale}` : "No credible matched control could be constructed from this structure.";
@@ -1643,7 +1725,7 @@ function renderSelectedAction(residue, report = current?.report) {
 
 function renderContributionAudit(residue, report = current?.report) {
   if (!residue || !report) return;
-  document.getElementById("auditResidue").textContent = `${residue.label} · rank ${residue.rank}/${report.allResidues.length} · ${residue.score.toFixed(1)}`;
+  document.getElementById("auditResidue").textContent = `${residue.label} · rank ${residue.rank}/${report.rankableCount||report.allResidues.length} · ${residue.score.toFixed(1)}`;
   document.getElementById("auditSummary").textContent = `${residue.rationale} Its ${residue.percentile.toFixed(1)}th score percentile means it ranks above ${residue.percentile.toFixed(1)}% of residues under the ${scoreLenses[report.scoringLens].label.toLowerCase()} lens; it is not a probability of function.`;
   const entries = Object.entries(residue.contributions).filter(([feature]) => (report.scoreWeights?.[feature] || 0) > 0).sort((a,b)=>b[1]-a[1]);
   const maximum = Math.max(...entries.map(([,value])=>value),1);
@@ -1705,10 +1787,85 @@ function renderBenchmark(report) {
     document.getElementById("benchmarkBoundary").textContent="RINet makes no recovery claim for this structure. Importing or curating experimental labels is required before benchmarking.";
     return;
   }
-  const byLabel=new Map(report.allResidues.map(row=>[row.label,row]));
+  const byLabel=new Map();report.allResidues.filter(row=>row.constructRepresentative!==false).forEach(row=>{byLabel.set(row.label,row);(row.equivalentAuthors||[row.authorLabel]).filter(Boolean).forEach(label=>byLabel.set(label,row));});
+  const groups=benchmark.groups||[{label:benchmark.citation||"Curated site",sites:benchmark.sites||[],source:benchmark.source,citation:benchmark.citation,outcome:benchmark.note}];
   document.getElementById("benchmarkStatus").textContent=benchmark.status;
-  document.getElementById("benchmarkRows").innerHTML=benchmark.sites.map(label=>{const row=byLabel.get(label);return `<div class="benchmark-row"><span>${esc(label)}</span><b>${row?`rank ${row.rank}/${report.allResidues.length} · ${row.percentile.toFixed(1)}th percentile`:"not resolved in coordinates"}</b></div>`;}).join("");
-  document.getElementById("benchmarkBoundary").innerHTML=`${esc(benchmark.note)} <a href="${benchmark.source}" target="_blank" rel="noreferrer">Source: ${esc(benchmark.citation)} ↗</a>`;
+  document.getElementById("benchmarkRows").innerHTML=groups.map(group=>{
+    const resolved=[...new Set((group.sites||[]).map(label=>byLabel.get(label)).filter(Boolean))];
+    const best=[...resolved].sort((a,b)=>(a.rank||Infinity)-(b.rank||Infinity))[0];
+    const result=best?`${esc(best.label)} · sensitivity percentile ${(100*(best.mechanicalPercentile||0)).toFixed(1)} · rank ${best.rank}/${report.rankableCount||report.allResidues.length}`:"not resolved in coordinates";
+    return `<div class="benchmark-row"><span><strong>${esc(group.label)}</strong><small>${esc(group.perturbation||"")}</small></span><b>${result}<small>${esc(group.outcome||"")}</small></b></div>`;
+  }).join("");
+  document.getElementById("benchmarkBoundary").innerHTML=`${esc(benchmark.note)} ${groups.map(group=>`<a href="${group.source}" target="_blank" rel="noreferrer">${esc(group.citation)} ↗</a>`).join(" · ")}`;
+}
+
+function validationAuc(entries, valueFor) {
+  const positives=entries.filter(entry=>entry.positive),negatives=entries.filter(entry=>!entry.positive);
+  if(!positives.length||!negatives.length)return null;
+  let wins=0,total=0;
+  positives.forEach(positive=>negatives.forEach(negative=>{
+    const left=valueFor(positive),right=valueFor(negative);
+    if(!Number.isFinite(left)||!Number.isFinite(right))return;
+    wins += left > right ? 1 : (left === right ? 0.5 : 0); total += 1;
+  }));
+  return total?wins/total:null;
+}
+
+function parseValidationLabels(text, report) {
+  const lines=String(text).split(/\r?\n/).filter(line=>line.trim());
+  if(lines.length<2)throw new Error("the CSV contains no label rows");
+  const headers=parseAdaptiveCsvLine(lines[0]).map(header=>header.trim().toLowerCase().replace(/[^a-z0-9]+/g,"_"));
+  const column=(...names)=>names.map(name=>headers.indexOf(name)).find(index=>index>=0)??-1;
+  const indices={chain:column("chain","author_chain"),residue:column("residue","author_residue","residue_number"),insertion:column("insertion","insertion_code"),positive:column("known_functional","positive","label"),conservation:column("conservation_score","evolution_score"),md:column("md_score"),external:column("external_score")};
+  if(indices.chain<0||indices.residue<0||indices.positive<0)throw new Error("required columns are chain, residue and known_functional");
+  const representativeByKey=new Map(),byResidueKey=new Map(report.residueMetrics.map(row=>[row.key,row]));
+  report.residueMetrics.forEach(row=>{
+    const representative=row.constructRepresentative===false?byResidueKey.get(row.duplicateOf):row;
+    if(representative)representativeByKey.set(`${row.chain}|${row.seq}|${row.insertion||""}`,representative);
+  });
+  const parsed=[],unresolved=[],conflicts=[];
+  lines.slice(1).forEach((line,lineIndex)=>{
+    const cells=parseAdaptiveCsvLine(line),chain=(cells[indices.chain]||"").trim(),residueText=(cells[indices.residue]||"").trim(),insertionCell=indices.insertion>=0?(cells[indices.insertion]||"").trim():"",match=residueText.match(/^(-?\d+)(.*)$/);
+    if(!chain||!match)return;
+    const seq=Number(match[1]),insertion=insertionCell||match[2].trim(),rawLabel=(cells[indices.positive]||"").trim().toLowerCase();
+    const positive=["1","true","yes","positive","functional"].includes(rawLabel)?true:["0","false","no","negative","neutral"].includes(rawLabel)?false:null;
+    if(positive===null)return;
+    const residue=representativeByKey.get(`${chain}|${seq}|${insertion}`);
+    if(!residue){unresolved.push(`${chain}:${seq}${insertion}`);return;}
+    const numeric=index=>index>=0&&String(cells[index]||"").trim()!==""?Number(cells[index]):null;
+    parsed.push({line:lineIndex+2,residue,positive,conservation:numeric(indices.conservation),md:numeric(indices.md),external:numeric(indices.external)});
+  });
+  const deduplicated=new Map();
+  parsed.forEach(entry=>{
+    const prior=deduplicated.get(entry.residue.label);
+    if(prior&&prior.positive!==entry.positive){conflicts.push(entry.residue.label);return;}
+    if(!prior)deduplicated.set(entry.residue.label,entry);
+    else ["conservation","md","external"].forEach(field=>{if(!Number.isFinite(prior[field])&&Number.isFinite(entry[field]))prior[field]=entry[field];});
+  });
+  return {entries:[...deduplicated.values()],unresolved:[...new Set(unresolved)],conflicts:[...new Set(conflicts)],inputRows:lines.length-1};
+}
+
+function renderImportedValidation(result, report) {
+  const target=document.getElementById("validationImportResult");if(!target)return;
+  const entries=result.entries,positives=entries.filter(entry=>entry.positive),negatives=entries.filter(entry=>!entry.positive),topN=Math.min(10,report.rankableCount||report.allResidues.length),topHits=positives.filter(entry=>entry.residue.rank&&entry.residue.rank<=topN).length,expected=topN*positives.length/Math.max(report.rankableCount||report.allResidues.length,1),enrichment=expected?topHits/expected:null;
+  const scores=[
+    {label:"RINet complete score",value:validationAuc(entries,entry=>entry.residue.score)},
+    {label:"Target-compliance sensitivity",value:validationAuc(entries,entry=>entry.residue.mechanicalLeverage)},
+    {label:"Target distance only",value:validationAuc(entries,entry=>-entry.residue.targetDistance)},
+    {label:"Cα degree only",value:validationAuc(entries,entry=>entry.residue.degree)},
+    {label:"Imported conservation",value:validationAuc(entries,entry=>entry.conservation)},
+    {label:"Imported MD",value:validationAuc(entries,entry=>entry.md)},
+    {label:"Imported external score",value:validationAuc(entries,entry=>entry.external)}
+  ].filter(row=>Number.isFinite(row.value));
+  const caveat=positives.length&&negatives.length?"AUROC uses only resolved, explicitly labelled positives and negatives.":"Add both positive and negative labels to calculate AUROC; unlabelled residues are not treated as negatives.";
+  target.innerHTML=`<div class="validation-summary"><span>Resolved labels<b>${entries.length}/${result.inputRows}</b></span><span>Positive / negative<b>${positives.length} / ${negatives.length}</b></span><span>Top-${topN} positive recovery<b>${topHits}/${positives.length||0}</b></span><span>Top-${topN} enrichment<b>${Number.isFinite(enrichment)?`${enrichment.toFixed(2)}×`:"—"}</b></span></div>${scores.map(row=>`<div class="validation-score-row"><span>${esc(row.label)}</span><b>AUROC ${row.value.toFixed(3)}</b></div>`).join("")}<p>${esc(caveat)}${result.unresolved.length?` Unresolved identifiers: ${esc(result.unresolved.slice(0,8).join(", "))}${result.unresolved.length>8?"…":""}.`:""}${result.conflicts.length?` Conflicting duplicate labels were ignored for ${esc(result.conflicts.join(", "))}.`:""}</p>`;
+}
+
+function downloadValidationTemplate() {
+  if(!current)return;
+  const csv="chain,residue,insertion,known_functional,conservation_score,md_score,external_score\n";
+  const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})),link=document.createElement("a");
+  link.href=url;link.download=`rinet-${(current.report.metadata?.pdbId||"structure").toLowerCase()}-validation-labels.csv`;link.click();window.setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
 function cutoffRanking(report,cutoff) {
@@ -1721,14 +1878,14 @@ function cutoffRanking(report,cutoff) {
 
 function renderSensitivity(report) {
   const reference=report.topResidues[0];
-  const baseTop=new Set(report.topResidues.map(row=>row.label));
-  document.getElementById("sensitivityRows").innerHTML=[7,8,9].map(cutoff=>{const ranked=cutoff===report.contactCutoff?report.allResidues:cutoffRanking(report,cutoff);const row=ranked.find(item=>item.label===reference.label);const overlap=ranked.slice(0,10).filter(item=>baseTop.has(item.label)).length;return `<div class="sensitivity-row"><span>${cutoff.toFixed(1)} Å · ${overlap}/10 top-site overlap</span><b>${esc(reference.label)} rank ${row?.rank||"N/A"}</b></div>`;}).join("");
+  const baseRanked=[...report.allResidues].sort((a,b)=>(b.mechanicalByCutoff?.find(item=>item.cutoff===8.5)?.leverage||0)-(a.mechanicalByCutoff?.find(item=>item.cutoff===8.5)?.leverage||0)),baseTop=new Set(baseRanked.slice(0,10).map(row=>row.label));
+  document.getElementById("sensitivityRows").innerHTML=[8,8.5,9].map(cutoff=>{const ranked=[...report.allResidues].sort((a,b)=>(b.mechanicalByCutoff?.find(item=>item.cutoff===cutoff)?.leverage||0)-(a.mechanicalByCutoff?.find(item=>item.cutoff===cutoff)?.leverage||0));const rank=ranked.findIndex(item=>item.label===reference.label)+1,overlap=ranked.slice(0,10).filter(item=>baseTop.has(item.label)).length,leverage=reference.mechanicalByCutoff?.find(item=>item.cutoff===cutoff)?.leverage||0;return `<div class="sensitivity-row"><span>${cutoff.toFixed(1)} Å · ${overlap}/10 sensitivity-site overlap</span><b>${esc(reference.label)} sensitivity rank ${rank||"N/A"} · ${leverage.toExponential(2)}</b></div>`;}).join("");
 }
 
 function renderExpertRanking(report, query = "") {
   const needle=query.trim().toLowerCase();
   const rows=report.allResidues.filter(row=>!needle||`${row.label} ${row.rationale} ${row.chain}`.toLowerCase().includes(needle)).slice(0,500);
-  document.getElementById("expertRows").innerHTML=rows.map(row=>`<tr class="expert-row" data-expert-label="${esc(row.label)}"><td>${row.rank}</td><td>${esc(row.label)}</td><td>${row.score.toFixed(1)}</td><td>${row.atomicPartners}</td><td>${row.polarContacts}</td><td>${row.ionicContacts}</td><td>${row.degree}</td><td>${row.closeness.toFixed(3)}</td><td>${row.betweenness.toFixed(2)}</td><td>${row.longRange}</td><td>${row.interchain}</td><td>${row.ligandDistance===null?"—":row.ligandDistance.toFixed(1)}</td><td>${esc(row.context)}</td></tr>`).join("");
+  document.getElementById("expertRows").innerHTML=rows.map(row=>`<tr class="expert-row" data-expert-label="${esc(row.label)}"><td>${row.rank}</td><td>${esc(row.label)}</td><td>${row.score.toFixed(1)}</td><td>${(100*(row.mechanicalPercentile||0)).toFixed(1)}</td><td>${(100*(row.mechanicalRobustness||0)).toFixed(0)}/100</td><td>${Number.isFinite(row.targetDistance)?row.targetDistance.toFixed(1):"—"}</td><td>${(100*(row.mutationLeverage||0)).toFixed(0)}%</td><td>${row.atomicPartners}</td><td>${row.polarContacts}</td><td>${row.ionicContacts}</td><td>${row.degree}</td><td>${row.betweenness.toFixed(2)}</td><td>${row.interchain}</td><td>${esc(row.context)}</td></tr>`).join("");
   document.querySelectorAll("[data-expert-label]").forEach(row=>row.addEventListener("click",()=>selectAnalyzedResidue(report.allResidues.find(item=>item.label===row.dataset.expertLabel),{autoView:true})));
 }
 
@@ -1742,13 +1899,41 @@ function renderScientificPanels(report, selected = report.topResidues[0]) {
   renderExpertRanking(report,document.getElementById("rankingFilter")?.value||"");
 }
 
+function renderMechanicalTarget(report){
+  const target=report.activeTarget,select=document.getElementById("targetSelect");if(!target||!select)return;
+  select.innerHTML=report.targetOptions.map(option=>`<option value="${esc(option.id)}" ${option.id===target.id?"selected":""}>${esc(option.label)} · ${option.residueKeys.length} residue${option.residueKeys.length===1?"":"s"}</option>`).join("");
+  document.getElementById("mechanicalTargetLabel").textContent=target.label;
+  document.getElementById("mechanicalTargetCount").textContent=`${target.residueKeys.length} resolved target residue${target.residueKeys.length===1?"":"s"}`;
+  const central=report.mechanicalModel?.profiles?.find(profile=>profile.cutoff===8.5)||report.mechanicalModel?.profiles?.[0];
+  document.getElementById("mechanicalNetworkSize").textContent=central?`${central.modelNodeCount} node${central.modelNodeCount===1?"":"s"} · ${central.edges} springs`:`${report.residueMetrics.length} nodes`;
+  document.getElementById("mechanicalSolverStatus").textContent=central?`PCG residual ${central.residual.toExponential(1)} · ridge ${central.ridge.toExponential(1)}`:"Mechanical response unavailable";
+  document.getElementById("mechanicalModelDetail").textContent=central?`H is the ${3*central.modelNodeCount} × ${3*central.modelNodeCount} anisotropic-network Hessian for ${central.edges} Cα springs at 8.5 Å. Net-zero unit forces are applied across ${target.residueKeys.length} target residue${target.residueKeys.length===1?"":"s"} along x, y and z. The linear systems use preconditioned conjugate gradients with a disclosed ridge of ${central.ridge.toExponential(2)}; the calculation is repeated at 8.0 and 9.0 Å.${central.modelNodeCount<central.fullNodeCount?` For interactive analysis of this large assembly, the mechanical domain contains the ${central.modelNodeCount} residues nearest the target out of ${central.fullNodeCount}; excluded residues are not ranked by target sensitivity.`:""}`:"No target response could be calculated.";
+  const status=document.getElementById("targetStatus");status.textContent=`Ranking now asks which mutation should most change compliance of ${target.label}. Change the target to recalculate every residue.`;status.classList.add("success");
+}
+
 function refreshRankedOutputs(report, { resetSelection = true } = {}) {
   document.getElementById("topologyRows").innerHTML = report.topResidues.map((residue,i)=>`<div class="topology-row"><strong>${String(i+1).padStart(2,"0")} / ${esc(residue.label)}</strong><span>PRIORITY ${residue.score.toFixed(1)} · DEG ${residue.degree}</span></div>`).join("");
   document.getElementById("bestResidueRows").innerHTML = report.topResidues.map((residue,i)=>`<button class="best-residue-row" type="button" data-residue-index="${i}"><span>${String(i+1).padStart(2,"0")}</span><strong>${esc(residue.label)}<em>${esc(residue.context)}</em></strong><small>${residue.score.toFixed(1)}</small></button>`).join("");
   document.querySelectorAll(".best-residue-row").forEach(button=>button.addEventListener("click",()=>selectAnalyzedResidue(report.topResidues[Number(button.dataset.residueIndex)],{button,autoView:true})));
-  renderGuidance(report);renderDiscovery(report,activeDiscoveryMode);renderScientificPanels(report,resetSelection?report.topResidues[0]:(molecular.selectedResidue||report.topResidues[0]));
+  renderMechanicalTarget(report);renderGuidance(report);renderDiscovery(report,activeDiscoveryMode);renderScientificPanels(report,resetSelection?report.topResidues[0]:(molecular.selectedResidue||report.topResidues[0]));
   molecular.topResidues=report.topResidues;molecular.resultScheme=buildResultColorScheme(report.topResidues);setMolecularRepresentation(molecular.representation);
   if(resetSelection) selectAnalyzedResidue(report.topResidues[0],{autoView:false});
+}
+
+
+function mechanochemicalMethodsText(data){
+  const r=data.report,target=r.activeTarget,central=r.mechanicalModel?.profiles?.find(profile=>profile.cutoff===8.5)||r.mechanicalModel?.profiles?.[0],largeDomain=central&&central.modelNodeCount<central.fullNodeCount;
+  return [
+    `Coordinates from ${data.sourceName} were parsed locally with RINet Targeted Mechanochemical Contrast 1.0 (receipt ${data.receiptId}; ${r.format}).`,
+    `The structure contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} author chain${r.chainReports.length===1?"":"s"}. The functional target was ${target?.label||"not resolved"}, represented by ${target?.residueKeys.length||0} Cα node${target?.residueKeys.length===1?"":"s"} selected from polymer–bound-group contacts, cross-chain atom contacts, or user-supplied author residue numbers.`,
+    `A three-dimensional anisotropic elastic network was built with ${central?.modelNodeCount||r.residueMetrics.length} Cα nodes and ${central?.edges||0} uniform harmonic springs at the primary 8.5 Å cutoff.${largeDomain?` For this large assembly, the interactive domain was restricted to the ${central.modelNodeCount} residues nearest the target out of ${central.fullNodeCount}; excluded residues received no mechanical rank.`:""}`,
+    `Net-zero unit forces were distributed across the target along x, y and z. Each linear system (H + λI)u = f was solved with diagonally preconditioned conjugate gradients (λ ${central?.ridge?.toExponential(3)||"not available"}; maximum residual ${central?.residual?.toExponential(2)||"not available"}). The calculation was repeated at 8.0 and 9.0 Å.`,
+    `For each spring e=(p,q), target-load extension was δe = ne·(up−uq). Residue i first-order target-compliance sensitivity was Si(T)=Σe∋i meanx,y,z(δe²). If the springs incident to i are fractionally weakened by ε, the linear estimate is ΔJtarget≈εSi, where Jtarget=fᵀ(H+λI)⁻¹f. This is the primary mechanical ranking. Cross-compliance ||CiT||F/sqrt(tr(Cii)tr(CTT)) was also calculated as a response descriptor; diagonal compliance used eight deterministic Rademacher probes.`,
+    `Sensitivity robustness was 1/(1 + coefficient of variation) across 8.0, 8.5 and 9.0 Å. ${scoreEquationText(r.scoringLens)}`,
+    `The conservative substitution was audited against typed side-chain contacts to estimate what fraction of local constraint capacity it can change. Side-chain-involving heavy-atom contacts used 4.5 Å; polar N/O/S proximity 2.35–3.60 Å; opposite-charge geometry 4.0 Å; hydrophobic C/S proximity 3.0–4.6 Å; aromatic atom proximity 3.2–5.5 Å; and metal-donor proximity 3.0 Å. Mutation constraint leverage is a design heuristic, not ΔΔG.`,
+    `The automatic control minimizes differences in residue class, atom-level partners, polar and ligand contacts, burial, B field and chain while requiring substantially lower target-compliance sensitivity. The experimental claim is supported only if the candidate alters the target-linked functional readout more than that matched control while abundance and fold/assembly remain acceptable.`,
+    `The mechanical model is a near-native-state linear approximation. Atomistic relaxation, ΔΔG, solvent, kinetics and conformational ensembles are separate validation layers when required by the system. Known labels, when bundled, were evaluated after ranking and contributed no score.`
+  ].join(" ");
 }
 
 function render(data) {
@@ -1775,13 +1960,13 @@ function render(data) {
   document.getElementById("flagList").innerHTML = flags.map(flag => `<div class="flag ${flag.warn ? "warn" : ""}"><i></i><div><strong>${esc(flag.title)}</strong><span>${esc(flag.note)}</span></div></div>`).join("");
   document.getElementById("topologyRows").innerHTML = r.topResidues.map((residue, i) => `<div class="topology-row"><strong>${String(i+1).padStart(2,"0")} / ${esc(residue.label)}</strong><span>PRIORITY ${residue.score.toFixed(0)} · DEG ${residue.degree}</span></div>`).join("");
   document.getElementById("bestResidueRows").innerHTML = r.topResidues.map((residue, i) => `<button class="best-residue-row" type="button" data-residue-index="${i}"><span>${String(i+1).padStart(2,"0")}</span><strong>${esc(residue.label)}<em>${esc(residue.context)}</em></strong><small>${residue.score.toFixed(0)}</small></button>`).join("");
+  renderMechanicalTarget(r);
   renderGuidance(r);
   renderDiscovery(r, "biology");
   renderScientificPanels(r,r.topResidues[0]);
   renderAdaptivePanel(r,{rebuild:true,clearResults:true});
   fillBuiltInDemoResults(r);
-  const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Intelligence 3.1 (receipt ${data.receiptId}; ${r.format}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} author chain${r.chainReports.length === 1 ? "" : "s"}. RINet first screened ${r.typedHeavyAtoms} polymer heavy atoms with a spatial index. Residue interactions were recorded when at least one side-chain atom was involved: heavy-atom contact ≤4.5 Å; N/O/S polar proximity 2.35–3.60 Å; oppositely charged Asp/Glu and Arg/Lys side-chain atoms ≤4.0 Å; hydrophobic side-chain C/S contacts 3.0–4.6 Å; aromatic ring-atom proximity 3.2–5.5 Å; and cysteine Sγ pairs 1.7–2.3 Å. Polymer–hetero contacts used 4.5 Å, ligand polar proximity used 3.6 Å, and N/O/S-to-metal proximity used 3.0 Å. This yielded ${r.typedInteractionPairs} unique residue-pair/type records and ${r.typedHeteroPairs} residue–bound-group/type records. Because hydrogens, bond angles, protonation, solvent, relaxation and energies are not evaluated, polar proximity is not labelled as a formal hydrogen bond, aromatic proximity is not a stacking-energy assignment, and none of these records is a ΔG estimate. Separately, a deterministic Cα graph was constructed at ${r.contactCutoff.toFixed(1)} Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} graph edges. ${scoreEquationText(r.scoringLens)} Closeness was ${r.residues <= 1500 ? "calculated on reachable graph components" : "omitted because this very large structure exceeds the interactive all-pairs path limit"}; betweenness was ${r.betweennessCalculated ? "calculated with the unweighted Brandes algorithm" : "omitted because the structure exceeds the 900-residue interactive path limit"}. Known benchmark labels, when available, were evaluated only after ranking and contributed no score. Cysteines received no automatic score bonus; ${r.disulfides} probable disulfide constraint${r.disulfides === 1 ? " was" : "s were"} assigned solely from Sγ separation, and detected disulfide residues were excluded from automatic panels because breaking a covalent constraint confounds protein-quality measurements. Coordinate screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} numbering gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}) and were not interpreted as prediction confidence. The first panel contains wild type, structurally prioritized candidates, and lower-score controls matched on residue class, burial, B-factor field, and chain. Candidate selection is greedy and deterministic: 36% disagreement among five hand-set reference patterns, 34% diversity across displayed atomic, graph, burial and bound-group features, and 30% structural rank. The reference patterns are hand-set design assumptions used only to spread the first experiment across distinct structural contexts. After result entry, candidate-minus-control measurements are compared with those reference patterns by mean squared error and converted to relative comparison weights using exp(-8 × MSE); these weights are not calibrated probabilities. Follow-up sites maximize weighted disagreement among the patterns while avoiding close structural duplicates. The atom-level audit and Cα graph are geometric evidence layers, not evidence of information flow, free-energy transfer, or causality. This static analysis does not calculate mutation relaxation, all-atom energetics, conformational dynamics, evolution, or cellular phenotype.`;
-  document.getElementById("methodsText").textContent = methods;
+  document.getElementById("methodsText").textContent = mechanochemicalMethodsText(data);
   els.results.classList.remove("hidden");
   document.body.classList.add("analysis-mode");
   document.body.classList.toggle("demo-mode", data.sourceType === "built-in-demo");
@@ -1871,13 +2056,24 @@ function residueSelection(residue) {
   return `${residue.seq}${residue.insertion || ""}${residue.chain === "∅" ? "" : `:${residue.chain}`}`;
 }
 
+function constructSelection(residue,report=current?.report){
+  const authors=new Set(residue?.equivalentAuthors||[residue?.authorLabel||residue?.label]);
+  const copies=(report?.residueMetrics||[]).filter(row=>authors.has(row.authorLabel));
+  return (copies.length?copies:[residue]).filter(Boolean).map(residueSelection).join(" OR ");
+}
+
 function addTargetRepresentations() {
   if (!molecular.component || !molecular.topResidues.length) return;
   const candidate = molecular.topResidues[0];
   const secondary = molecular.topResidues.slice(1, 5);
-  if (secondary.length) molecular.component.addRepresentation("ball+stick", { sele: secondary.map(residueSelection).join(" OR "), color: "#69d7ff", scale: 1.05, opacity: .86, quality: "high" });
-  molecular.component.addRepresentation("ball+stick", { sele: residueSelection(candidate), color: "#d9ff58", scale: 1.55, quality: "high" });
-  molecular.component.addRepresentation("spacefill", { sele: `${residueSelection(candidate)} and .CA`, color: "#d9ff58", scale: 1.15, quality: "high" });
+  const targetResidues=(current?.report?.activeTarget?.residueKeys||[]).map(key=>current.report.allResidues.find(row=>row.key===key)).filter(Boolean);
+  if(targetResidues.length)molecular.component.addRepresentation("ball+stick",{sele:targetResidues.map(residueSelection).join(" OR "),color:"#ffad61",scale:1.18,opacity:.94,quality:"high"});
+  const heteroMatch=current?.report?.activeTarget?.id?.match(/^hetero:([^:]+):([^:]+):(-?\d+)$/);
+  if(heteroMatch){const [,name,chain,seq]=heteroMatch;molecular.component.addRepresentation("ball+stick",{sele:`${seq}:${chain} and ${name} and not protein`,colorScheme:"element",scale:1.4,quality:"high"});}
+  if (secondary.length) molecular.component.addRepresentation("ball+stick", { sele: secondary.map(row=>constructSelection(row)).join(" OR "), color: "#69d7ff", scale: 1.05, opacity: .86, quality: "high" });
+  const candidateSelection=constructSelection(candidate);
+  molecular.component.addRepresentation("ball+stick", { sele: candidateSelection, color: "#d9ff58", scale: 1.55, quality: "high" });
+  molecular.component.addRepresentation("spacefill", { sele: `(${candidateSelection}) and .CA`, color: "#d9ff58", scale: 1.15, quality: "high" });
 }
 
 function fitStructureWithPadding(stage, component, duration = 500, padding = 1.32) {
@@ -1946,17 +2142,17 @@ function residueExplanation(residue) {
   if (residue.disulfidePartner) return `PROBABLE DISULFIDE · ${residue.disulfidePartner.distance.toFixed(2)} Å TO ${residue.disulfidePartner.label.toUpperCase()}`;
   if (residue.directMetalCoordination) return `${residue.ligandDistance.toFixed(1)} Å DIRECT ${residue.nearestLigandElement} CONTACT · EXPLICIT COORDINATION EVIDENCE`;
   if (residue.ligandDistance !== null && residue.ligandDistance <= 6) return `${residue.ligandDistance.toFixed(1)} Å FROM ${residue.nearestLigand || "BOUND GROUP"} · TEST LOCAL CHEMISTRY`;
-  if (residue.interchain) return `${residue.interchain} CROSS-CHAIN CONTACTS · TEST ASSEMBLY COMMUNICATION`;
-  return `${residue.degree} NON-LOCAL CONTACTS · TEST STRUCTURE TO FUNCTION`;
+  if (residue.interchain) return `TARGET SENSITIVITY PERCENTILE ${(100*(residue.mechanicalPercentile||0)).toFixed(0)} · ${residue.interchain} CROSS-CHAIN CONTACTS`;
+  return `TARGET SENSITIVITY PERCENTILE ${(100*(residue.mechanicalPercentile||0)).toFixed(0)} · ${Number.isFinite(residue.targetDistance)?`${residue.targetDistance.toFixed(1)} Å FROM TARGET`:`${residue.degree} CONTACTS`}`;
 }
 
 function selectAnalyzedResidue(residue, { button = null, autoView = false, updateDiscovery = true } = {}) {
   if (!molecular.component || !residue) return;
   if (molecular.highlight) molecular.highlight.forEach(representation => molecular.component.removeRepresentation(representation));
-  const selection = residueSelection(residue);
+  const selection = constructSelection(residue);
   molecular.highlight = [
     molecular.component.addRepresentation("ball+stick", { sele: selection, color: "#ff6f9f", scale: 1.65, quality: "high" }),
-    molecular.component.addRepresentation("spacefill", { sele: `${selection} and .CA`, color: "#ff6f9f", scale: 1.2, quality: "high" })
+    molecular.component.addRepresentation("spacefill", { sele: `(${selection}) and .CA`, color: "#ff6f9f", scale: 1.2, quality: "high" })
   ];
   if (autoView) molecular.component.autoView(selection, 450);
   molecular.selectedResidue = residue;
@@ -2074,6 +2270,27 @@ function updateResultScrollCue() {
 window.addEventListener("scroll", () => { updateResultScrollCue(); updateSectionRail(); }, { passive: true });
 window.addEventListener("resize", () => { updateResultScrollCue(); updateSectionRail(); }, { passive: true });
 
+function recalculateForTarget(targetId){
+  if(!current)return;
+  const status=document.getElementById("targetStatus");if(status){status.textContent="Solving the three target-response networks…";status.classList.remove("success");}
+  applyMechanicalTarget(current.report,targetId);rerankReport(current.report,activeScoringLens);refreshRankedOutputs(current.report);
+  renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});fillBuiltInDemoResults(current.report);
+  document.getElementById("methodsText").textContent=mechanochemicalMethodsText(current);
+  setLocalActionStatus(`Mechanical response recalculated for ${current.report.activeTarget.label}. ${current.report.topResidues[0].label} is the first candidate under the ${scoreLenses[activeScoringLens].label.toLowerCase()} question.`,true);
+}
+
+document.getElementById("targetSelect")?.addEventListener("change",event=>recalculateForTarget(event.currentTarget.value));
+document.getElementById("applyManualTarget")?.addEventListener("click",()=>{
+  if(!current)return;
+  const input=document.getElementById("manualTargetInput"),tokens=input.value.split(/[;,\n]+/).map(value=>value.trim()).filter(Boolean),resolved=[];
+  tokens.forEach(token=>{const match=token.match(/(?:^|\s)([A-Za-z0-9]+)\s*:\s*(-?\d+)\s*([A-Za-z]?)\s*$/);if(!match)return;const [,chain,seq,insertion]=match;const residue=current.report.residueMetrics.find(row=>row.chain===chain&&row.seq===Number(seq)&&(row.insertion||"").toUpperCase()===insertion.toUpperCase());if(residue&&!resolved.includes(residue.key))resolved.push(residue.key);});
+  const status=document.getElementById("targetStatus");
+  if(!resolved.length){status.textContent="No residues matched. Use author numbering such as A:87, A:92.";status.classList.remove("success");return;}
+  const id=`manual:${resolved.join("|")}`,target={id,type:"manual",label:"Manual site",residueKeys:resolved};
+  const existing=current.report.targetOptions.findIndex(option=>option.id===id);if(existing>=0)current.report.targetOptions[existing]=target;else current.report.targetOptions.push(target);
+  recalculateForTarget(id);
+});
+
 document.querySelectorAll("[data-scoring-lens]").forEach(button=>button.addEventListener("click",()=>{
   if(!current)return;
   activeScoringLens=button.dataset.scoringLens;
@@ -2082,7 +2299,7 @@ document.querySelectorAll("[data-scoring-lens]").forEach(button=>button.addEvent
   refreshRankedOutputs(current.report);
   renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});
   fillBuiltInDemoResults(current.report);
-  document.getElementById("methodsText").textContent=document.getElementById("methodsText").textContent.replace(/score = 100 × \[[^\]]+\]; each feature is normalized to the maximum observed in this structure\./,scoreEquationText(activeScoringLens));
+  document.getElementById("methodsText").textContent=mechanochemicalMethodsText(current);
   setLocalActionStatus(`Structural ranking recalculated for the “${scoreLenses[activeScoringLens].label}” question. ${current.report.topResidues[0].label} is now rank 1.`, true);
 }));
 
@@ -2211,8 +2428,18 @@ document.getElementById("stateFileInput")?.addEventListener("change",async event
     const secondByLabel=new Map(second.allResidues.map(row=>[row.label,row]));
     const comparisons=current.report.topResidues.map(first=>({first,second:secondByLabel.get(first.label)})).filter(row=>row.second);
     if(!comparisons.length)throw new Error("no matching author chain/residue identifiers; reconcile numbering before state comparison");
-    target.innerHTML=`<p><b>${comparisons.length}/10 primary-state top sites matched by exact author identifier.</b> Positive Δdegree means contacts gained in the second state.</p>${comparisons.map(({first,second:other})=>`<div class="sensitivity-row"><span>${esc(first.label)} · Δdegree ${(other.degree-first.degree)>=0?"+":""}${other.degree-first.degree} · Δinterchain ${(other.interchain-first.interchain)>=0?"+":""}${other.interchain-first.interchain}</span><b>rank ${first.rank} → ${other.rank}</b></div>`).join("")}<p>Comparison is coordinate-state evidence only; unequal constructs, ligands, assemblies or missing residues can cause apparent changes.</p>`;
+    target.innerHTML=`<p><b>${comparisons.length}/10 primary-state top sites matched by exact author identifier.</b> The same target definition was used when it could be resolved in both structures.</p>${comparisons.map(({first,second:other})=>`<div class="sensitivity-row"><span>${esc(first.label)} · target sensitivity ${first.mechanicalLeverage.toExponential(2)} → ${other.mechanicalLeverage.toExponential(2)} · Δdegree ${(other.degree-first.degree)>=0?"+":""}${other.degree-first.degree}</span><b>sensitivity percentile ${(100*first.mechanicalPercentile).toFixed(0)} → ${(100*other.mechanicalPercentile).toFixed(0)}</b></div>`).join("")}<p>State-dependent sensitivity is interpretable only after reconciling construct, ligand, assembly, numbering and missing-coordinate differences.</p>`;
   }catch(error){target.textContent=`State comparison stopped: ${error.message}.`;}
+});
+
+document.getElementById("downloadValidationTemplate")?.addEventListener("click",downloadValidationTemplate);
+document.getElementById("validationLabelsFile")?.addEventListener("change",async event=>{
+  const file=event.currentTarget.files?.[0],target=document.getElementById("validationImportResult");
+  if(!file||!current)return;
+  target.textContent=`Evaluating ${file.name} against the current ranking…`;
+  try{renderImportedValidation(parseValidationLabels(await file.text(),current.report),current.report);}
+  catch(error){target.textContent=`Validation import stopped: ${error.message}.`;}
+  event.currentTarget.value="";
 });
 
 document.getElementById("copyMethods").addEventListener("click",()=>openCopyDialog("Reproducible methods",document.getElementById("methodsText").textContent));
@@ -2221,7 +2448,8 @@ document.getElementById("copyDialog")?.addEventListener("click",event=>{if(event
 
 function receiptPayload() {
   const adaptivePanel=adaptiveRound.panel.map(entry=>({constructType:entry.type,residue:entry.residue?.label||"WT",mutation:entry.mutation,role:entry.role,matchedTo:entry.candidateFor?.label||null,reason:entry.why,result:adaptiveRound.results.get(entry.key)||null}));
-  return { tool: "RINet Structure Intelligence", version: "3.1", receiptId: current.receiptId, analyzedAt: current.analyzedAt, sourceLabel: current.sourceName, sourceType: current.sourceType, structureSha256: current.digest, selectedAssay:customAssay||null, scoringLens:current.report.scoringLens, exactScoreWeights:current.report.scoreWeights, contactCutoffAngstrom:current.report.contactCutoff, typedInteractionRules:{heavyAtomContactAngstrom:4.5,polarProximityAngstrom:[2.35,3.6],ionicGeometryAngstrom:4.0,hydrophobicContactAngstrom:[3.0,4.6],aromaticProximityAngstrom:[3.2,5.5],metalCoordinationAngstrom:3.0}, benchmarkManifest:benchmarkManifest[current.report.metadata?.pdbId]||null, adaptiveRound:{panelSize:adaptiveRound.panelSize,panel:adaptivePanel,conditionalMechanismWeights:adaptiveRound.posteriors.map(row=>({mechanism:row.id,weight:row.probability,sse:row.sse})),illustrativeResults:adaptiveRound.example}, summary: current.report, scientificBoundary: "Static coordinate geometry with typed atom-level contacts, a separate Cα graph, explicit candidate/control experiment design, and an untrained assumption-driven follow-up selector; not an all-atom potential, ΔG calculation, evolutionary analysis, dynamics calculation, calibrated functional prediction, evidence of information flow, functional proof, or causal claim." };
+  const central=current.report.mechanicalModel?.profiles?.find(profile=>profile.cutoff===8.5)||current.report.mechanicalModel?.profiles?.[0]||null;
+  return { tool:"RINet Targeted Mechanochemical Contrast", version:"1.0", receiptId:current.receiptId, analyzedAt:current.analyzedAt, sourceLabel:current.sourceName, sourceType:current.sourceType, structureSha256:current.digest, selectedAssay:customAssay||null, selectedTarget:current.report.activeTarget, mechanicalModel:central, sensitivityCutoffsAngstrom:[8,8.5,9], scoringLens:current.report.scoringLens, exactScoreWeights:current.report.scoreWeights, typedInteractionRules:{heavyAtomContactAngstrom:4.5,polarProximityAngstrom:[2.35,3.6],ionicGeometryAngstrom:4.0,hydrophobicContactAngstrom:[3.0,4.6],aromaticProximityAngstrom:[3.2,5.5],metalCoordinationAngstrom:3.0}, benchmarkManifest:benchmarkManifest[current.report.metadata?.pdbId]||null, experimentRound:{panelSize:adaptiveRound.panelSize,panel:adaptivePanel,illustrativeResults:adaptiveRound.example}, summary:current.report, scientificBoundary:"Target-loaded anisotropic-network response, first-order target-compliance sensitivity to local spring weakening, typed coordinate contacts, and an explicit candidate/control experiment. This near-native linear model does not substitute for mutant relaxation, ΔΔG, solvent, kinetics, ensembles, or experimental validation." };
 }
 
 document.getElementById("downloadReceipt").addEventListener("click", () => {

@@ -8,14 +8,14 @@
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=20260816">
   <link rel="image_src" href="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <link rel="stylesheet" href="/contact.css?v=1">
-  <link rel="stylesheet" href="/brief/brief.css?v=28">
+  <link rel="stylesheet" href="/brief/brief.css?v=29">
   <title>Structure Brief | RINet</title>
-  <meta name="description" content="Rank residues from a protein structure, inspect every score term, and design a controlled experiment.">
+  <meta name="description" content="Choose a functional site, rank mutations by their predicted effect on its mechanical compliance, and plan the candidate-control experiment.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://rinetlab.com/brief/">
   <meta property="og:site_name" content="RINet">
   <meta property="og:title" content="RINet | Find the residue worth testing">
-  <meta property="og:description" content="Rank residues from a protein structure, inspect every score term, and design a controlled experiment.">
+  <meta property="og:description" content="Choose a functional site, rank mutations by target-compliance sensitivity, and plan the candidate-control experiment.">
   <meta property="og:image" content="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <meta property="og:image:secure_url" content="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <meta property="og:image:type" content="image/png">
@@ -25,14 +25,14 @@
   <meta itemprop="image" content="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="RINet | Find the residue worth testing">
-  <meta name="twitter:description" content="Rank residues from a protein structure, inspect every score term, and design a controlled experiment.">
+  <meta name="twitter:description" content="Choose a functional site, rank mutations by target-compliance sensitivity, and plan the candidate-control experiment.">
   <meta name="twitter:image" content="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <meta name="twitter:image:alt" content="RINet protein network mark">
 </head>
 <body>
   <header class="app-header">
     <a class="brand" href="/"><img src="/media/rinet-mark.png?v=20260816" alt="">RINet</a>
-    <div class="app-title">Structure Brief <i>3.1</i></div>
+    <div class="app-title">Structure Brief <i>4.0</i></div>
     <div class="header-actions"><a class="header-demo" href="/brief/?demo=1">Demo <span>↗</span></a><div class="privacy"><b></b> Local browser analysis</div></div>
   </header>
 
@@ -127,15 +127,15 @@
           <div class="viewer-boundary">SUPPLIED COORDINATES · STATIC STRUCTURE · NOT A TRAJECTORY</div>
         </div>
         <aside class="best-residues">
-          <div class="intel-intro"><p class="eyebrow">What RINet does</p><h3>Find residues. Plan the test.</h3><p class="hud-definition">The list below shows which residues rank highest from the supplied structure. Select one to see a mutation, a comparable lower-ranked control, and the measurements needed to interpret the result.</p><p id="hudThesis">Select a residue to inspect its score and proposed control.</p></div>
+          <div class="intel-intro"><p class="eyebrow">Target-directed mutation design</p><h3>Choose a functional site. Find a mutation that can test it.</h3><p class="hud-definition">RINet loads the chosen site in a mechanical network and finds where weakening local residue contacts should most change that site's compliance. Each high-sensitivity mutation is paired with a locally similar low-sensitivity control.</p><p id="hudThesis">Select a functional target to calculate its mechanically sensitive residues.</p></div>
           <div class="intel-cards">
             <article><span>PROPOSED SUBSTITUTION</span><strong id="hudMutation">Pending</strong><small id="hudMutationNote">Waiting for coordinates</small></article>
             <article><span>MATCHED CONTROL</span><strong id="hudControl">Pending</strong><small>Separates a site effect from structural background.</small></article>
             <article class="intel-risk"><span>RESULT REQUIRED</span><strong id="hudGate">Pending</strong><small id="hudGateNote">Protein quality must hold before function is interpreted.</small></article>
           </div>
-          <div class="ranked-title"><span>TOP 10 STRUCTURAL CANDIDATES</span><small>Click one to build its experiment</small></div>
+          <div class="ranked-title"><span>TOP 10 TARGET-SENSITIVITY CANDIDATES</span><small>Click one to build its experiment</small></div>
           <div id="bestResidueRows"></div>
-          <p class="best-boundary">These are the highest-scoring residues under the selected structural question. They are candidates to test—not proven functional residues.</p>
+          <p class="best-boundary">Ranked against the functional target shown below. A candidate is useful only when its matched low-sensitivity control behaves differently and protein quality is retained.</p>
         </aside>
       </section>
 
@@ -154,37 +154,53 @@
 
       <section class="evidence-lab" id="scoringSection" data-demo-section="Panel" aria-labelledby="evidence-lab-title">
         <div class="evidence-lab-head">
-          <div><p class="eyebrow">Residue finding + experiment planning</p><h3 id="evidence-lab-title">Find a residue, then plan how to test it.</h3><p>RINet uses the supplied 3D coordinates to rank residues for a structural question. It then proposes a mutation, pairs it with a comparable lower-ranked residue, and specifies the measurements needed to tell a specific functional effect from damaged or missing protein.</p></div>
+          <div><p class="eyebrow">Functional site → mechanical response → controlled experiment</p><h3 id="evidence-lab-title">Find a residue that can change a functional site.</h3><p>Choose a ligand pocket, chain interface, or known functional residues. RINet loads that site in a Cα elastic network, measures which local springs carry the target load, and ranks mutations expected to change the site's compliance. It then finds a locally similar, low-sensitivity mutation to run as the control.</p></div>
           <div class="lens-picker-wrap"><span>QUESTION TO TEST</span><div class="lens-picker" role="tablist" aria-label="Structural question">
-            <button class="active" type="button" role="tab" aria-selected="true" data-scoring-lens="general">Broad screen</button>
-            <button type="button" role="tab" aria-selected="false" data-scoring-lens="ligand">Bound ligand</button>
-            <button type="button" role="tab" aria-selected="false" data-scoring-lens="interface">Chain interface</button>
-            <button type="button" role="tab" aria-selected="false" data-scoring-lens="allostery">Distant coupling</button>
-            <button type="button" role="tab" aria-selected="false" data-scoring-lens="stability">Packing / stability</button>
-            <button type="button" role="tab" aria-selected="false" data-scoring-lens="antibody">Antibody binding</button>
-          </div><small>This choice changes which structural features are emphasized. It does not prove a mechanism.</small></div>
+            <button class="active" type="button" role="tab" aria-selected="true" data-scoring-lens="general">Target sensitivity</button>
+            <button type="button" role="tab" aria-selected="false" data-scoring-lens="ligand">Direct pocket</button>
+            <button type="button" role="tab" aria-selected="false" data-scoring-lens="interface">Interface sensitivity</button>
+            <button type="button" role="tab" aria-selected="false" data-scoring-lens="allostery">Remote sensitivity</button>
+            <button type="button" role="tab" aria-selected="false" data-scoring-lens="stability">Mechanical integrity</button>
+            <button type="button" role="tab" aria-selected="false" data-scoring-lens="antibody">Antibody interface</button>
+          </div><small>The selected site is explicit. This choice specifies whether the mutation should be local, remote, or interface-focused.</small></div>
         </div>
         <nav class="experiment-spine" aria-label="Experiment workflow">
-          <a href="#questionSetup"><span>01 · QUESTION</span><strong id="workflowQuestion">What structural mechanism do you want to test?</strong><p>Choose the biological contrast before looking at a score.</p></a>
+          <a href="#questionSetup"><span>01 · QUESTION</span><strong id="workflowQuestion">Which functional site do you want to perturb?</strong><p>Choose the site and the biological measurement before looking at a score.</p></a>
           <a href="#candidateControlStep"><span>02 · CANDIDATE</span><strong id="workflowCandidate">Calculating…</strong><p>Which residue most clearly perturbs that structural feature?</p></a>
           <a href="#candidateControlStep"><span>03 · CONTROL</span><strong id="workflowControl">Calculating…</strong><p>What comparable mutation should have less effect?</p></a>
           <a href="#measurementStep"><span>04 · MEASUREMENTS</span><strong id="workflowMeasurements">Function + quantity + integrity</strong><p>Did function change without simply losing usable protein?</p></a>
           <a href="#interpretationStep"><span>05 · INTERPRETATION</span><strong id="workflowInterpretation">Awaiting measurements</strong><p>Was the effect site-specific, or did the protein become damaged?</p></a>
           <a href="#interpretationStep"><span>06 · NEXT EXPERIMENT</span><strong id="workflowNext">Available after round 1</strong><p>Which construct best distinguishes what remains uncertain?</p></a>
         </nav>
+        <section class="target-director" aria-labelledby="targetDirectorTitle">
+          <div class="target-director-copy"><span>01 / FUNCTIONAL TARGET</span><h4 id="targetDirectorTitle">Where should a perturbation be felt?</h4><p>Choose a resolved ligand pocket or chain interface, or enter residues already known to define activity. This choice changes the mechanical calculation and the residue ranking.</p></div>
+          <div class="target-director-controls">
+            <label for="targetSelect">Resolved targets in this structure</label>
+            <select id="targetSelect" aria-label="Functional target"></select>
+            <label for="manualTargetInput">Known site residues (optional)</label>
+            <div><input id="manualTargetInput" placeholder="A:87, A:92, B:145"><button id="applyManualTarget" type="button">Calculate this target</button></div>
+            <p id="targetStatus" role="status">Building target choices from the coordinate record…</p>
+          </div>
+          <div class="mechanics-readout" aria-label="Mechanical response calculation">
+            <article><span>SELECTED TARGET</span><strong id="mechanicalTargetLabel">Calculating…</strong><small id="mechanicalTargetCount">—</small></article>
+            <article><span>ELASTIC NETWORK</span><strong id="mechanicalNetworkSize">Calculating…</strong><small>Uniform Cα springs at 8.5 Å</small></article>
+            <article><span>CUTOFF CHECK</span><strong>8.0 / 8.5 / 9.0 Å</strong><small id="mechanicalSolverStatus">Three independent networks</small></article>
+            <article><span>PRIMARY OUTPUT</span><strong>Mutation leverage on target compliance</strong><small>First-order change expected when local springs at a residue are weakened</small></article>
+          </div>
+        </section>
         <div class="lens-context" id="questionSetup">
           <div class="assay-setup-copy"><span>01 / QUESTION</span><h4>Define the functional readout</h4><p>Name the measurement that represents function in your system. This changes the experiment sheet, not the structural calculation.</p></div>
           <div class="assay-setup-form"><label for="assayInput">Primary functional readout</label><div><input id="assayInput" maxlength="180" placeholder="Loading a suggested readout…"><button id="applyAssay" type="button">Use this readout</button><button id="resetAssay" class="secondary" type="button">Use RINet suggestion</button></div><div class="hypothesis-feedback" id="assayFeedback" role="status">Loading the suggested assay…</div></div>
         </div>
 
         <details class="calculation-details">
-          <summary>See exactly how the structural ranking is calculated</summary>
-          <div class="model-explanation"><span>STRUCTURAL RANKING ONLY</span><p id="lensDescription">Balanced structure-first ranking. No single metric is treated as function.</p><code id="scoreEquation">Loading exact score equation…</code></div>
+          <summary>See the physical model, equation, parameters, and exact ranking</summary>
+          <div class="model-explanation"><span>TARGET-DIRECTED MECHANICAL RESPONSE</span><p id="lensDescription">Calculating the selected target response.</p><code id="mechanicalEquation">(H + λI)u = fₜ; Sᵢ(T) = Σe∋i ⟨[nₑ·(uₚ−u_q)]²⟩x,y,z; ΔJₜ ≈ εSᵢ</code><p id="mechanicalModelDetail">H is the anisotropic-network Hessian; balanced unit forces are applied to the selected target along x, y and z.</p><code id="scoreEquation">Loading exact ranking equation…</code></div>
         </details>
 
         <section class="adaptive-cycle" id="candidateControlStep" aria-labelledby="adaptive-cycle-title">
           <div class="adaptive-cycle-head">
-            <div><span>02–03 / CANDIDATE + CONTROL</span><h4 id="adaptive-cycle-title">Choose a small, controlled first round.</h4><p>Each panel contains wild type, candidate mutations that probe different structural features, and lower-ranked controls with similar chemistry and structural context. Probable disulfide residues are not selected automatically because breaking a covalent bond would confound the result.</p></div>
+            <div><span>02–03 / CANDIDATE + CONTROL</span><h4 id="adaptive-cycle-title">Run high-sensitivity mutations beside low-sensitivity controls.</h4><p>Each pair is matched on residue chemistry and local structural environment but separated by its predicted effect on compliance of the same functional target. This makes the mechanical calculation experimentally falsifiable. Probable disulfides are excluded because breaking a covalent bond would confound the comparison.</p></div>
             <div class="adaptive-cycle-actions">
               <label>Panel size <select id="adaptivePanelSize"><option value="6">6</option><option value="8" selected>8</option><option value="12">12</option></select></label>
               <button type="button" id="rebuildAdaptivePanel">Regenerate panel</button>
@@ -206,39 +222,39 @@
           </div>
           <div class="adaptive-status" id="adaptiveStatus" role="status"><strong>Panel generated.</strong><span>Enter normalized measurements in the table, or export and re-import the CSV template.</span></div>
           <div class="adaptive-next" id="interpretationStep">
-            <div><span>05–06 / INTERPRETATION + NEXT EXPERIMENT</span><h5>Separate a specific effect from protein damage.</h5><p id="adaptivePosteriorSummary">Complete all three measurements for at least two candidates and one additional construct.</p></div>
+            <div><span>05–06 / INTERPRETATION + NEXT EXPERIMENT</span><h5>Separate a specific functional effect from protein damage.</h5><p id="adaptivePosteriorSummary">Complete all three measurements for at least two candidates and one of their matched controls.</p></div>
             <div id="adaptivePosterior" class="adaptive-posterior"><span>No measurements entered</span></div>
             <div id="adaptiveNextRows" class="adaptive-next-rows"><p>Follow-up sites will appear here after the result table is analyzed.</p></div>
           </div>
           <details class="design-details">
-            <summary>Why these candidates differ from one another</summary>
-            <p class="design-details-lead">To avoid spending the first round on near-duplicate sites, RINet spreads candidates across five provisional structural response patterns. These are hand-set design assumptions—not learned mechanisms, physical energy calculations, or probabilities.</p>
-            <div class="mechanism-hypotheses" aria-label="Provisional structural response patterns">
-              <article><span>01</span><strong>Long-range graph position</strong><p>Emphasizes long-range contacts, closeness, and betweenness.</p></article>
-              <article><span>02</span><strong>Direct local contact</strong><p>Emphasizes ligand, metal, interface, and local-contact geometry.</p></article>
-              <article><span>03</span><strong>Protein-quality sensitivity</strong><p>Emphasizes the possibility that a mutation lowers abundance or disrupts fold/assembly.</p></article>
-              <article><span>04</span><strong>Packing</strong><p>Emphasizes contact density, weighted packing, and burial.</p></article>
-              <article><span>05</span><strong>Mixed structural features</strong><p>Represents sites for which no single displayed feature group dominates.</p></article>
+            <summary>Why this is a mechanistic experiment rather than a list of important residues</summary>
+            <p class="design-details-lead">Every candidate is tied to the same user-chosen functional target. The high-sensitivity mutation and its low-sensitivity control are matched locally, so their difference tests the compliance calculation instead of merely asking whether a highly connected residue is important.</p>
+            <div class="mechanism-hypotheses" aria-label="Targeted mechanical experiment logic">
+              <article><span>01</span><strong>Define the target</strong><p>Use a ligand pocket, biological interface, or experimentally established residue set.</p></article>
+              <article><span>02</span><strong>Solve the response</strong><p>Apply balanced forces to the target and solve the anisotropic elastic network along three axes.</p></article>
+              <article><span>03</span><strong>Check robustness</strong><p>Repeat at 8.0, 8.5 and 9.0 Å so a fragile network cutoff does not silently drive the result.</p></article>
+              <article><span>04</span><strong>Change local constraints</strong><p>Choose a substitution that removes or alters side-chain contacts without automatically choosing the most destructive mutation.</p></article>
+              <article><span>05</span><strong>Challenge the model</strong><p>Run a locally matched mutation with weak target-compliance sensitivity. Similar outcomes count against the mechanical explanation.</p></article>
             </div>
             <div class="adaptive-metrics" aria-label="Panel design diagnostics">
-              <article><span>STRUCTURAL VARIETY</span><strong id="adaptiveCoverage">—</strong><small>How broadly the panel samples the displayed atomic, graph, burial and bound-group features.</small></article>
-              <article><span>TOP-RANK VARIETY</span><strong id="adaptiveBaseline">—</strong><small>The same calculation if the first N ranked residues were chosen without diversification.</small></article>
-              <article><span>PATTERN CONTRAST</span><strong id="adaptiveSeparation">—</strong><small>How differently the five hand-set patterns describe this panel. Not accuracy.</small></article>
-              <article><span>PAIRED CONTROLS</span><strong id="adaptiveControls">—</strong><small>Lower-ranked structural matches tested beside candidates.</small></article>
+              <article><span>TARGET-DISTANCE SPAN</span><strong id="adaptiveCoverage">—</strong><small>Range of candidate distances from the selected functional target.</small></article>
+              <article><span>MEAN CUTOFF ROBUSTNESS</span><strong id="adaptiveBaseline">—</strong><small>Average stability of candidate sensitivity across the three elastic-network cutoffs.</small></article>
+              <article><span>MEAN SENSITIVITY REDUCTION</span><strong id="adaptiveSeparation">—</strong><small>How much lower the controls' target-compliance sensitivity is than their paired candidates.</small></article>
+              <article><span>PAIRED CONTROLS</span><strong id="adaptiveControls">—</strong><small>Local-environment matches that directly test the target-compliance calculation.</small></article>
             </div>
           </details>
           <div class="prior-art-boundary">
-            <div><span>METHOD SCOPE</span><strong>Established components and the workflow implemented here</strong></div>
-            <article><a href="https://doi.org/10.1093/nar/gkac365" target="_blank" rel="noreferrer">RING 3.0 ↗</a><p>Probabilistic interaction networks and contact evolution across structural ensembles.</p></article>
-            <article><a href="https://doi.org/10.1016/j.jmb.2016.12.004" target="_blank" rel="noreferrer">Arpeggio ↗</a><p>Atom typing and geometric rules for classifying protein, ligand and metal contacts. RINet's browser-side interaction audit follows this established idea with simpler disclosed rules.</p></article>
-            <article><a href="https://doi.org/10.1093/nar/gky417" target="_blank" rel="noreferrer">HotSpot Wizard 3.0 ↗</a><p>Mutation hotspots, stability filtering and smart-library design.</p></article>
-            <article><a href="https://doi.org/10.1038/s41586-022-04586-4" target="_blank" rel="noreferrer">Multi-phenotype DMS ↗</a><br><a href="https://doi.org/10.1038/s41467-026-74517-8" target="_blank" rel="noreferrer">Activity–abundance residuals ↗</a><p>Measured secondary phenotypes separate specific functional effects from loss of protein integrity at large scale.</p></article>
-            <article><a href="https://doi.org/10.1126/science.adr6006" target="_blank" rel="noreferrer">EVOLVEpro ↗</a><p>Sequence-embedding active learning after experimental fitness measurements.</p></article>
-            <article><span>WORKFLOW IMPLEMENTED HERE</span><p>RINet joins atom-level evidence, a local-environment-matched control that directly challenges the added value of graph position, three measured phenotypes, and follow-up-site selection in one local workflow. This integration is the contribution being tested; prospective performance has not yet been established.</p></article>
+            <div><span>SCIENTIFIC BASIS</span><strong>Established mechanics; a new experiment-design integration</strong></div>
+            <article><a href="https://doi.org/10.1016/S0006-3495(01)76033-X" target="_blank" rel="noreferrer">Anisotropic Network Model ↗</a><p>A Cα elastic network provides the directional Hessian used for near-native collective response.</p></article>
+            <article><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC2913187/" target="_blank" rel="noreferrer">Perturbation-response scanning ↗</a><p>Linear response to residue forces has been used to connect structural perturbations with observed conformational change.</p></article>
+            <article><a href="https://doi.org/10.1016/j.jmb.2022.167696" target="_blank" rel="noreferrer">ENM parameter analysis ↗</a><p>The 8.5 Å primary cutoff and explicit cutoff sensitivity follow published evaluation of elastic-network parameterization.</p></article>
+            <article><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC9017885/" target="_blank" rel="noreferrer">Dynamic Coupling Index ↗</a><p>Normalizing a site's response by background compliance is established; RINet extends the idea to a selected target-region cross-compliance contrast.</p></article>
+            <article><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8767309/" target="_blank" rel="noreferrer">Allosteric-site benchmark ↗</a><p>Energy-weighted bond-propensity methods show why target-directed propagation should be benchmarked against known allosteric systems.</p></article>
+            <article><span>RINET TARGETED MECHANOCHEMICAL CONTRAST</span><p>The implemented contribution is the full lab decision: choose a functional target; compute first-order target-compliance sensitivity and cutoff robustness; select a mutation from explicit local constraints; generate a locally matched low-sensitivity control; collect function, abundance and fold/assembly; then choose the next construct from the paired outcome. Prospective performance must still be established on held-out systems.</p></article>
           </div>
         </section>
 
-        <div class="residue-inspector-heading"><p class="eyebrow">Residue-level audit</p><h4>Selected residue score and control</h4><p>Select a candidate to inspect its score terms, mutation set, and matched control.</p></div>
+        <div class="residue-inspector-heading"><p class="eyebrow">Residue-level audit</p><h4>Why this mutation should affect the selected target</h4><p>Inspect target-compliance sensitivity, cutoff robustness, local contacts, mutation chemistry, and the low-sensitivity control.</p></div>
         <div class="evidence-residue-picker" id="evidenceResiduePicker" aria-label="Top ten ranked residues"></div>
         <article class="selected-action" aria-labelledby="selected-action-title">
           <div class="selected-action-head"><div><span>SELECTED RESIDUE PLAN</span><h4 id="selected-action-title"><strong id="selectedActionResidue">Pending</strong><em id="selectedActionScore">—</em></h4></div><p id="selectedActionBoundary">Structure-derived score; not a probability of function.</p></div>
@@ -255,7 +271,7 @@
         <section class="atomic-evidence" aria-labelledby="atomic-evidence-title">
           <div class="atomic-evidence-head">
             <div><span>COORDINATE EVIDENCE</span><h4 id="atomic-evidence-title">What atoms touch this residue?</h4><p id="atomicEvidenceIntro">Select a residue to inspect its atom-level partners before choosing a mutation.</p></div>
-            <p>These are geometric observations from the supplied model. They are not interaction energies, proof of information flow, or a predicted mutation effect.</p>
+            <p>These atom contacts define what the proposed side-chain replacement can change locally. The elastic-network response above supplies the separate target-compliance calculation.</p>
           </div>
           <div class="atomic-evidence-metrics" aria-label="Atom-level interaction summary">
             <article><span>ATOMIC PARTNERS</span><strong id="atomicPartnerCount">—</strong><small>unique residue or bound-group partners</small></article>
@@ -302,13 +318,13 @@
         <div class="contract-copy">
           <p class="eyebrow">Method scope</p>
           <h3 id="scientific-contract-title">What RINet calculates</h3>
-          <p>From one coordinate model, RINet records typed atom-level contacts, builds a separate Cα contact graph, calculates the displayed residue scores, selects lower-scoring structural controls, and repeats the ranking at 7, 8, and 9 Å cutoffs. The atomic layer explains local geometry; the graph layer describes wider structural position. Neither is treated as an energy calculation or proof of information flow.</p>
+          <p>RINet turns a known functional site into a testable perturbation experiment. It builds a directional Cα elastic network, solves the target-loaded response, calculates how weakening springs around each residue changes target compliance to first order, checks the result at three cutoffs, audits what a substitution changes locally, and selects a locally matched low-sensitivity control.</p>
         </div>
         <div class="contract-grid">
           <article><span>INPUT</span><strong>Structure</strong><p>Author chain IDs, residue numbering, ligands, missing atoms and quality fields remain visible.</p></article>
-          <article><span>CALCULATION</span><strong>Inspect, rank, compare</strong><p>Typed atomic contacts, graph position, every weighted term, and a matched lower-score control.</p></article>
+          <article><span>CALCULATION</span><strong>Target → mechanical response</strong><p>Directional elastic response, normalized cross-compliance, cutoff robustness, and mutation-specific local constraints.</p></article>
           <article><span>EXPERIMENT OUTPUT</span><strong>Candidate + control</strong><p>Mutation set, protein-quality measurements, functional readout, and interpretation rule.</p></article>
-          <article><span>NOT CALCULATED</span><strong>Energy or causality</strong><p>ΔG, dynamics, evolution, cellular phenotype, and causal mechanism require separate analyses and experimental evidence.</p></article>
+          <article><span>MODEL REGIME</span><strong>Near-native linear mechanics</strong><p>Use atomistic energy, ensembles or MD as a separate layer when relaxation, solvent, kinetics or large state changes determine the question.</p></article>
         </div>
       </section>
 
@@ -325,14 +341,15 @@
 
       <section class="validation-studio" id="validationSection" data-demo-section="Checks" aria-labelledby="validation-title">
         <div class="validation-head">
-          <div><p class="eyebrow">Ranking checks</p><h3 id="validation-title">Sensitivity and reference checks</h3></div>
-          <p>Known residues are applied after scoring. The panels report reference-site recovery, contact-cutoff sensitivity, and an optional second-structure comparison.</p>
+          <div><p class="eyebrow">Mechanical-model checks</p><h3 id="validation-title">Does the target response survive basic challenges?</h3></div>
+          <p>Known residues are applied after ranking. The panels report reference-site recovery, elastic-network cutoff sensitivity, and an optional second-structure comparison.</p>
         </div>
         <div class="validation-grid">
           <article><span>A / KNOWN-SITE RECOVERY</span><h4 id="benchmarkStatus">Checking benchmark manifest…</h4><div id="benchmarkRows"></div><p id="benchmarkBoundary"></p></article>
-          <article><span>B / CONTACT-CUTOFF SENSITIVITY</span><h4>Rank stability across 7–9 Å</h4><div id="sensitivityRows"></div><p>Large rank changes indicate dependence on the contact definition and should be reported with the result.</p></article>
+          <article><span>B / ELASTIC-CUTOFF SENSITIVITY</span><h4>Target-sensitivity stability at 8.0, 8.5 and 9.0 Å</h4><div id="sensitivityRows"></div><p>Large sensitivity-rank changes indicate dependence on network construction and lower the displayed robustness term.</p></article>
           <article><span>C / SECOND CONFORMATION</span><h4>Compare the same protein in another state</h4><input id="stateFileInput" type="file" accept=".pdb,.ent,.cif,.mmcif,text/plain" hidden><label id="stateFileButton" for="stateFileInput">Choose second PDB/mmCIF</label><div id="stateComparison">No second state loaded. RINet will compare matched chain/residue identifiers, contact changes and rank shifts.</div></article>
           <article><span>D / SCOPE OF THIS CHECK</span><h4>Reference check, not general validation</h4><p>The built-in known sites test whether the ranking recovers established structural anchors in selected examples. It is not a substitute for blinded multi-protein benchmarking against mutational, allosteric, evolutionary or MD datasets.</p></article>
+          <article class="validation-import"><span>E / LAB BENCHMARK</span><h4>Test this ranking against your own mutational labels</h4><p>Import positive and negative residues for this structure. RINet reports AUROC for the complete score, target sensitivity, target distance and Cα degree. Optional conservation, MD or external scores are evaluated beside them.</p><div class="validation-import-actions"><input id="validationLabelsFile" type="file" accept=".csv,text/csv" hidden><label for="validationLabelsFile">Import label CSV</label><button type="button" id="downloadValidationTemplate">Download template</button></div><div id="validationImportResult">No label set imported. Required columns: chain, residue, known_functional. Optional: insertion, conservation_score, md_score, external_score.</div></article>
         </div>
       </section>
 
@@ -421,7 +438,7 @@
         <section class="expert-ranking">
           <div class="section-head"><span>05</span><h3>Complete expert ranking</h3><p>All parsed residues · sortable evidence record</p></div>
           <label class="ranking-filter">Filter chain, residue or feature <input id="rankingFilter" type="search" placeholder="Example: chain B, ligand, interchain, HIS"></label>
-          <div class="expert-table-wrap"><table><thead><tr><th>Rank</th><th>Residue</th><th>Score</th><th>Atomic partners</th><th>Polar</th><th>Ionic</th><th>Cα degree</th><th>Closeness</th><th>Betweenness</th><th>Long range</th><th>Interchain</th><th>Ligand Å</th><th>Why</th></tr></thead><tbody id="expertRows"></tbody></table></div>
+          <div class="expert-table-wrap"><table><thead><tr><th>Rank</th><th>Residue</th><th>Score</th><th>Sensitivity %ile</th><th>Cutoff robustness</th><th>Target Å</th><th>Mutation leverage</th><th>Atomic partners</th><th>Polar</th><th>Ionic</th><th>Cα degree</th><th>Betweenness</th><th>Interchain</th><th>Why</th></tr></thead><tbody id="expertRows"></tbody></table></div>
         </section>
 
         <section class="methods">
@@ -432,8 +449,8 @@
         <section class="limitations">
           <div class="section-head"><span>07</span><h3>Interpretation limits</h3><p>Read before ordering constructs</p></div>
           <div class="limitations-grid">
-            <article><strong>Static coordinates</strong><p>No dynamics, kinetics, conformational ensemble or energetic coupling is inferred from one model.</p></article>
-            <article><strong>Geometry is not energy</strong><p>Typed atom contacts and the Cα graph describe geometry. They are not an all-atom potential, folding model, free-energy calculation, or evidence that information flows along graph edges.</p></article>
+            <article><strong>Coarse-grained mechanics</strong><p>The elastic response is a linear, near-native-state calculation from one conformation. Compare relevant states or use MD when anharmonic motion, kinetics, solvent, membranes, or large rearrangements matter.</p></article>
+            <article><strong>Mechanical response is not ΔΔG</strong><p>The anisotropic network estimates target-to-residue compliance. Mutation relaxation, atomistic energetics and binding or folding free energy require a separate validated calculation or experiment.</p></article>
             <article><strong>Biological assembly</strong><p>The supplied coordinate file may contain an asymmetric unit, crystal contacts or an incomplete biological assembly.</p></article>
             <article><strong>Numbering and construct</strong><p>Author numbering, insertion codes, unresolved residues, tags and assay constructs must be reconciled experimentally.</p></article>
             <article><strong>Evolution absent by default</strong><p>Conservation is not invented. Use the FASTA/BLAST route or import external evidence before making evolutionary claims.</p></article>
@@ -476,9 +493,9 @@
     </form>
   </section>
 
-  <footer><a href="/">← RINet home</a><span>Structure Brief 3.1 · atom-level evidence and controlled experiment design</span></footer>
+  <footer><a href="/">← RINet home</a><span>Structure Brief 4.0 · target-directed mutation and control design</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
   <script src="/contact.js?v=5"></script>
-  <script src="/brief/brief.js?v=26"></script>
+  <script src="/brief/brief.js?v=27"></script>
 </body>
 </html>
