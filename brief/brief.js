@@ -22,12 +22,20 @@ const metalElements = new Set(["LI", "NA", "MG", "AL", "K", "CA", "MN", "FE", "C
 const aminoAcidOneLetter = { ALA:"A", ARG:"R", ASN:"N", ASP:"D", CYS:"C", GLN:"Q", GLU:"E", GLY:"G", HIS:"H", ILE:"I", LEU:"L", LYS:"K", MET:"M", PHE:"F", PRO:"P", SER:"S", THR:"T", TRP:"W", TYR:"Y", VAL:"V", SEC:"U", PYL:"O" };
 const featureLabels = { degree:"Contact degree", weighted:"Distance-weighted packing", longRange:"Long-range contacts", interchain:"Cross-chain contacts", closeness:"Closeness centrality", betweenness:"Betweenness centrality", burial:"Radial burial", ligand:"Ligand proximity", coordination:"Direct metal coordination", cdr:"CDR-region evidence" };
 const scoreLenses = {
-  general: { label:"General", description:"General model: contacts, centrality, burial, ligand distance and direct metal coordination use the displayed weights.", weights:{ degree:.15, weighted:.10, longRange:.10, interchain:.12, closeness:.10, betweenness:.08, burial:.05, ligand:.15, coordination:.15, cdr:0 } },
-  ligand: { label:"Ligand", description:"Ligand model: increases the weights for bound-group distance and direct metal coordination.", weights:{ degree:.08, weighted:.08, longRange:.05, interchain:.04, closeness:.07, betweenness:.06, burial:.06, ligand:.36, coordination:.20, cdr:0 } },
-  interface: { label:"Interface", description:"Interface model: increases the weights for cross-chain contacts and graph bottlenecks. Check the biological assembly and crystal contacts.", weights:{ degree:.14, weighted:.10, longRange:.09, interchain:.38, closeness:.09, betweenness:.12, burial:.08, ligand:0, coordination:0, cdr:0 } },
-  allostery: { label:"Allostery", description:"Allostery model: increases the weights for long-range contacts, closeness and betweenness. It does not prove energetic coupling.", weights:{ degree:.10, weighted:.07, longRange:.22, interchain:.13, closeness:.15, betweenness:.25, burial:.04, ligand:.04, coordination:0, cdr:0 } },
-  stability: { label:"Stability", description:"Stability model: increases the weights for contact packing and burial. Test expression and fold before interpreting function.", weights:{ degree:.18, weighted:.22, longRange:.10, interchain:.10, closeness:.10, betweenness:.08, burial:.20, ligand:.02, coordination:0, cdr:0 } },
-  antibody: { label:"Antibody / CDR", description:"Antibody model: adds variable-loop evidence when antibody-like sequence context is detected. Verify CDR numbering and antigen contacts externally.", weights:{ degree:.10, weighted:.06, longRange:.05, interchain:.25, closeness:.08, betweenness:.08, burial:.02, ligand:.10, coordination:0, cdr:.26 } }
+  general: { label:"Broad screen", description:"Broad structural screen: contacts, centrality, burial, ligand distance, and direct metal coordination use the displayed weights.", weights:{ degree:.15, weighted:.10, longRange:.10, interchain:.12, closeness:.10, betweenness:.08, burial:.05, ligand:.15, coordination:.15, cdr:0 } },
+  ligand: { label:"Bound ligand", description:"Bound-ligand question: gives more weight to bound-group distance and direct metal coordination.", weights:{ degree:.08, weighted:.08, longRange:.05, interchain:.04, closeness:.07, betweenness:.06, burial:.06, ligand:.36, coordination:.20, cdr:0 } },
+  interface: { label:"Chain interface", description:"Interface question: gives more weight to cross-chain contacts and graph bottlenecks. Check the biological assembly and crystal contacts.", weights:{ degree:.14, weighted:.10, longRange:.09, interchain:.38, closeness:.09, betweenness:.12, burial:.08, ligand:0, coordination:0, cdr:0 } },
+  allostery: { label:"Distant coupling", description:"Distant-coupling question: gives more weight to long-range contacts, closeness, and betweenness. It does not establish energetic coupling or allostery.", weights:{ degree:.10, weighted:.07, longRange:.22, interchain:.13, closeness:.15, betweenness:.25, burial:.04, ligand:.04, coordination:0, cdr:0 } },
+  stability: { label:"Packing / stability", description:"Packing question: gives more weight to contact density and burial. Expression and fold must be checked before function is interpreted.", weights:{ degree:.18, weighted:.22, longRange:.10, interchain:.10, closeness:.10, betweenness:.08, burial:.20, ligand:.02, coordination:0, cdr:0 } },
+  antibody: { label:"Antibody binding", description:"Antibody-binding question: adds variable-loop evidence when antibody-like sequence context is detected. Verify CDR numbering and antigen contacts externally.", weights:{ degree:.10, weighted:.06, longRange:.05, interchain:.25, closeness:.08, betweenness:.08, burial:.02, ligand:.10, coordination:0, cdr:.26 } }
+};
+const workflowQuestions = {
+  general:"Which structurally prominent residue is worth a controlled first test?",
+  ligand:"Which residue most directly perturbs bound ligand or metal chemistry?",
+  interface:"Which residue most clearly tests a chain or partner interface?",
+  allostery:"Which distant site provides a test of coupling without assuming that coupling exists?",
+  stability:"Which residue provides a clean test of packing or structural tolerance?",
+  antibody:"Which residue most clearly tests antigen-contact or CDR-region function?"
 };
 const benchmarkManifest = {
   "4HHB": { status:"Curated structural-anchor sanity check", source:"https://www.rcsb.org/structure/4HHB", citation:"4HHB primary structure and heme coordination", sites:["HIS A:87","HIS B:92","HIS C:87","HIS D:92"], note:"Proximal F8 histidines coordinate heme iron. Labels are evaluated after ranking and contribute no score." },
@@ -690,11 +698,11 @@ function updateAssaySetup(report, residue) {
 }
 
 const adaptiveHypotheses = [
-  { id:"network", label:"Long-range connectivity", short:"long-range" },
+  { id:"network", label:"Long-range graph position", short:"long-range" },
   { id:"local", label:"Direct local contact", short:"local contact" },
-  { id:"destabilization", label:"Protein-quality loss", short:"protein quality" },
-  { id:"hub", label:"Packing density", short:"packing" },
-  { id:"mixed", label:"Combined features", short:"combined" }
+  { id:"destabilization", label:"Protein-quality sensitivity", short:"protein quality" },
+  { id:"hub", label:"Packing", short:"packing" },
+  { id:"mixed", label:"Mixed structural features", short:"mixed features" }
 ];
 
 function bounded(value, minimum = 0, maximum = 1) {
@@ -803,9 +811,9 @@ function buildAdaptivePanel(report, requestedSize = adaptiveRound.panelSize) {
   selected.forEach((residue,index) => {
     const mechanism = dominantMechanism(residue);
     const contrast=mechanismContrast(residue);
-    entries.push({ type:"candidate", key:residue.label, role:`Candidate · ${contrast.high.short} vs ${contrast.low.short}`, residue, mutation:mutationLadder(residue).conservative, mechanism, information:adaptiveCounterfactualValue(residue), contrast, why:`The ${contrast.high.short} and ${contrast.low.short} working models differ by ${(100*contrast.gap).toFixed(0)}/100 in predicted function-minus-quality response at this site. Active-model rank ${residue.rank}/${report.allResidues.length}; structural feature profile not duplicated in the panel.` });
+    entries.push({ type:"candidate", key:residue.label, role:"Candidate", residue, mutation:mutationLadder(residue).conservative, mechanism, information:adaptiveCounterfactualValue(residue), contrast, why:`Chosen because the ${contrast.high.short} and ${contrast.low.short} reference patterns disagree most at this site (${(100*contrast.gap).toFixed(0)}/100). Structural rank ${residue.rank}/${report.allResidues.length}; its displayed feature profile is not duplicated in the panel.` });
     const pair = controls.find(item => item.candidate.label === residue.label);
-    if (pair) entries.push({ type:"control", key:pair.residue.label, role:"Matched control", residue:pair.residue, mutation:mutationLadder(pair.residue).conservative, candidateFor:residue, information:adaptiveCounterfactualValue(pair.residue), why:`Controls ${residue.label} for chemistry and structural context while carrying a lower network score; match ${pair.residue.matchQuality.toFixed(0)}/100.` });
+    if (pair) entries.push({ type:"control", key:pair.residue.label, role:"Matched lower-rank control", residue:pair.residue, mutation:mutationLadder(pair.residue).conservative, candidateFor:residue, information:adaptiveCounterfactualValue(pair.residue), why:`Comparable chemistry and structural context to ${residue.label}, but a lower structural score; automatic match ${pair.residue.matchQuality.toFixed(0)}/100.` });
   });
   adaptiveRound.panel = entries.slice(0,panelSize);
   return adaptiveRound.panel;
@@ -837,9 +845,13 @@ function resetAdaptiveAnalysisUI() {
   const summary = document.getElementById("adaptivePosteriorSummary");
   if (summary) summary.textContent="Complete all three measurements for at least two candidates and one additional construct.";
   const posterior = document.getElementById("adaptivePosterior");
-  if (posterior) posterior.innerHTML="<span>No results entered</span>";
+  if (posterior) posterior.innerHTML="<span>No measurements entered</span>";
   const nextRows = document.getElementById("adaptiveNextRows");
   if (nextRows) nextRows.innerHTML="<p>Follow-up sites will appear here after the result table is analyzed.</p>";
+  const interpretation = document.getElementById("workflowInterpretation");
+  if (interpretation) interpretation.textContent="Awaiting measurements";
+  const next = document.getElementById("workflowNext");
+  if (next) next.textContent="Available after round 1";
 }
 
 function adaptiveResultClass(result) {
@@ -929,14 +941,20 @@ function analyzeAdaptiveResults(report=current?.report) {
   const status=document.getElementById("adaptiveStatus");
   if (!analysis) {
     status.className="adaptive-status"; status.innerHTML="<strong>Insufficient results.</strong><span>Complete all three measurements for at least two candidates and one additional non-WT construct.</span>";
+    const interpretation=document.getElementById("workflowInterpretation");
+    if(interpretation)interpretation.textContent="More complete measurements required";
     return;
   }
   status.className=`adaptive-status ${adaptiveRound.example?"example":""}`;
   const paired=analysis.measured.filter(row=>row.controlEntry).length;
-  status.innerHTML=adaptiveRound.example?"<strong>Example values loaded.</strong><span>These are not measured 4HHB data.</span>":`<strong>${analysis.completed.size} constructs analyzed.</strong><span>The model fit used ${paired} complete candidate-control pair${paired===1?"":"s"}.</span>`;
-  document.getElementById("adaptivePosteriorSummary").textContent=`${analysis.fits[0].label} has the lowest squared error against the candidate-minus-control measurements (relative weight ${(100*analysis.fits[0].probability).toFixed(0)}%). The weights compare only the five working models shown above.`;
+  status.innerHTML=adaptiveRound.example?"<strong>Synthetic example values loaded.</strong><span>These are for interface demonstration only; they are not measured 4HHB data.</span>":`<strong>${analysis.completed.size} constructs interpreted.</strong><span>The comparison used ${paired} complete candidate-control pair${paired===1?"":"s"}.</span>`;
+  document.getElementById("adaptivePosteriorSummary").textContent=`After subtracting matched-control effects, the measurements are closest to the hand-set “${analysis.fits[0].label}” pattern. Its relative comparison weight is ${(100*analysis.fits[0].probability).toFixed(0)}% among the five patterns shown here; this is neither a probability of mechanism nor a causal conclusion.`;
   document.getElementById("adaptivePosterior").innerHTML=analysis.fits.map(row=>`<div class="posterior-row"><span>${esc(row.label)}</span><i><b style="width:${(100*row.probability).toFixed(1)}%"></b></i><strong>${(100*row.probability).toFixed(0)}%</strong></div>`).join("");
-  document.getElementById("adaptiveNextRows").innerHTML=analysis.next.map(({residue,gain})=>{const contrast=mechanismContrast(residue);return `<div class="next-experiment-row"><button type="button" data-next-site="${esc(residue.label)}">${esc(residue.label)}<br>${esc(mutationLadder(residue).conservative)}</button><span>Largest remaining contrast: ${esc(contrast.high.short)} vs ${esc(contrast.low.short)}. Active-model rank ${residue.rank}.</span><strong>Δ ${(100*gain).toFixed(0)}</strong></div>`;}).join("");
+  document.getElementById("adaptiveNextRows").innerHTML=analysis.next.map(({residue,gain})=>{const contrast=mechanismContrast(residue);return `<div class="next-experiment-row"><button type="button" data-next-site="${esc(residue.label)}">${esc(residue.label)}<br>${esc(mutationLadder(residue).conservative)}</button><span>Next test because ${esc(contrast.high.short)} and ${esc(contrast.low.short)} give different expectations here. Structural rank ${residue.rank}.</span><strong>contrast ${(100*gain).toFixed(0)}</strong></div>`;}).join("");
+  const interpretation=document.getElementById("workflowInterpretation");
+  if(interpretation)interpretation.textContent=`Closest reference pattern: ${analysis.fits[0].label}`;
+  const next=document.getElementById("workflowNext");
+  if(next)next.textContent=analysis.next[0]?`${analysis.next[0].residue.label} ${mutationLadder(analysis.next[0].residue).conservative}`:"No follow-up site available";
   document.querySelectorAll("[data-next-site]").forEach(button=>button.addEventListener("click",()=>selectAnalyzedResidue(report.allResidues.find(row=>row.label===button.dataset.nextSite),{autoView:true})));
 }
 
@@ -1408,13 +1426,21 @@ function renderSelectedAction(residue, report = current?.report) {
   const assay = assayFor(report, residue, control);
   const constructs = experimentConstructs(report, residue);
   document.getElementById("selectedActionResidue").textContent = residue.label;
-  document.getElementById("selectedActionScore").textContent = `rank ${residue.rank}/${report.allResidues.length} · score ${residue.score.toFixed(1)} · ${scoreLenses[report.scoringLens].label} model`;
+  document.getElementById("selectedActionScore").textContent = `rank ${residue.rank}/${report.allResidues.length} · score ${residue.score.toFixed(1)} · ${scoreLenses[report.scoringLens].label} question`;
   document.getElementById("selectedActionBoundary").textContent = `${residue.percentile.toFixed(1)}th score percentile in this structure. This is not a probability of function.`;
   document.getElementById("selectedActionReason").textContent = residue.rationale;
   document.getElementById("selectedActionMutation").textContent = constructs.map(row => row.site === "—" ? row.construct : `${row.construct}: ${row.site} ${row.substitution}`).join(" · ");
   document.getElementById("selectedActionControl").textContent = control ? `${control.label} · ${mutationLadder(control).conservative} · match ${control.matchQuality.toFixed(0)}/100. ${control.controlRationale}` : "No credible matched control could be constructed from this structure.";
   document.getElementById("selectedActionAssay").textContent = `1. ${assay}. 2. Expression or abundance. 3. One folding, stability or assembly readout. Compare every construct with wild type in the same batch.`;
   document.getElementById("selectedActionRule").textContent = `${residue.label} changes ${assay} more than ${control?.label || "the matched control"}, while expression and molecular integrity remain acceptably similar to wild type.`;
+  const question=document.getElementById("workflowQuestion");
+  if(question)question.textContent=workflowQuestions[report.scoringLens]||workflowQuestions.general;
+  const candidate=document.getElementById("workflowCandidate");
+  if(candidate)candidate.textContent=`${residue.label} ${mutationLadder(residue).conservative}`;
+  const controlCard=document.getElementById("workflowControl");
+  if(controlCard)controlCard.textContent=control?`${control.label} ${mutationLadder(control).conservative}`:"Manual control required";
+  const measurements=document.getElementById("workflowMeasurements");
+  if(measurements)measurements.textContent=`${assay} + abundance + fold/assembly`;
   updateAssaySetup(report, residue);
   renderEvidenceResiduePicker(report, residue);
 }
@@ -1557,7 +1583,7 @@ function render(data) {
   renderDiscovery(r, "biology");
   renderScientificPanels(r,r.topResidues[0]);
   renderAdaptivePanel(r,{rebuild:true,clearResults:true});
-  const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Intelligence 3.0 (receipt ${data.receiptId}; ${r.format}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} author chain${r.chainReports.length === 1 ? "" : "s"}. A deterministic residue-contact graph was constructed between Cα atoms separated by no more than ${r.contactCutoff.toFixed(1)} Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. ${scoreEquationText(r.scoringLens)} Closeness was ${r.residues <= 1500 ? "calculated on reachable graph components" : "omitted because this very large structure exceeds the interactive all-pairs path limit"}; betweenness was ${r.betweennessCalculated ? "calculated with the unweighted Brandes algorithm" : "omitted because the structure exceeds the 900-residue interactive path limit"}. Known benchmark labels, when available, were evaluated only after ranking and contributed no score. Cysteines received no score bonus; ${r.disulfides} probable disulfide constraint${r.disulfides === 1 ? " was" : "s were"} assigned solely from Sγ separations of 1.7–2.3 Å. Detected disulfide residues were excluded from automatic panels because breaking a covalent constraint strongly confounds protein-quality measurements. Coordinate screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} numbering gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}) and were not interpreted as prediction confidence. The first panel contains wild type, structurally prioritized candidates, and lower-score controls matched on residue class, burial, B-factor field, and chain. Candidate selection is greedy and deterministic: 36% variance among five working-model readout patterns, 34% diversity in the ten displayed structural features, and 30% active-model rank. The working models represent long-range connectivity, direct local contact, protein-quality loss, packing density, and combined features. They map normalized structural features to expected function, abundance, and fold/assembly changes and are design assumptions rather than fitted outcome predictions. After result entry, candidate-minus-control patterns are fit by mean squared error and converted to relative comparison weights using exp(-8 × MSE). Follow-up sites maximize weighted disagreement among the working models while avoiding structural duplicates. The weights are not calibrated probabilities and do not establish mechanism. This is a static Cα contact analysis; it does not calculate all-atom energetics, conformational dynamics, evolution, or cellular phenotype.`;
+  const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Intelligence 3.0 (receipt ${data.receiptId}; ${r.format}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} author chain${r.chainReports.length === 1 ? "" : "s"}. A deterministic residue-contact graph was constructed between Cα atoms separated by no more than ${r.contactCutoff.toFixed(1)} Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. ${scoreEquationText(r.scoringLens)} Closeness was ${r.residues <= 1500 ? "calculated on reachable graph components" : "omitted because this very large structure exceeds the interactive all-pairs path limit"}; betweenness was ${r.betweennessCalculated ? "calculated with the unweighted Brandes algorithm" : "omitted because the structure exceeds the 900-residue interactive path limit"}. Known benchmark labels, when available, were evaluated only after ranking and contributed no score. Cysteines received no score bonus; ${r.disulfides} probable disulfide constraint${r.disulfides === 1 ? " was" : "s were"} assigned solely from Sγ separations of 1.7–2.3 Å. Detected disulfide residues were excluded from automatic panels because breaking a covalent constraint strongly confounds protein-quality measurements. Coordinate screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} numbering gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}) and were not interpreted as prediction confidence. The first panel contains wild type, structurally prioritized candidates, and lower-score controls matched on residue class, burial, B-factor field, and chain. Candidate selection is greedy and deterministic: 36% disagreement among five hand-set reference patterns, 34% diversity in the ten displayed structural features, and 30% structural rank. The reference patterns emphasize long-range graph position, direct local contact, protein-quality sensitivity, packing, and mixed structural features. They map normalized features to provisional function, abundance, and fold/assembly changes solely to diversify experiments; they are not fitted predictions or physical mechanisms. After result entry, candidate-minus-control patterns are compared by mean squared error and converted to relative comparison weights using exp(-8 × MSE). Follow-up sites maximize weighted disagreement among the reference patterns while avoiding structural duplicates. The weights are not calibrated probabilities and do not establish mechanism. A Cα contact graph is treated here as one geometric description, not as evidence of information flow, free-energy transfer, or causality. This static analysis does not calculate all-atom energetics, conformational dynamics, evolution, or cellular phenotype.`;
   document.getElementById("methodsText").textContent = methods;
   els.results.classList.remove("hidden");
   document.body.classList.add("analysis-mode");
@@ -1859,7 +1885,7 @@ document.querySelectorAll("[data-scoring-lens]").forEach(button=>button.addEvent
   refreshRankedOutputs(current.report);
   renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});
   document.getElementById("methodsText").textContent=document.getElementById("methodsText").textContent.replace(/score = 100 × \[[^\]]+\]; each feature is normalized to the maximum observed in this structure\./,scoreEquationText(activeScoringLens));
-  setLocalActionStatus(`Ranking recalculated with the ${scoreLenses[activeScoringLens].label} model. ${current.report.topResidues[0].label} is now rank 1.`, true);
+  setLocalActionStatus(`Structural ranking recalculated for the “${scoreLenses[activeScoringLens].label}” question. ${current.report.topResidues[0].label} is now rank 1.`, true);
 }));
 
 document.getElementById("rebuildAdaptivePanel")?.addEventListener("click",()=>{

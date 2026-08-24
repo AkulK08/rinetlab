@@ -8,7 +8,7 @@
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=20260816">
   <link rel="image_src" href="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <link rel="stylesheet" href="/contact.css?v=1">
-  <link rel="stylesheet" href="/brief/brief.css?v=25">
+  <link rel="stylesheet" href="/brief/brief.css?v=26">
   <title>Structure Brief | RINet</title>
   <meta name="description" content="Rank residues from a protein structure, inspect every score term, and design a controlled experiment.">
   <meta property="og:type" content="website">
@@ -98,10 +98,10 @@
         <div class="section-rail-readout"><strong id="sectionCurrent">1</strong><span>/ 5</span><small id="sectionLabel">Structure</small></div>
         <ol>
           <li><a class="active" data-section-link data-section-label="Structure" href="#structureSection" aria-current="step"><i></i><span>Structure</span></a></li>
-          <li><a data-section-link data-section-label="Panel" href="#scoringSection"><i></i><span>Panel design</span></a></li>
+          <li><a data-section-link data-section-label="Design" href="#scoringSection"><i></i><span>Experiment design</span></a></li>
           <li><a data-section-link data-section-label="Sequence" href="#sequenceSection"><i></i><span>Sequence</span></a></li>
           <li><a data-section-link data-section-label="Checks" href="#validationSection"><i></i><span>Checks</span></a></li>
-          <li><a data-section-link data-section-label="Experiment" href="#decisionBrief"><i></i><span>Experiment</span></a></li>
+          <li><a data-section-link data-section-label="Plan" href="#decisionBrief"><i></i><span>Selected plan</span></a></li>
         </ol>
       </nav>
 
@@ -139,7 +139,7 @@
         </aside>
       </section>
 
-      <a class="result-scroll-cue" id="resultScrollCue" href="#scoringSection" aria-label="Continue to mutagenesis panel design"><b>SCROLL</b><span id="scrollCueLabel">Next: build a mutagenesis panel</span><i></i></a>
+      <a class="result-scroll-cue" id="resultScrollCue" href="#scoringSection" aria-label="Continue to experiment design"><b>SCROLL</b><span id="scrollCueLabel">Next: design a controlled experiment</span><i></i></a>
       <button class="demo-skip-status" id="demoSkipStatus" type="button" aria-label="Stop the automatic tour"><span>Auto tour</span><strong>Scrolling… · click to stop</strong><i></i></button>
 
       <div class="analysis-status" id="analysisStatus" role="status">Analysis ready · coordinates remained on this device.</div>
@@ -154,26 +154,37 @@
 
       <section class="evidence-lab" id="scoringSection" data-demo-section="Panel" aria-labelledby="evidence-lab-title">
         <div class="evidence-lab-head">
-          <div><p class="eyebrow">First-round panel</p><h3 id="evidence-lab-title">Select constructs for the first assay round.</h3><p>RINet scores the structure under the selected model, then chooses candidate residues with different structural feature profiles. After testing, enter function, abundance, and a fold or assembly measurement to rank follow-up sites.</p></div>
-          <div class="lens-picker-wrap"><span>SCORING MODEL</span><div class="lens-picker" role="tablist" aria-label="Research question">
-            <button class="active" type="button" role="tab" aria-selected="true" data-scoring-lens="general">General</button>
-            <button type="button" role="tab" aria-selected="false" data-scoring-lens="ligand">Ligand</button>
-            <button type="button" role="tab" aria-selected="false" data-scoring-lens="interface">Interface</button>
-            <button type="button" role="tab" aria-selected="false" data-scoring-lens="allostery">Allostery</button>
-            <button type="button" role="tab" aria-selected="false" data-scoring-lens="stability">Stability</button>
-            <button type="button" role="tab" aria-selected="false" data-scoring-lens="antibody">Antibody / CDR</button>
-          </div><small>Changing the model recomputes the residue scores and panel.</small></div>
+          <div><p class="eyebrow">Experiment design</p><h3 id="evidence-lab-title">Start with the experiment, not the score.</h3><p>Choose the structural question. RINet proposes a candidate, a lower-ranked control, and three measurements. The result is interpreted only after protein quantity and molecular integrity are checked.</p></div>
+          <div class="lens-picker-wrap"><span>QUESTION TO TEST</span><div class="lens-picker" role="tablist" aria-label="Structural question">
+            <button class="active" type="button" role="tab" aria-selected="true" data-scoring-lens="general">Broad screen</button>
+            <button type="button" role="tab" aria-selected="false" data-scoring-lens="ligand">Bound ligand</button>
+            <button type="button" role="tab" aria-selected="false" data-scoring-lens="interface">Chain interface</button>
+            <button type="button" role="tab" aria-selected="false" data-scoring-lens="allostery">Distant coupling</button>
+            <button type="button" role="tab" aria-selected="false" data-scoring-lens="stability">Packing / stability</button>
+            <button type="button" role="tab" aria-selected="false" data-scoring-lens="antibody">Antibody binding</button>
+          </div><small>This choice changes which structural features are emphasized. It does not prove a mechanism.</small></div>
         </div>
-        <div class="evidence-steps" aria-label="Panel design workflow"><span><b>1</b> Select scoring model</span><span><b>2</b> Review candidates and controls</span><span><b>3</b> Enter function and quality data</span><span><b>4</b> Review follow-up sites</span></div>
-        <div class="lens-context">
-          <div class="assay-setup-copy"><span>ASSAY DEFINITION</span><h4>Primary functional measurement</h4><p>This label is used in the construct sheet and results template. Editing it does not alter the structural score.</p></div>
+        <nav class="experiment-spine" aria-label="Experiment workflow">
+          <a href="#questionSetup"><span>01 · QUESTION</span><strong id="workflowQuestion">What structural mechanism do you want to test?</strong><p>Choose the biological contrast before looking at a score.</p></a>
+          <a href="#candidateControlStep"><span>02 · CANDIDATE</span><strong id="workflowCandidate">Calculating…</strong><p>Which residue most clearly perturbs that structural feature?</p></a>
+          <a href="#candidateControlStep"><span>03 · CONTROL</span><strong id="workflowControl">Calculating…</strong><p>What comparable mutation should have less effect?</p></a>
+          <a href="#measurementStep"><span>04 · MEASUREMENTS</span><strong id="workflowMeasurements">Function + quantity + integrity</strong><p>Did function change without simply losing usable protein?</p></a>
+          <a href="#interpretationStep"><span>05 · INTERPRETATION</span><strong id="workflowInterpretation">Awaiting measurements</strong><p>Was the effect site-specific, or did the protein become damaged?</p></a>
+          <a href="#interpretationStep"><span>06 · NEXT EXPERIMENT</span><strong id="workflowNext">Available after round 1</strong><p>Which construct best distinguishes what remains uncertain?</p></a>
+        </nav>
+        <div class="lens-context" id="questionSetup">
+          <div class="assay-setup-copy"><span>01 / QUESTION</span><h4>Define the functional readout</h4><p>Name the measurement that represents function in your system. This changes the experiment sheet, not the structural calculation.</p></div>
           <div class="assay-setup-form"><label for="assayInput">Primary functional readout</label><div><input id="assayInput" maxlength="180" placeholder="Loading a suggested readout…"><button id="applyAssay" type="button">Use this readout</button><button id="resetAssay" class="secondary" type="button">Use RINet suggestion</button></div><div class="hypothesis-feedback" id="assayFeedback" role="status">Loading the suggested assay…</div></div>
-          <div class="model-explanation"><span>ACTIVE SCORE</span><p id="lensDescription">Balanced structure-first ranking. No single metric is treated as function.</p><code id="scoreEquation">Loading exact score equation…</code></div>
         </div>
 
-        <section class="adaptive-cycle" aria-labelledby="adaptive-cycle-title">
+        <details class="calculation-details">
+          <summary>See exactly how the structural ranking is calculated</summary>
+          <div class="model-explanation"><span>STRUCTURAL RANKING ONLY</span><p id="lensDescription">Balanced structure-first ranking. No single metric is treated as function.</p><code id="scoreEquation">Loading exact score equation…</code></div>
+        </details>
+
+        <section class="adaptive-cycle" id="candidateControlStep" aria-labelledby="adaptive-cycle-title">
           <div class="adaptive-cycle-head">
-            <div><span>ROUND 1 · PANEL DESIGN</span><h4 id="adaptive-cycle-title">First-round constructs</h4><p>The panel includes wild type, structurally distinct candidate sites, and lower-scoring controls matched on residue class, burial, B-factor field, and chain. Residues assigned probable disulfide bonds remain visible in the audit but are excluded from automatic panels.</p></div>
+            <div><span>02–03 / CANDIDATE + CONTROL</span><h4 id="adaptive-cycle-title">Choose a small, controlled first round.</h4><p>Each panel contains wild type, candidate mutations that probe different structural features, and lower-ranked controls with similar chemistry and structural context. Probable disulfide residues are not selected automatically because breaking a covalent bond would confound the result.</p></div>
             <div class="adaptive-cycle-actions">
               <label>Panel size <select id="adaptivePanelSize"><option value="6">6</option><option value="8" selected>8</option><option value="12">12</option></select></label>
               <button type="button" id="rebuildAdaptivePanel">Regenerate panel</button>
@@ -181,36 +192,40 @@
               <label class="adaptive-import" for="adaptiveResultsFile">Import completed CSV<input id="adaptiveResultsFile" type="file" accept=".csv,text/csv" hidden></label>
             </div>
           </div>
-          <div class="adaptive-metrics" aria-label="First round design diagnostics">
-            <article><span>PANEL COVERAGE</span><strong id="adaptiveCoverage">—</strong><small>Mean coverage of the top 120 residues in normalized ten-feature space.</small></article>
-            <article><span>RANK-ONLY COVERAGE</span><strong id="adaptiveBaseline">—</strong><small>The same calculation using the top N residues without panel design.</small></article>
-            <article><span>MODEL-SEPARATION INDEX</span><strong id="adaptiveSeparation">—</strong><small>Scaled minimum distance between the five expected readout patterns; not an accuracy estimate.</small></article>
-            <article><span>PAIRED CONTROLS</span><strong id="adaptiveControls">—</strong><small>Lower-scoring structural matches included with the candidates.</small></article>
-          </div>
-          <div class="mechanism-intro"><span>WORKING MODELS USED FOR PANEL SELECTION</span><p>Each model maps the displayed structural features to expected changes in function, abundance, and fold/assembly. Panel contrasts use expected function change minus the mean expected protein-quality change. These patterns are design assumptions, not fitted predictions.</p></div>
-          <div class="mechanism-hypotheses" aria-label="Working structural models">
-            <article><span>01</span><strong>Long-range connectivity</strong><p>Function follows long-range contacts, closeness, or betweenness while protein quality is retained.</p></article>
-            <article><span>02</span><strong>Direct local contact</strong><p>Function follows ligand, metal, interface, or local-contact geometry.</p></article>
-            <article><span>03</span><strong>Protein-quality loss</strong><p>Functional change is accompanied by lower abundance or disrupted fold/assembly.</p></article>
-            <article><span>04</span><strong>Packing density</strong><p>Response follows contact degree, weighted packing, and burial.</p></article>
-            <article><span>05</span><strong>Combined features</strong><p>No single structural feature group dominates the expected response.</p></article>
-          </div>
           <div class="adaptive-table-wrap">
             <table class="adaptive-table">
-              <thead><tr><th>Construct</th><th>Panel role</th><th>Residue / mutation</th><th>Selection basis</th><th>Function<br><small>% WT</small></th><th>Abundance<br><small>% WT</small></th><th>Fold / assembly<br><small>% WT</small></th><th>Result class</th></tr></thead>
+              <thead><tr><th>Construct</th><th>Why it is included</th><th>Residue / mutation</th><th>Structural rationale</th><th>Function<br><small>% WT</small></th><th>Abundance<br><small>% WT</small></th><th>Fold / assembly<br><small>% WT</small></th><th>Interpretation</th></tr></thead>
               <tbody id="adaptivePanelRows"><tr><td colspan="8">Building the first round…</td></tr></tbody>
             </table>
           </div>
+          <div class="measurement-intro" id="measurementStep"><span>04 / MEASUREMENTS</span><strong>Enter three values for every construct.</strong><p>Function answers the biological question. Abundance and fold/assembly show whether the construct still produced usable protein. Without both quality checks, a functional loss cannot be assigned to the selected site.</p></div>
           <div class="adaptive-result-bar">
             <div><label>Functional-effect threshold <input id="adaptiveFunctionThreshold" type="number" min="1" max="100" step="1" value="20">%</label><label>Protein-quality cutoff <input id="adaptiveIntegrityFloor" type="number" min="1" max="100" step="1" value="75">% WT</label></div>
-            <div><button type="button" class="secondary" id="loadAdaptiveExample">Fill example data</button><button type="button" id="analyzeAdaptiveResults">Fit models and rank round 2</button></div>
+            <div><button type="button" class="secondary" id="loadAdaptiveExample">Fill clearly labeled example data</button><button type="button" id="analyzeAdaptiveResults">Interpret results and choose next experiment</button></div>
           </div>
           <div class="adaptive-status" id="adaptiveStatus" role="status"><strong>Panel generated.</strong><span>Enter normalized measurements in the table, or export and re-import the CSV template.</span></div>
-          <div class="adaptive-next">
-            <div><span>AFTER ROUND 1</span><h5>Model fit and follow-up sites</h5><p id="adaptivePosteriorSummary">Complete all three measurements for at least two candidates and one additional construct.</p></div>
-            <div id="adaptivePosterior" class="adaptive-posterior"><span>No results entered</span></div>
+          <div class="adaptive-next" id="interpretationStep">
+            <div><span>05–06 / INTERPRETATION + NEXT EXPERIMENT</span><h5>Separate a specific effect from protein damage.</h5><p id="adaptivePosteriorSummary">Complete all three measurements for at least two candidates and one additional construct.</p></div>
+            <div id="adaptivePosterior" class="adaptive-posterior"><span>No measurements entered</span></div>
             <div id="adaptiveNextRows" class="adaptive-next-rows"><p>Follow-up sites will appear here after the result table is analyzed.</p></div>
           </div>
+          <details class="design-details">
+            <summary>Why these candidates differ from one another</summary>
+            <p class="design-details-lead">To avoid spending the first round on near-duplicate sites, RINet spreads candidates across five provisional structural response patterns. These are hand-set design assumptions—not learned mechanisms, physical energy calculations, or probabilities.</p>
+            <div class="mechanism-hypotheses" aria-label="Provisional structural response patterns">
+              <article><span>01</span><strong>Long-range graph position</strong><p>Emphasizes long-range contacts, closeness, and betweenness.</p></article>
+              <article><span>02</span><strong>Direct local contact</strong><p>Emphasizes ligand, metal, interface, and local-contact geometry.</p></article>
+              <article><span>03</span><strong>Protein-quality sensitivity</strong><p>Emphasizes the possibility that a mutation lowers abundance or disrupts fold/assembly.</p></article>
+              <article><span>04</span><strong>Packing</strong><p>Emphasizes contact density, weighted packing, and burial.</p></article>
+              <article><span>05</span><strong>Mixed structural features</strong><p>Represents sites for which no single displayed feature group dominates.</p></article>
+            </div>
+            <div class="adaptive-metrics" aria-label="Panel design diagnostics">
+              <article><span>STRUCTURAL VARIETY</span><strong id="adaptiveCoverage">—</strong><small>How broadly the panel samples the displayed ten-feature space.</small></article>
+              <article><span>TOP-RANK VARIETY</span><strong id="adaptiveBaseline">—</strong><small>The same calculation if the first N ranked residues were chosen without diversification.</small></article>
+              <article><span>PATTERN CONTRAST</span><strong id="adaptiveSeparation">—</strong><small>How differently the five hand-set patterns describe this panel. Not accuracy.</small></article>
+              <article><span>PAIRED CONTROLS</span><strong id="adaptiveControls">—</strong><small>Lower-ranked structural matches tested beside candidates.</small></article>
+            </div>
+          </details>
           <div class="prior-art-boundary">
             <div><span>METHOD SCOPE</span><strong>Established components and the workflow implemented here</strong></div>
             <article><a href="https://doi.org/10.1093/nar/gkac365" target="_blank" rel="noreferrer">RING 3.0 ↗</a><p>Probabilistic interaction networks and contact evolution across structural ensembles.</p></article>
@@ -432,6 +447,6 @@
   <footer><a href="/">← RINet home</a><span>Structure Brief 3.0 · transparent residue-network analysis</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
   <script src="/contact.js?v=5"></script>
-  <script src="/brief/brief.js?v=23"></script>
+  <script src="/brief/brief.js?v=24"></script>
 </body>
 </html>
