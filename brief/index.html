@@ -8,7 +8,7 @@
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=20260816">
   <link rel="image_src" href="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <link rel="stylesheet" href="/contact.css?v=1">
-  <link rel="stylesheet" href="/brief/brief.css?v=32">
+  <link rel="stylesheet" href="/brief/brief.css?v=33">
   <title>Structure Brief | RINet</title>
   <meta name="description" content="Choose the protein site you care about. RINet identifies the most useful residue to mutate, a comparison mutation, the measurements to run, and what to test next.">
   <meta property="og:type" content="website">
@@ -188,6 +188,39 @@
             <article><span>PRIMARY OUTPUT</span><strong>Residues most likely to affect this site</strong><small>Predicted change at the selected site when contacts around each residue are weakened</small></article>
           </div>
         </section>
+
+        <section class="ranking-explanation" aria-labelledby="ranking-explanation-title">
+          <div class="residue-inspector-heading"><p class="eyebrow">Why this residue was selected</p><h4 id="ranking-explanation-title">See the score and its contact neighborhood.</h4><p>The score breakdown shows what raised this residue's rank. The contact graph shows the selected residue and its nearest Cα-contact neighbors. Choose any of the ten ranked residues to update both views.</p></div>
+          <div class="evidence-residue-picker" id="evidenceResiduePicker" aria-label="Top ten ranked residues"></div>
+          <div class="evidence-lab-grid">
+            <article class="residue-audit">
+              <div class="panel-head"><span>SCORE BREAKDOWN</span><strong id="auditResidue">Pending</strong></div>
+              <p id="auditSummary">Select a ranked residue to inspect every score component.</p>
+              <div class="contribution-chart" id="contributionChart"></div>
+              <div class="audit-detail"><span>MUTATION CHEMISTRY</span><p id="auditMutation">Pending</p></div>
+              <div class="audit-detail"><span>WHY THIS COMPARISON WAS CHOSEN</span><p id="auditControl">Pending</p></div>
+            </article>
+            <article class="network-panel">
+              <div class="panel-head"><span>CONTACT NEIGHBORHOOD</span><strong>Click any node to select it</strong></div>
+              <div class="network-legend" aria-label="Contact graph legend"><span><i class="selected"></i>selected residue</span><span><i class="direct"></i>direct contact</span><span><i class="ranked"></i>other ranked residue</span><span><i class="neighbor"></i>nearby contact</span></div>
+              <svg id="networkMap" viewBox="0 0 620 420" role="img" aria-label="Focused contact neighborhood around the selected residue"></svg>
+              <p>Lines are Cα contacts under the active cutoff. The selected residue is fixed at the center; only its nearby contact neighborhood is shown. This is a graph layout, not a physical trajectory.</p>
+            </article>
+          </div>
+          <article class="selected-action" aria-labelledby="selected-action-title">
+            <div class="selected-action-head"><div><span>WHAT TO DO WITH THIS RESIDUE</span><h4 id="selected-action-title"><strong id="selectedActionResidue">Pending</strong><em id="selectedActionScore">—</em></h4></div><p id="selectedActionBoundary">Structure-derived ranking; not a probability of function.</p></div>
+            <div class="selected-action-buttons"><button type="button" id="copySelectedTest">Open experiment sheet</button><button type="button" id="downloadConstructs">Download construct list</button><button type="button" id="actionFocusStructure">Show in 3D</button><button type="button" id="actionOpenSequence">Show in sequence</button><button type="button" id="actionOpenExperiment">See full rationale</button></div>
+            <div class="selected-action-grid">
+              <div><span>WHY THIS RESIDUE RANKS FIRST</span><p id="selectedActionReason">Pending</p></div>
+              <div><span>BUILD THESE CONSTRUCTS</span><p id="selectedActionMutation">Pending</p></div>
+              <div><span>BUILD THIS COMPARISON</span><p id="selectedActionControl">Pending</p></div>
+              <div><span>MEASURE THESE OUTPUTS</span><p id="selectedActionAssay">Pending</p></div>
+            </div>
+            <div class="selected-action-rule"><span>THIS RESULT SUPPORTS THE RESIDUE IF</span><p id="selectedActionRule">Pending</p></div>
+            <p class="selected-action-status" id="selectedActionStatus" role="status">Select a ranked residue to update the construct and measurement plan.</p>
+          </article>
+        </section>
+
         <div class="lens-context" id="questionSetup">
           <div class="assay-setup-copy"><span>01 / QUESTION</span><h4>Define the functional readout</h4><p>Name the measurement that represents function in your system. This changes the experiment sheet, not the structural calculation.</p></div>
           <div class="assay-setup-form"><label for="assayInput">Primary functional readout</label><div><input id="assayInput" maxlength="180" placeholder="Loading a suggested readout…"><button id="applyAssay" type="button">Use this readout</button><button id="resetAssay" class="secondary" type="button">Use RINet suggestion</button></div><div class="hypothesis-feedback" id="assayFeedback" role="status">Loading the suggested assay…</div></div>
@@ -254,20 +287,6 @@
           </div>
         </section>
 
-        <div class="residue-inspector-heading"><p class="eyebrow">Residue-level audit</p><h4>Why this residue ranks above the comparison</h4><p>Inspect the predicted effect on the chosen site, stability across network cutoffs, local contacts, mutation chemistry, and the structurally matched comparison residue.</p></div>
-        <div class="evidence-residue-picker" id="evidenceResiduePicker" aria-label="Top ten ranked residues"></div>
-        <article class="selected-action" aria-labelledby="selected-action-title">
-          <div class="selected-action-head"><div><span>WHAT TO DO WITH THIS RESIDUE</span><h4 id="selected-action-title"><strong id="selectedActionResidue">Pending</strong><em id="selectedActionScore">—</em></h4></div><p id="selectedActionBoundary">Structure-derived ranking; not a probability of function.</p></div>
-          <div class="selected-action-buttons"><button type="button" id="copySelectedTest">Open experiment sheet</button><button type="button" id="downloadConstructs">Download construct list</button><button type="button" id="actionFocusStructure">Show in 3D</button><button type="button" id="actionOpenSequence">Show in sequence</button><button type="button" id="actionOpenExperiment">See full rationale</button></div>
-          <div class="selected-action-grid">
-            <div><span>WHY THIS RESIDUE RANKS FIRST</span><p id="selectedActionReason">Pending</p></div>
-            <div><span>BUILD THESE CONSTRUCTS</span><p id="selectedActionMutation">Pending</p></div>
-            <div><span>BUILD THIS COMPARISON</span><p id="selectedActionControl">Pending</p></div>
-            <div><span>MEASURE THESE OUTPUTS</span><p id="selectedActionAssay">Pending</p></div>
-          </div>
-          <div class="selected-action-rule"><span>THIS RESULT SUPPORTS THE RESIDUE IF</span><p id="selectedActionRule">Pending</p></div>
-          <p class="selected-action-status" id="selectedActionStatus" role="status">Select a ranked residue to update the construct and measurement plan.</p>
-        </article>
         <section class="atomic-evidence" aria-labelledby="atomic-evidence-title">
           <div class="atomic-evidence-head">
             <div><span>COORDINATE EVIDENCE</span><h4 id="atomic-evidence-title">What atoms touch this residue?</h4><p id="atomicEvidenceIntro">Select a residue to inspect its atom-level partners before choosing a mutation.</p></div>
@@ -298,20 +317,6 @@
             <div class="atomic-contrast-rows" id="atomicContrastRows"></div>
           </div>
         </section>
-        <div class="evidence-lab-grid">
-          <article class="residue-audit">
-            <div class="panel-head"><span>01 / SCORE BREAKDOWN</span><strong id="auditResidue">Pending</strong></div>
-            <p id="auditSummary">Select a ranked residue to inspect every score component.</p>
-            <div class="contribution-chart" id="contributionChart"></div>
-            <div class="audit-detail"><span>MUTATION CHEMISTRY</span><p id="auditMutation">Pending</p></div>
-            <div class="audit-detail"><span>WHY THIS COMPARISON WAS CHOSEN</span><p id="auditControl">Pending</p></div>
-          </article>
-          <article class="network-panel">
-            <div class="panel-head"><span>02 / CONTACT GRAPH</span><strong>Force-directed layout</strong></div>
-            <svg id="networkMap" viewBox="0 0 620 420" role="img" aria-label="Residue interaction network projection linked to the selected residue"></svg>
-            <p>Each edge is a Cα contact under the active cutoff. Click any node to select that residue. The 2D positions are a graph layout, not a physical trajectory.</p>
-          </article>
-        </div>
       </section>
 
       <section class="scientific-contract" aria-labelledby="scientific-contract-title">
@@ -496,6 +501,6 @@
   <footer><a href="/">← RINet home</a><span>Structure Brief 4.0 · residue selection and experiment planning</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
   <script src="/contact.js?v=5"></script>
-  <script src="/brief/brief.js?v=29"></script>
+  <script src="/brief/brief.js?v=30"></script>
 </body>
 </html>

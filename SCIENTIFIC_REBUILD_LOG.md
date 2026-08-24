@@ -229,6 +229,14 @@ Values should be rechecked after any change to target definition, spring constru
 - Verified the full-structure initial view and experiment path at desktop and 390 × 844 mobile sizes. The molecule remains fully visible, mobile cards are swipeable, and the viewport was reset after testing.
 - Re-tested the question tabs and construct-list regeneration after the layout change; both update the underlying experiment correctly.
 
+### Ranking explanation promoted (2026-08-25)
+
+- Moved the ranked-residue picker, score contribution breakdown, contact graph, and selected-residue action panel directly below target selection. They now appear before construct tables, reference material, and the atom-level audit.
+- Replaced the diffuse whole-protein graph with a selected-residue neighborhood: breadth-first traversal through the active Cα contact network, capped at 32 residues on desktop and 24 on small screens.
+- Increased the selected, direct-contact, top-ranked, and background node radii; tightened the graph layout; emphasized direct contact edges; and retained labels only where they identify the selection or a scientifically relevant ranked/direct neighbor.
+- Enlarged contribution bars and values and placed the score and graph side by side on desktop, stacked score-first on mobile.
+- Verified desktop and 390 × 844 layouts, 32/24-node limits, residue labels, score bars, and node-click selection. Clicking a graph node updates the residue action panel and its corresponding mutation plan.
+
 ## Work still required before strong performance claims
 
 1. Freeze a multi-protein benchmark before any further weight tuning. Use family-separated train/development/test partitions.

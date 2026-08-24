@@ -1754,24 +1754,60 @@ function renderSequence(report, requestedChain = activeSequenceChain) {
 
 function renderNetworkMap(report, selected = report.topResidues[0]) {
   const svg = document.getElementById("networkMap");
-  if (!svg) return;
-  const selectedKeys = new Set(report.allResidues.slice(0,90).map(row=>row.key));
-  report.edges.forEach(edge => { if (selectedKeys.has(edge.source)) selectedKeys.add(edge.target); if (selectedKeys.has(edge.target)) selectedKeys.add(edge.source); });
-  const nodes = report.allResidues.filter(row=>selectedKeys.has(row.key)).slice(0,150).map((row,index)=>({ ...row, x:310+170*Math.cos(2*Math.PI*index/Math.max(1,Math.min(40,report.allResidues.length))), y:210+150*Math.sin(2*Math.PI*index/Math.max(1,Math.min(40,report.allResidues.length))) }));
+  if (!svg || !selected) return;
+  const byResidueKey = new Map(report.allResidues.map(row=>[row.key,row]));
+  const adjacency = new Map(report.allResidues.map(row=>[row.key,[]]));
+  report.edges.forEach(edge=>{
+    if(adjacency.has(edge.source)&&adjacency.has(edge.target)){
+      adjacency.get(edge.source).push(edge.target);
+      adjacency.get(edge.target).push(edge.source);
+    }
+  });
+  const compactMap=window.matchMedia("(max-width: 700px)").matches;
+  const maximumNodes=compactMap?24:32,depthByKey=new Map([[selected.key,0]]);
+  let frontier=[selected.key];
+  for(let depth=1;depth<=4&&frontier.length&&depthByKey.size<maximumNodes;depth+=1){
+    const next=[];
+    frontier.forEach(key=>{
+      [...(adjacency.get(key)||[])].sort((left,right)=>{
+        const a=byResidueKey.get(left),b=byResidueKey.get(right);
+        return (a?.rank||9999)-(b?.rank||9999)||(b?.score||0)-(a?.score||0);
+      }).forEach(key=>{
+        if(depthByKey.has(key)||depthByKey.size>=maximumNodes)return;
+        depthByKey.set(key,depth);next.push(key);
+      });
+    });
+    frontier=next;
+  }
+  const grouped=[...depthByKey].reduce((map,[key,depth])=>{if(!map.has(depth))map.set(depth,[]);map.get(depth).push(key);return map;},new Map());
+  const radii=[0,60,102,140,168];
+  const nodes=[...depthByKey].map(([key,depth])=>{
+    const row=byResidueKey.get(key),ring=grouped.get(depth)||[key],index=ring.indexOf(key),angle=-Math.PI/2+2*Math.PI*index/Math.max(1,ring.length)+(depth%2?0:.19),radius=radii[depth]||205;
+    const anchorX=310+radius*Math.cos(angle),anchorY=210+Math.min(radius,150)*Math.sin(angle);
+    return {...row,depth,anchorX,anchorY,x:anchorX,y:anchorY};
+  }).filter(node=>node.key);
   const byKey = new Map(nodes.map(node=>[node.key,node]));
-  const edges = report.edges.filter(edge=>byKey.has(edge.source)&&byKey.has(edge.target)).slice(0,900);
-  for (let iteration=0;iteration<65;iteration+=1) {
+  const edges = report.edges.filter(edge=>byKey.has(edge.source)&&byKey.has(edge.target));
+  for (let iteration=0;iteration<90;iteration+=1) {
     const forces=new Map(nodes.map(node=>[node.key,{x:0,y:0}]));
     for (let i=0;i<nodes.length;i+=1) for (let j=i+1;j<nodes.length;j+=1) {
-      const a=nodes[i],b=nodes[j],dx=a.x-b.x,dy=a.y-b.y,d2=Math.max(25,dx*dx+dy*dy),force=130/d2;
+      const a=nodes[i],b=nodes[j],dx=a.x-b.x,dy=a.y-b.y,d2=Math.max(81,dx*dx+dy*dy),force=310/d2;
       forces.get(a.key).x+=dx*force;forces.get(a.key).y+=dy*force;forces.get(b.key).x-=dx*force;forces.get(b.key).y-=dy*force;
     }
-    edges.forEach(edge=>{const a=byKey.get(edge.source),b=byKey.get(edge.target),dx=b.x-a.x,dy=b.y-a.y,d=Math.max(1,Math.hypot(dx,dy)),force=(d-34)*.012;forces.get(a.key).x+=dx/d*force;forces.get(a.key).y+=dy/d*force;forces.get(b.key).x-=dx/d*force;forces.get(b.key).y-=dy/d*force;});
-    nodes.forEach(node=>{const force=forces.get(node.key);node.x=Math.max(14,Math.min(606,node.x+force.x+(310-node.x)*.003));node.y=Math.max(14,Math.min(406,node.y+force.y+(210-node.y)*.003));});
+    edges.forEach(edge=>{const a=byKey.get(edge.source),b=byKey.get(edge.target),dx=b.x-a.x,dy=b.y-a.y,d=Math.max(1,Math.hypot(dx,dy)),force=(d-42)*.024;forces.get(a.key).x+=dx/d*force;forces.get(a.key).y+=dy/d*force;forces.get(b.key).x-=dx/d*force;forces.get(b.key).y-=dy/d*force;});
+    nodes.forEach(node=>{
+      if(node.key===selected.key){node.x=310;node.y=210;return;}
+      const force=forces.get(node.key);
+      node.x=Math.max(50,Math.min(570,node.x+force.x+(node.anchorX-node.x)*.018));
+      node.y=Math.max(48,Math.min(372,node.y+force.y+(node.anchorY-node.y)*.018));
+    });
   }
   const chainColors=["#4bc6d9","#738cff","#b98cff","#ff9b5e","#42cf9b","#d9bd54"];
   const chainIndex=new Map(report.chainReports.map((row,index)=>[row.chain,index]));
-  svg.innerHTML = `${edges.map(edge=>{const a=byKey.get(edge.source),b=byKey.get(edge.target);return `<line class="network-edge" x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}"/>`;}).join("")}${nodes.map(node=>{const top=node.rank<=10,active=node.label===selected?.label,radius=active?8:top?5:3.1,color=active?"#ff4f91":top?"#c9fb3c":chainColors[(chainIndex.get(node.chain)||0)%chainColors.length];return `<circle class="network-node" data-network-label="${esc(node.label)}" cx="${node.x.toFixed(1)}" cy="${node.y.toFixed(1)}" r="${radius}" fill="${color}"><title>${esc(node.label)} · rank ${node.rank} · score ${node.score.toFixed(1)}</title></circle>${active||node.rank<=5?`<text class="network-label" x="${(node.x+8).toFixed(1)}" y="${(node.y-7).toFixed(1)}">${esc(node.label)}</text>`:""}`;}).join("")}`;
+  const directCount=nodes.filter(node=>node.depth===1).length;
+  svg.innerHTML = `<defs><filter id="networkGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>${edges.map(edge=>{const a=byKey.get(edge.source),b=byKey.get(edge.target),direct=edge.source===selected.key||edge.target===selected.key;return `<line class="network-edge ${direct?"direct-edge":""}" x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}"/>`;}).join("")}${nodes.map(node=>{const top=Number.isFinite(node.rank)&&node.rank<=10,active=node.key===selected.key,direct=node.depth===1,radius=active?17:direct?12:top?10:8.5,color=active?"#ff5c9b":direct?"#c9fb3c":top?"#f2ffae":chainColors[(chainIndex.get(node.chain)||0)%chainColors.length],showLabel=active||top||(direct&&directCount<=9),rank=Number.isFinite(node.rank)?`rank ${node.rank} · score ${node.score.toFixed(1)}`:`contact neighbor`;
+    return `<circle class="network-node ${active?"active":direct?"direct":top?"ranked":""}" data-network-label="${esc(node.label)}" cx="${node.x.toFixed(1)}" cy="${node.y.toFixed(1)}" r="${radius}" fill="${color}" ${active?'filter="url(#networkGlow)"':""}><title>${esc(node.label)} · ${rank} · ${node.depth} contact step${node.depth===1?"":"s"} from selected</title></circle>${showLabel?`<text class="network-label ${active?"active":""}" x="${(node.x+(active?18:12)).toFixed(1)}" y="${(node.y+(active?5:4)).toFixed(1)}">${esc(node.label)}</text>`:""}`;
+  }).join("")}`;
   svg.querySelectorAll("[data-network-label]").forEach(node=>node.addEventListener("click",()=>selectAnalyzedResidue(report.allResidues.find(row=>row.label===node.dataset.networkLabel),{autoView:true})));
 }
 
