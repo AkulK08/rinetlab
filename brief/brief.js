@@ -587,7 +587,7 @@ function biologicalGuidance(report, candidateOverride = report.topResidues[0], c
       match: /hemoglobin|haemoglobin|oxygen transport|oxygen-binding|heme transport/,
       identity: "Oxygen-carrying heme assembly",
       useCase: "Oxygen binding and cooperativity",
-      useNote: "Useful for testing heme-linked function, subunit communication, oxygen affinity and assembly stability.",
+      useNote: "Measure oxygen affinity or cooperativity together with heme occupancy and tetramer integrity.",
       assay: "an oxygen-equilibrium or spectral heme assay",
       purpose: "The structure is suited to separating heme-proximal effects from subunit communication and general fold loss.",
     },
@@ -595,7 +595,7 @@ function biologicalGuidance(report, candidateOverride = report.topResidues[0], c
       match: /antibody|immunoglobulin|immune|antigen/,
       identity: "Immune recognition protein",
       useCase: "Binding and specificity",
-      useNote: "Useful for testing whether a surface site changes recognition without destabilizing the scaffold.",
+      useNote: "Measure binding or neutralization together with expression and scaffold integrity.",
       assay: "the established binding or neutralization assay",
       purpose: "The most useful question is whether a surface intervention changes recognition beyond a matched structural perturbation.",
     },
@@ -603,7 +603,7 @@ function biologicalGuidance(report, candidateOverride = report.topResidues[0], c
       match: /receptor|signaling|signal transduction|g-protein|kinase|phosphatase/,
       identity: "Signaling protein",
       useCase: "Activity and state control",
-      useNote: "Useful for prioritizing sites that may change activity, partner response or conformational state.",
+      useNote: "Measure the established activity readout together with abundance and state or assembly controls.",
       assay: "the closest established activity or signaling readout",
       purpose: "The structure can identify a perturbation that tests state or partner control while preserving molecular integrity.",
     },
@@ -611,7 +611,7 @@ function biologicalGuidance(report, candidateOverride = report.topResidues[0], c
       match: /enzyme|oxidoreductase|transferase|hydrolase|lyase|isomerase|ligase|protease|catalytic|\w+ase\b/,
       identity: "Catalytic protein",
       useCase: "Catalysis and substrate handling",
-      useNote: "Useful for separating catalytic, ligand-positioning and structural effects.",
+      useNote: "Measure turnover or product formation together with abundance and fold quality.",
       assay: "a substrate-turnover or product-formation assay",
       purpose: "The structure is useful for testing whether a graph-prioritized site changes catalysis rather than simply reducing fold quality.",
     },
@@ -643,12 +643,12 @@ function biologicalGuidance(report, candidateOverride = report.topResidues[0], c
   const siteReason = candidate?.directMetalCoordination
     ? `${candidate.label} makes a ${candidate.ligandDistance.toFixed(1)} Å direct contact to ${candidate.nearestLigandElement} in ${candidate.nearestLigand}; this is explicit coordinate evidence for a metal-linked structural role, not a prediction of the mutation outcome.`
     : candidate?.interchain
-    ? `${candidate.label} sits at a cross-chain structural junction and is positioned to test communication within the assembly.`
+    ? `${candidate.label} has ${candidate.interchain} cross-chain contact${candidate.interchain===1?"":"s"} at the active cutoff and ranks ${candidate.rank}/${report.allResidues.length}.`
     : candidate?.ligandDistance !== null && candidate?.ligandDistance <= 6
       ? `${candidate.label} is ${candidate.ligandDistance.toFixed(1)} Å from ${candidate.nearestLigand || "a bound group"} and can test whether that local ligand contact matters.`
       : candidate?.disulfidePartner
         ? `${candidate.label} participates in a probable disulfide constraint, making structural integrity the first biological question.`
-        : `${candidate?.label || "The first site"} has unusually broad reach through the residue contact graph and offers the clearest first contrast in this structure.`;
+        : `${candidate?.label || "The first site"} is rank ${candidate?.rank || "—"}/${report.allResidues.length}. ${candidate?.rationale || "No residue-level rationale is available."}`;
   return {
     ...category,
     identityNote,
@@ -690,11 +690,11 @@ function updateAssaySetup(report, residue) {
 }
 
 const adaptiveHypotheses = [
-  { id:"network", label:"Network coupling" },
-  { id:"local", label:"Local chemistry" },
-  { id:"destabilization", label:"Destabilization" },
-  { id:"hub", label:"Generic hub" },
-  { id:"mixed", label:"Mixed model" }
+  { id:"network", label:"Long-range connectivity", short:"long-range" },
+  { id:"local", label:"Direct local contact", short:"local contact" },
+  { id:"destabilization", label:"Protein-quality loss", short:"protein quality" },
+  { id:"hub", label:"Packing density", short:"packing" },
+  { id:"mixed", label:"Combined features", short:"combined" }
 ];
 
 function bounded(value, minimum = 0, maximum = 1) {
@@ -803,7 +803,7 @@ function buildAdaptivePanel(report, requestedSize = adaptiveRound.panelSize) {
   selected.forEach((residue,index) => {
     const mechanism = dominantMechanism(residue);
     const contrast=mechanismContrast(residue);
-    entries.push({ type:"candidate", key:residue.label, role:`Test · ${contrast.high.label} / ${contrast.low.label}`, residue, mutation:mutationLadder(residue).conservative, mechanism, information:adaptiveCounterfactualValue(residue), contrast, why:`The declared mechanisms differ by ${(100*contrast.gap).toFixed(0)}/100 at this site; it also adds a structural context not already represented. Active-model rank ${residue.rank}/${report.allResidues.length}.` });
+    entries.push({ type:"candidate", key:residue.label, role:`Candidate · ${contrast.high.short} vs ${contrast.low.short}`, residue, mutation:mutationLadder(residue).conservative, mechanism, information:adaptiveCounterfactualValue(residue), contrast, why:`The ${contrast.high.short} and ${contrast.low.short} working models differ by ${(100*contrast.gap).toFixed(0)}/100 in predicted function-minus-quality response at this site. Active-model rank ${residue.rank}/${report.allResidues.length}; structural feature profile not duplicated in the panel.` });
     const pair = controls.find(item => item.candidate.label === residue.label);
     if (pair) entries.push({ type:"control", key:pair.residue.label, role:"Matched control", residue:pair.residue, mutation:mutationLadder(pair.residue).conservative, candidateFor:residue, information:adaptiveCounterfactualValue(pair.residue), why:`Controls ${residue.label} for chemistry and structural context while carrying a lower network score; match ${pair.residue.matchQuality.toFixed(0)}/100.` });
   });
@@ -832,14 +832,14 @@ function resetAdaptiveAnalysisUI() {
   const status = document.getElementById("adaptiveStatus");
   if (status) {
     status.className="adaptive-status";
-    status.innerHTML="<strong>Round 1 is ready.</strong><span>Download the CSV or enter results directly. No result is treated as causal proof.</span>";
+    status.innerHTML="<strong>Panel generated.</strong><span>Enter normalized measurements in the table, or export and re-import the CSV template.</span>";
   }
   const summary = document.getElementById("adaptivePosteriorSummary");
-  if (summary) summary.textContent="Enter complete results for at least two candidates and one additional construct to update the five mechanism weights.";
+  if (summary) summary.textContent="Complete all three measurements for at least two candidates and one additional construct.";
   const posterior = document.getElementById("adaptivePosterior");
-  if (posterior) posterior.innerHTML="<span>No measured results</span>";
+  if (posterior) posterior.innerHTML="<span>No results entered</span>";
   const nextRows = document.getElementById("adaptiveNextRows");
-  if (nextRows) nextRows.innerHTML="<p>The next panel will appear here with the structural reason and expected information gain for every residue.</p>";
+  if (nextRows) nextRows.innerHTML="<p>Follow-up sites will appear here after the result table is analyzed.</p>";
 }
 
 function adaptiveResultClass(result) {
@@ -848,10 +848,10 @@ function adaptiveResultClass(result) {
   const integrityFloor = bounded(document.getElementById("adaptiveIntegrityFloor")?.value || 75,1,100);
   const shifted = Math.abs(result.function-100) >= functionalThreshold;
   const intact = result.abundance >= integrityFloor && result.integrity >= integrityFloor;
-  if (shifted && intact) return { label:"Function-specific signal", className:"signal" };
-  if (shifted && !intact) return { label:"Integrity-confounded", className:"confound" };
-  if (!shifted && intact) return { label:"Clean negative", className:"negative" };
-  return { label:"Integrity loss; function unresolved", className:"confound" };
+  if (shifted && intact) return { label:"Specific functional effect", className:"signal" };
+  if (shifted && !intact) return { label:"Confounded by protein quality", className:"confound" };
+  if (!shifted && intact) return { label:"No resolved effect", className:"negative" };
+  return { label:"Protein-quality defect", className:"confound" };
 }
 
 function renderAdaptivePanel(report, { rebuild = true, clearResults = false } = {}) {
@@ -875,7 +875,7 @@ function renderAdaptivePanel(report, { rebuild = true, clearResults = false } = 
   const baselineResidues = report.allResidues.slice(0,selectedResidues.length);
   document.getElementById("adaptiveCoverage").textContent=`${adaptiveCoverage(report,selectedResidues).toFixed(0)}%`;
   document.getElementById("adaptiveBaseline").textContent=`${adaptiveCoverage(report,baselineResidues).toFixed(0)}%`;
-  document.getElementById("adaptiveSeparation").textContent=`${adaptiveMechanismSeparation(adaptiveRound.panel).toFixed(0)}%`;
+  document.getElementById("adaptiveSeparation").textContent=`${adaptiveMechanismSeparation(adaptiveRound.panel).toFixed(0)}/100`;
   document.getElementById("adaptiveControls").textContent=String(adaptiveRound.panel.filter(entry=>entry.type==="control").length);
   document.getElementById("adaptivePanelSize").value=String(adaptiveRound.panelSize);
 }
@@ -928,15 +928,15 @@ function analyzeAdaptiveResults(report=current?.report) {
   renderAdaptivePanel(report,{rebuild:false});
   const status=document.getElementById("adaptiveStatus");
   if (!analysis) {
-    status.className="adaptive-status"; status.innerHTML="<strong>More results required.</strong><span>Enter all three measurements for at least two candidates and one additional non-WT construct.</span>";
+    status.className="adaptive-status"; status.innerHTML="<strong>Insufficient results.</strong><span>Complete all three measurements for at least two candidates and one additional non-WT construct.</span>";
     return;
   }
   status.className=`adaptive-status ${adaptiveRound.example?"example":""}`;
   const paired=analysis.measured.filter(row=>row.controlEntry).length;
-  status.innerHTML=adaptiveRound.example?"<strong>Illustrative data only.</strong><span>These values demonstrate the workflow and are not hemoglobin measurements.</span>":`<strong>${analysis.completed.size} constructs analyzed.</strong><span>${paired} candidate-control contrast${paired===1?"":"s"} used; conditional mechanism weights and round 2 recommendations updated.</span>`;
-  document.getElementById("adaptivePosteriorSummary").textContent=`${analysis.fits[0].label} best matches the candidate-versus-control, three-channel pattern (${(100*analysis.fits[0].probability).toFixed(0)}% conditional weight). This compares five declared models; it is not causal proof.`;
+  status.innerHTML=adaptiveRound.example?"<strong>Example values loaded.</strong><span>These are not measured 4HHB data.</span>":`<strong>${analysis.completed.size} constructs analyzed.</strong><span>The model fit used ${paired} complete candidate-control pair${paired===1?"":"s"}.</span>`;
+  document.getElementById("adaptivePosteriorSummary").textContent=`${analysis.fits[0].label} has the lowest squared error against the candidate-minus-control measurements (relative weight ${(100*analysis.fits[0].probability).toFixed(0)}%). The weights compare only the five working models shown above.`;
   document.getElementById("adaptivePosterior").innerHTML=analysis.fits.map(row=>`<div class="posterior-row"><span>${esc(row.label)}</span><i><b style="width:${(100*row.probability).toFixed(1)}%"></b></i><strong>${(100*row.probability).toFixed(0)}%</strong></div>`).join("");
-  document.getElementById("adaptiveNextRows").innerHTML=analysis.next.map(({residue,gain})=>{const contrast=mechanismContrast(residue);return `<div class="next-experiment-row"><button type="button" data-next-site="${esc(residue.label)}">${esc(residue.label)}<br>${esc(mutationLadder(residue).conservative)}</button><span>Separates ${esc(contrast.high.label)} from ${esc(contrast.low.label)} among the models still consistent with round 1; active-model rank ${residue.rank}.</span><strong>${(100*gain).toFixed(0)}/100</strong></div>`;}).join("");
+  document.getElementById("adaptiveNextRows").innerHTML=analysis.next.map(({residue,gain})=>{const contrast=mechanismContrast(residue);return `<div class="next-experiment-row"><button type="button" data-next-site="${esc(residue.label)}">${esc(residue.label)}<br>${esc(mutationLadder(residue).conservative)}</button><span>Largest remaining contrast: ${esc(contrast.high.short)} vs ${esc(contrast.low.short)}. Active-model rank ${residue.rank}.</span><strong>Δ ${(100*gain).toFixed(0)}</strong></div>`;}).join("");
   document.querySelectorAll("[data-next-site]").forEach(button=>button.addEventListener("click",()=>selectAnalyzedResidue(report.allResidues.find(row=>row.label===button.dataset.nextSite),{autoView:true})));
 }
 
@@ -962,7 +962,7 @@ function downloadAdaptiveTemplate() {
   const rows=adaptiveRound.panel.map((entry,index)=>[ `A${index+1}`,entry.role,entry.residue?.label||"WT",entry.mutation,assay,entry.type==="wt"?100:"",entry.type==="wt"?100:"",entry.type==="wt"?100:"",entry.why ]);
   const csv=[header.map(adaptiveCsvCell).join(","),...rows.map(row=>row.map(adaptiveCsvCell).join(","))].join("\n");
   const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); const link=document.createElement("a"); link.href=url; link.download=`rinet-${(current.report.metadata?.pdbId||"structure").toLowerCase()}-adaptive-round.csv`; link.click(); window.setTimeout(()=>URL.revokeObjectURL(url),1000);
-  document.getElementById("adaptiveStatus").innerHTML="<strong>Results CSV downloaded.</strong><span>Fill the three % WT columns and import the same file to design round 2.</span>";
+  document.getElementById("adaptiveStatus").innerHTML="<strong>Result template downloaded.</strong><span>Fill the three % WT columns and import the completed file.</span>";
 }
 
 function parseAdaptiveCsvLine(line) {
@@ -976,7 +976,7 @@ async function importAdaptiveResults(file) {
   const headers=parseAdaptiveCsvLine(lines[0]).map(value=>value.trim().toLowerCase()); const index=Object.fromEntries(headers.map((value,i)=>[value,i])); let imported=0;
   const readNumber=value=>String(value??"").trim()===""?NaN:Number(value);
   lines.slice(1).forEach(line=>{const cells=parseAdaptiveCsvLine(line);const label=(cells[index.residue]||"").trim();if(!label||label==="WT")return;const entry=adaptiveRound.panel.find(row=>row.residue?.label===label);if(!entry)return;const result={function:readNumber(cells[index.function_percent_wt]),abundance:readNumber(cells[index.abundance_percent_wt]),integrity:readNumber(cells[index.integrity_percent_wt])};if([result.function,result.abundance,result.integrity].every(Number.isFinite)){adaptiveRound.results.set(entry.key,result);imported+=1;}});
-  adaptiveRound.example=false; renderAdaptivePanel(current.report,{rebuild:false}); analyzeAdaptiveResults(current.report); if(imported<3)document.getElementById("adaptiveStatus").innerHTML=`<strong>${imported} complete rows imported.</strong><span>Round 2 requires two measured candidates and one additional complete construct.</span>`;
+  adaptiveRound.example=false; renderAdaptivePanel(current.report,{rebuild:false}); analyzeAdaptiveResults(current.report); if(imported<3)document.getElementById("adaptiveStatus").innerHTML=`<strong>${imported} complete rows imported.</strong><span>Analysis requires two measured candidates and one additional complete construct.</span>`;
 }
 
 function parsePdb(text, options = {}) {
@@ -1296,7 +1296,7 @@ function renderGuidance(report, candidateOverride = report.topResidues[0]) {
   const assay = assayFor(report, candidate, control);
   const structuralThesis = disulfide
     ? `${candidateLabel} forms a ${disulfide.distance.toFixed(2)} Å sulfur–sulfur contact with ${disulfide.label}, consistent with a disulfide constraint. The decisive question is whether function changes beyond any loss of structural integrity.`
-    : `${candidateLabel} is the strongest multi-signal structural contrast in this coordinate model. Test it against ${controlLabel} while holding expression and folding accountable.`;
+    : `${candidateLabel} is rank ${candidate.rank}/${report.allResidues.length} under the active score. Compare it with ${controlLabel} and measure protein quality alongside function.`;
 
   document.getElementById("guidanceIdentity").textContent = biology.identity;
   document.getElementById("guidanceIdentityNote").textContent = biology.identityNote;
@@ -1304,7 +1304,7 @@ function renderGuidance(report, candidateOverride = report.topResidues[0]) {
   document.getElementById("guidanceUseCaseNote").textContent = biology.useNote;
   document.getElementById("guidancePrimaryReason").textContent = biology.siteReason;
   document.getElementById("guidanceMutation").textContent = biology.firstMove;
-  document.getElementById("guidanceGate").textContent = disulfide ? "Integrity before function" : "Candidate must beat control";
+  document.getElementById("guidanceGate").textContent = disulfide ? "Measure protein quality first" : "Function effect exceeds control";
   document.getElementById("guidanceConfidence").textContent = `${Math.round(completeness * 100)}% coordinate completeness, not biological certainty.`;
   document.getElementById("guidanceHypothesis").textContent = selectedExperimentQuestion(report, candidate);
   document.getElementById("guidanceExperiment").textContent = `Build the first and stronger chemistry probes at ${candidateLabel}, plus the matched perturbation at ${controlLabel}. Run all constructs beside wild type. Measure ${assay}, abundance, and one orthogonal folding or stability readout in the same batch.`;
@@ -1328,10 +1328,10 @@ function renderGuidance(report, candidateOverride = report.topResidues[0]) {
   document.getElementById("viewerCandidateReason").textContent = candidate ? residueExplanation(candidate) : "NO RANKABLE CONTACT SIGNAL";
   document.getElementById("hudThesis").textContent = `${biology.identity}. ${biology.siteReason}`;
   document.getElementById("hudMutation").textContent = ladder.conservative;
-  document.getElementById("hudMutationNote").textContent = disulfide ? "Disrupts the bridge; treat folding as the first readout." : `Tests ${candidateLabel} with the least severe informative change.`;
+  document.getElementById("hudMutationNote").textContent = disulfide ? "Disrupts the bridge; measure folding first." : `Smallest side-chain property change proposed for ${candidateLabel}.`;
   document.getElementById("hudControl").textContent = controlLabel;
-  document.getElementById("hudGate").textContent = disulfide ? "INTEGRITY BEFORE FUNCTION" : "CANDIDATE MUST BEAT CONTROL";
-  document.getElementById("hudGateNote").textContent = disulfide ? `A functional effect is not site-specific evidence if ${candidateLabel} also loses expression or fold.` : `Advance only if ${candidateLabel} changes the functional readout more than ${controlLabel} without a matching integrity defect.`;
+  document.getElementById("hudGate").textContent = disulfide ? "MEASURE FOLD FIRST" : "FUNCTION EFFECT > CONTROL";
+  document.getElementById("hudGateNote").textContent = disulfide ? `Do not assign a specific functional effect if ${candidateLabel} also lowers expression or folding.` : `${candidateLabel} must change the functional readout more than ${controlLabel} without a corresponding protein-quality defect.`;
 }
 
 function scoreEquationText(lensName = activeScoringLens) {
@@ -1557,7 +1557,7 @@ function render(data) {
   renderDiscovery(r, "biology");
   renderScientificPanels(r,r.topResidues[0]);
   renderAdaptivePanel(r,{rebuild:true,clearResults:true});
-  const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Intelligence 3.0 (receipt ${data.receiptId}; ${r.format}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} author chain${r.chainReports.length === 1 ? "" : "s"}. A deterministic residue-contact graph was constructed between Cα atoms separated by no more than ${r.contactCutoff.toFixed(1)} Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. ${scoreEquationText(r.scoringLens)} Closeness was ${r.residues <= 1500 ? "calculated on reachable graph components" : "omitted because this very large structure exceeds the interactive all-pairs path limit"}; betweenness was ${r.betweennessCalculated ? "calculated with the unweighted Brandes algorithm" : "omitted because the structure exceeds the 900-residue interactive path limit"}. Known benchmark labels, when available, were evaluated only after ranking and contributed no score. Cysteines received no score bonus; ${r.disulfides} probable disulfide constraint${r.disulfides === 1 ? " was" : "s were"} assigned solely from Sγ separations of 1.7–2.3 Å and treated as an integrity warning. Detected disulfide residues were excluded from automatic adaptive rounds because breaking a covalent constraint creates a strong integrity confound; they remain available for manual inspection. Coordinate screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} numbering gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}) and were not assumed to represent prediction confidence. The first adaptive round contains wild type, structurally prioritized candidates and lower-score controls matched on residue class, burial, B-factor field and chain context. Candidate selection is greedy and deterministic: 36% counterfactual disagreement among five declared mechanisms, 34% diversity in the ten displayed structural features and 30% active-lens rank. Network coupling, local chemistry, destabilization, generic hub and mixed signatures define expected function, abundance and integrity patterns; these are explicit mechanistic assumptions, not learned predictions. After result entry, candidate-minus-matched-control patterns are fit by mean squared error and converted to conditional comparison weights with exp(-8 × MSE). The next sites maximize posterior-weighted disagreement while avoiding structural duplicates. These weights are neither calibrated probabilities nor evidence of causation and require prospective experimental validation. This is a static, coarse residue-network analysis, not an all-atom potential, dynamics calculation, evolutionary analysis or causal claim. No AI or learned model generated the ranking or interpretation.`;
+  const methods = `Coordinates from ${data.sourceName} were parsed locally with RINet Structure Intelligence 3.0 (receipt ${data.receiptId}; ${r.format}). The analyzed model contained ${r.residues} polymer residues and ${r.polymerAtoms} polymer atoms across ${r.chainReports.length} author chain${r.chainReports.length === 1 ? "" : "s"}. A deterministic residue-contact graph was constructed between Cα atoms separated by no more than ${r.contactCutoff.toFixed(1)} Å, excluding residues within two sequence positions on the same chain, yielding ${r.contacts} contacts. ${scoreEquationText(r.scoringLens)} Closeness was ${r.residues <= 1500 ? "calculated on reachable graph components" : "omitted because this very large structure exceeds the interactive all-pairs path limit"}; betweenness was ${r.betweennessCalculated ? "calculated with the unweighted Brandes algorithm" : "omitted because the structure exceeds the 900-residue interactive path limit"}. Known benchmark labels, when available, were evaluated only after ranking and contributed no score. Cysteines received no score bonus; ${r.disulfides} probable disulfide constraint${r.disulfides === 1 ? " was" : "s were"} assigned solely from Sγ separations of 1.7–2.3 Å. Detected disulfide residues were excluded from automatic panels because breaking a covalent constraint strongly confounds protein-quality measurements. Coordinate screening flagged ${r.chainReports.reduce((s,c)=>s+c.breaks,0)} numbering gap or backbone break${r.chainReports.reduce((s,c)=>s+c.breaks,0) === 1 ? "" : "s"}, ${r.lowOccupancy} polymer atoms below full occupancy and ${r.missingCa} residues without Cα coordinates. B-factor fields were summarized descriptively (mean ${r.bMean === null ? "not available" : r.bMean.toFixed(2)}) and were not interpreted as prediction confidence. The first panel contains wild type, structurally prioritized candidates, and lower-score controls matched on residue class, burial, B-factor field, and chain. Candidate selection is greedy and deterministic: 36% variance among five working-model readout patterns, 34% diversity in the ten displayed structural features, and 30% active-model rank. The working models represent long-range connectivity, direct local contact, protein-quality loss, packing density, and combined features. They map normalized structural features to expected function, abundance, and fold/assembly changes and are design assumptions rather than fitted outcome predictions. After result entry, candidate-minus-control patterns are fit by mean squared error and converted to relative comparison weights using exp(-8 × MSE). Follow-up sites maximize weighted disagreement among the working models while avoiding structural duplicates. The weights are not calibrated probabilities and do not establish mechanism. This is a static Cα contact analysis; it does not calculate all-atom energetics, conformational dynamics, evolution, or cellular phenotype.`;
   document.getElementById("methodsText").textContent = methods;
   els.results.classList.remove("hidden");
   document.body.classList.add("analysis-mode");
