@@ -204,6 +204,7 @@ Values should be rechecked after any change to target definition, spring constru
 - Combined heme, individual heme, and manual residue targets recalculate the networks and ranking.
 - Manual targets no longer duplicate the residue count in the selector label.
 - The section indicator displays 1/5 through 5/5 and the original scroll cue is present.
+- Every workflow card now presents the scientific question first and its current target, construct, measurement, interpretation, or next experiment underneath; candidate and control answers no longer replace the question headline.
 - The visible page contains none of the previous "working models," "model fit," "model separation," or hand-set mechanism-pattern language.
 - The homepage is not modified by this rebuild; `/brief/` and `/brief/?demo=1` share the rebuilt app code.
 

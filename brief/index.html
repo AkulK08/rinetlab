@@ -8,7 +8,7 @@
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=20260816">
   <link rel="image_src" href="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <link rel="stylesheet" href="/contact.css?v=1">
-  <link rel="stylesheet" href="/brief/brief.css?v=29">
+  <link rel="stylesheet" href="/brief/brief.css?v=30">
   <title>Structure Brief | RINet</title>
   <meta name="description" content="Choose a functional site, rank mutations by their predicted effect on its mechanical compliance, and plan the candidate-control experiment.">
   <meta property="og:type" content="website">
@@ -165,12 +165,12 @@
           </div><small>The selected site is explicit. This choice specifies whether the mutation should be local, remote, or interface-focused.</small></div>
         </div>
         <nav class="experiment-spine" aria-label="Experiment workflow">
-          <a href="#questionSetup"><span>01 · QUESTION</span><strong id="workflowQuestion">Which functional site do you want to perturb?</strong><p>Choose the site and the biological measurement before looking at a score.</p></a>
-          <a href="#candidateControlStep"><span>02 · CANDIDATE</span><strong id="workflowCandidate">Calculating…</strong><p>Which residue most clearly perturbs that structural feature?</p></a>
-          <a href="#candidateControlStep"><span>03 · CONTROL</span><strong id="workflowControl">Calculating…</strong><p>What comparable mutation should have less effect?</p></a>
-          <a href="#measurementStep"><span>04 · MEASUREMENTS</span><strong id="workflowMeasurements">Function + quantity + integrity</strong><p>Did function change without simply losing usable protein?</p></a>
-          <a href="#interpretationStep"><span>05 · INTERPRETATION</span><strong id="workflowInterpretation">Awaiting measurements</strong><p>Was the effect site-specific, or did the protein become damaged?</p></a>
-          <a href="#interpretationStep"><span>06 · NEXT EXPERIMENT</span><strong id="workflowNext">Available after round 1</strong><p>Which construct best distinguishes what remains uncertain?</p></a>
+          <a href="#questionSetup"><span>01 · QUESTION</span><strong id="workflowQuestion">Which mutation should most change the mechanical compliance of the functional site?</strong><p class="workflow-answer"><b>Target + readout</b><em id="workflowTarget">Calculating…</em></p></a>
+          <a href="#candidateControlStep"><span>02 · CANDIDATE</span><strong>Which residue should most clearly perturb that site?</strong><p class="workflow-answer"><b>Candidate to test</b><em id="workflowCandidate">Calculating…</em></p></a>
+          <a href="#candidateControlStep"><span>03 · CONTROL</span><strong>What comparable mutation should have less effect?</strong><p class="workflow-answer"><b>Matched control</b><em id="workflowControl">Calculating…</em></p></a>
+          <a href="#measurementStep"><span>04 · MEASUREMENTS</span><strong>What must be measured to interpret the mutation?</strong><p class="workflow-answer"><b>Same-batch readouts</b><em id="workflowMeasurements">Function + quantity + integrity</em></p></a>
+          <a href="#interpretationStep"><span>05 · INTERPRETATION</span><strong>Was the functional effect specific, or was the protein damaged?</strong><p class="workflow-answer"><b>Current result</b><em id="workflowInterpretation">Awaiting measurements</em></p></a>
+          <a href="#interpretationStep"><span>06 · NEXT EXPERIMENT</span><strong>Which construct best distinguishes what remains uncertain?</strong><p class="workflow-answer"><b>Next construct</b><em id="workflowNext">Available after round 1</em></p></a>
         </nav>
         <section class="target-director" aria-labelledby="targetDirectorTitle">
           <div class="target-director-copy"><span>01 / FUNCTIONAL TARGET</span><h4 id="targetDirectorTitle">Where should a perturbation be felt?</h4><p>Choose a resolved ligand pocket or chain interface, or enter residues already known to define activity. This choice changes the mechanical calculation and the residue ranking.</p></div>
@@ -496,6 +496,6 @@
   <footer><a href="/">← RINet home</a><span>Structure Brief 4.0 · target-directed mutation and control design</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
   <script src="/contact.js?v=5"></script>
-  <script src="/brief/brief.js?v=27"></script>
+  <script src="/brief/brief.js?v=28"></script>
 </body>
 </html>
