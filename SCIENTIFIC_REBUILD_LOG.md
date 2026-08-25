@@ -248,6 +248,15 @@ Values should be rechecked after any change to target definition, spring constru
 - Replaced the long score rationale in the primary ranking panel with the three largest score drivers, target-effect percentile, cutoff stability, and rank. Full evidence remains available elsewhere in the same demo.
 - Verified automatic movement, pause/resume, previous/next navigation, target-to-ranking recalculation, result-to-next-construct movement, method expansion, and desktop/mobile presentation. The homepage remains unchanged.
 
+### Removed material between guided stops (2026-08-25)
+
+- Removed the analysis-status strip, duplicate structure metrics, long experiment-design introduction, and duplicate six-card workflow from the built-in guided presentation.
+- Moved the six scientific-question choices into the functional-target stage, so question and target are chosen in one place.
+- Moved the functional-readout control into the construct stage, immediately above the prefilled construct/measurement table.
+- Moved the score equation, detailed comparison logic, scientific references, atom-level contact audit, and method-scope panel out of the main scroll path and into the existing closed `Scientific evidence and methods` appendix after the final guided plan.
+- Preserved all calculations, controls, atom-level evidence, references, expert ranking, coordinate record, flags, limitations, and export behavior; only their presentation order changed.
+- Reverified desktop and 390 × 844 mobile layouts. Structure now flows directly to question/target, target directly to ranking, ranking directly to construct/readout, result directly to sequence, and sequence directly to checks and the final plan.
+
 ## Work still required before strong performance claims
 
 1. Freeze a multi-protein benchmark before any further weight tuning. Use family-separated train/development/test partitions.

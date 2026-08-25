@@ -2564,6 +2564,20 @@ document.getElementById("downloadReceipt").addEventListener("click", () => {
   const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `${current.receiptId.toLowerCase()}-structure-brief.json`; document.body.appendChild(link); link.click(); link.remove(); window.setTimeout(() => URL.revokeObjectURL(link.href), 2000);
 });
 
+function organizeGuidedDemo() {
+  if (new URLSearchParams(window.location.search).get("demo") !== "1") return;
+  const target=document.querySelector(".target-director"),questionPicker=document.querySelector(".lens-picker-wrap");
+  if(target&&questionPicker)target.prepend(questionPicker);
+  const adaptive=document.getElementById("candidateControlStep"),readout=document.getElementById("questionSetup"),adaptiveHead=adaptive?.querySelector(".adaptive-cycle-head");
+  if(adaptiveHead&&readout)adaptiveHead.after(readout);
+  const appendix=document.getElementById("guidedAppendix");
+  [".calculation-details",".design-details",".prior-art-boundary",".atomic-evidence",".scientific-contract"].forEach(selector=>{
+    const element=document.querySelector(selector);
+    if(appendix&&element)appendix.appendChild(element);
+  });
+}
+
+organizeGuidedDemo();
 switchSource("id", false);
 window.scrollTo({ top: 0, behavior: "auto" });
 initPreview();
