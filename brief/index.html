@@ -8,7 +8,7 @@
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=20260816">
   <link rel="image_src" href="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <link rel="stylesheet" href="/contact.css?v=1">
-  <link rel="stylesheet" href="/brief/brief.css?v=36">
+  <link rel="stylesheet" href="/brief/brief.css?v=37">
   <title>Structure Brief | RINet</title>
   <meta name="description" content="Choose the protein site you care about. RINet identifies the most useful residue to mutate, a comparison mutation, the measurements to run, and what to test next.">
   <meta property="og:type" content="website">
@@ -127,15 +127,17 @@
           <div class="viewer-boundary">SUPPLIED COORDINATES · STATIC STRUCTURE · NOT A TRAJECTORY</div>
         </div>
         <aside class="best-residues">
-          <div class="intel-intro"><p class="eyebrow">Residue selection and experiment plan</p><h3>Choose the site you care about. RINet tells you what to build and measure.</h3><p class="hud-definition">RINet ranks residues by their predicted effect on that site, then pairs the top mutation with a similar lower-effect comparison.</p><p id="hudThesis">Choose a functional site to find the first residue to test.</p></div>
+          <div class="intel-intro"><p class="eyebrow">Candidate experiments</p><h3>First residues to test</h3><p class="hud-definition">A structure-derived experiment ranking—not measured effect size. Known functional sites are labeled separately and never enter the score.</p></div>
+          <div class="ranked-title"><span>MODEL-PRIORITIZED EXPERIMENTS</span><small>First five shown</small></div>
+          <div id="bestResidueRows"></div>
+          <button class="ranked-residue-toggle" id="rankedResidueToggle" type="button" aria-expanded="false">Show all 10 candidates</button>
+          <p class="best-boundary">These are hypotheses to test. A residue is supported only when its mutation changes function more than the matched comparison while abundance and fold/assembly remain acceptable.</p>
+          <p class="hud-thesis-action" id="hudThesis">Choose a functional site to find the first residue to test.</p>
           <div class="intel-cards">
             <article><span>BUILD THIS MUTATION FIRST</span><strong id="hudMutation">Pending</strong><small id="hudMutationNote">Waiting for coordinates</small></article>
             <article><span>BUILD THIS COMPARISON</span><strong id="hudControl">Pending</strong><small>Run it in the same batch as the first mutation and wild type.</small></article>
             <article class="intel-risk"><span>RESULT TO LOOK FOR</span><strong id="hudGate">Pending</strong><small id="hudGateNote">Only interpret function if abundance and fold/assembly remain acceptable.</small></article>
           </div>
-          <div class="ranked-title"><span>10 MOST USEFUL RESIDUES TO TEST</span><small>Click any residue to see its mutation and experiment</small></div>
-          <div id="bestResidueRows"></div>
-          <p class="best-boundary">The ranking is recalculated for the functional site selected below. A result is useful when the mutation changes function more than its comparison and the protein still expresses and folds or assembles.</p>
         </aside>
       </section>
 
@@ -191,7 +193,7 @@
             <article><span>SELECTED TARGET</span><strong id="mechanicalTargetLabel">Calculating…</strong><small id="mechanicalTargetCount">—</small></article>
             <article><span>ELASTIC NETWORK</span><strong id="mechanicalNetworkSize">Calculating…</strong><small>Uniform Cα springs at 8.5 Å</small></article>
             <article><span>CUTOFF CHECK</span><strong>8.0 / 8.5 / 9.0 Å</strong><small id="mechanicalSolverStatus">Three independent networks</small></article>
-            <article><span>PRIMARY OUTPUT</span><strong>Residues most likely to affect this site</strong><small>Predicted change at the selected site when contacts around each residue are weakened</small></article>
+            <article><span>PRIMARY OUTPUT</span><strong>Candidate mutations for this site</strong><small>Model-prioritized experiments; not measured biological effect sizes</small></article>
           </div>
         </section>
 
@@ -504,6 +506,6 @@
   <footer><a href="/">← RINet home</a><span>Structure Brief 4.0 · residue selection and experiment planning</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
   <script src="/contact.js?v=5"></script>
-  <script src="/brief/brief.js?v=33"></script>
+  <script src="/brief/brief.js?v=34"></script>
 </body>
 </html>

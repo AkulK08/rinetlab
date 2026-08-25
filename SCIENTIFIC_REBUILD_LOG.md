@@ -265,6 +265,16 @@ Values should be rechecked after any change to target definition, spring constru
 - Added immediate button confirmation, a refreshed-table highlight, and a status message naming the new first candidate and explaining that the alternative panel remains deterministic.
 - Verified the default target changes from `All HEM pockets` to `Manual site`, the leading residue changes from `ARG A/C:141` to `TYR A/C:42`, and repeated panel generation changes the displayed candidates and comparisons.
 
+### Evidence-first candidate sidebar (2026-08-25)
+
+- Moved the ranked candidate experiments to the top of the structure sidebar, before the construct/control/result cards. The first five are visible immediately; `Show all 10 candidates` expands the same interactive list.
+- Replaced “most useful/important residue” language in the sidebar and target status with “model-prioritized experiment” and “first residue to test.” The primary mechanical output is now labeled `Candidate mutations for this site`.
+- Each row now shows the proposed substitution, target-effect percentile, cutoff stability, and an explicit `model score` label instead of presenting the score as biological impact.
+- Added an evidence classification independent of ranking. Exact matches to the post-ranking benchmark manifest are labeled `KNOWN FUNCTIONAL SITE`; all other rows are labeled `STRUCTURE-DERIVED CANDIDATE`. Benchmark labels do not enter the score.
+- For the default 4HHB analysis, `ARG A/C:141` is correctly marked as matching the independently supplied αArg141 functional anchor. The other leading rows remain unlabeled hypotheses until external evidence or experiments support them.
+- Simplified the sidebar into a quieter single-surface hierarchy with compact rows, lower visual chrome, one expandable candidate list, and action cards placed after the candidates.
+- Verified five-row/all-ten toggling, known-site labeling, residue selection, 3D highlighting, mutation-plan updates, and desktop/mobile layouts.
+
 ## Work still required before strong performance claims
 
 1. Freeze a multi-protein benchmark before any further weight tuning. Use family-separated train/development/test partitions.

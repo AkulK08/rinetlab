@@ -15,6 +15,7 @@ let activeScoringLens = "general";
 let activeTargetId = null;
 let activeSequenceChain = null;
 let customAssay = "";
+let sidebarRankingExpanded = false;
 const adaptiveRound = { panelSize: 8, panel: [], results: new Map(), example: false, panelOffset: 0 };
 const preview = { stage: null, component: null };
 const demoTour = { timer: null, frame: null, active: false, paused: false };
@@ -1998,13 +1999,41 @@ function renderMechanicalTarget(report){
   document.getElementById("mechanicalSolverStatus").textContent=central?`PCG residual ${central.residual.toExponential(1)} · ridge ${central.ridge.toExponential(1)}`:"Mechanical response unavailable";
   document.getElementById("mechanicalModelDetail").textContent=central?`H is the ${3*central.modelNodeCount} × ${3*central.modelNodeCount} anisotropic-network Hessian for ${central.edges} Cα springs at 8.5 Å. Net-zero unit forces are applied across ${target.residueKeys.length} target residue${target.residueKeys.length===1?"":"s"} along x, y and z. The linear systems use preconditioned conjugate gradients with a disclosed ridge of ${central.ridge.toExponential(2)}; the calculation is repeated at 8.0 and 9.0 Å.${central.modelNodeCount<central.fullNodeCount?` For interactive analysis of this large assembly, the mechanical domain contains the ${central.modelNodeCount} residues nearest the target out of ${central.fullNodeCount}; excluded residues are not ranked by target sensitivity.`:""}`:"No target response could be calculated.";
   const first=report.topResidues?.[0];
-  const status=document.getElementById("targetStatus");status.textContent=first?`Most important residue for ${target.label}: ${first.label}. Change the functional site to rerank every residue.`:`No rankable residue was found for ${target.label}.`;status.classList.add("success");
+  const status=document.getElementById("targetStatus");status.textContent=first?`First model-prioritized experiment for ${target.label}: ${first.label}. Change the functional site to rerank every residue.`:`No rankable residue was found for ${target.label}.`;status.classList.add("success");
+}
+
+function benchmarkEvidenceForResidue(report,residue){
+  const benchmark=benchmarkManifest[String(report.metadata?.pdbId||"").toUpperCase()];
+  if(!benchmark)return null;
+  const authors=new Set([residue.authorLabel,...(residue.equivalentAuthors||[])].filter(Boolean));
+  return (benchmark.groups||[]).find(group=>(group.sites||[]).some(site=>authors.has(site)))||null;
+}
+
+function renderSidebarRanking(report,{reset=false}={}){
+  if(reset)sidebarRankingExpanded=false;
+  const container=document.getElementById("bestResidueRows");
+  if(!container)return;
+  container.classList.toggle("expanded",sidebarRankingExpanded);
+  container.innerHTML=report.topResidues.map((residue,index)=>{
+    const known=benchmarkEvidenceForResidue(report,residue),mutation=mutationLadder(residue).conservative;
+    const evidence=known?`<i class="residue-evidence known" title="${esc(known.label)}">KNOWN FUNCTIONAL SITE</i>`:`<i class="residue-evidence">STRUCTURE-DERIVED CANDIDATE</i>`;
+    return `<button class="best-residue-row" type="button" data-residue-index="${index}"><span>${String(index+1).padStart(2,"0")}</span><strong>${esc(residue.label)}<em>Build ${esc(mutation)} · site-effect ${(100*(residue.mechanicalPercentile||0)).toFixed(0)}th %ile · stability ${(100*(residue.mechanicalRobustness||0)).toFixed(0)}/100</em>${evidence}</strong><small>${residue.score.toFixed(1)}<b>model score</b></small></button>`;
+  }).join("");
+  container.querySelectorAll(".best-residue-row").forEach(button=>button.addEventListener("click",()=>selectAnalyzedResidue(report.topResidues[Number(button.dataset.residueIndex)],{button,autoView:true})));
+  const toggle=document.getElementById("rankedResidueToggle");
+  if(toggle){
+    toggle.hidden=report.topResidues.length<=5;
+    toggle.setAttribute("aria-expanded",String(sidebarRankingExpanded));
+    toggle.textContent=sidebarRankingExpanded?"Show first five":"Show all 10 candidates";
+    toggle.onclick=()=>{sidebarRankingExpanded=!sidebarRankingExpanded;renderSidebarRanking(report);};
+  }
+  const rankingHint=document.querySelector(".ranked-title small");
+  if(rankingHint)rankingHint.textContent=sidebarRankingExpanded?"All ten shown":"First five shown";
 }
 
 function refreshRankedOutputs(report, { resetSelection = true } = {}) {
   document.getElementById("topologyRows").innerHTML = report.topResidues.map((residue,i)=>`<div class="topology-row"><strong>${String(i+1).padStart(2,"0")} / ${esc(residue.label)}</strong><span>PRIORITY ${residue.score.toFixed(1)} · DEG ${residue.degree}</span></div>`).join("");
-  document.getElementById("bestResidueRows").innerHTML = report.topResidues.map((residue,i)=>`<button class="best-residue-row" type="button" data-residue-index="${i}"><span>${String(i+1).padStart(2,"0")}</span><strong>${esc(residue.label)}<em>${esc(residue.context)}</em></strong><small>${residue.score.toFixed(1)}</small></button>`).join("");
-  document.querySelectorAll(".best-residue-row").forEach(button=>button.addEventListener("click",()=>selectAnalyzedResidue(report.topResidues[Number(button.dataset.residueIndex)],{button,autoView:true})));
+  renderSidebarRanking(report);
   renderMechanicalTarget(report);renderGuidance(report);renderDiscovery(report,activeDiscoveryMode);renderScientificPanels(report,resetSelection?report.topResidues[0]:(molecular.selectedResidue||report.topResidues[0]));
   molecular.topResidues=report.topResidues;molecular.resultScheme=buildResultColorScheme(report.topResidues);setMolecularRepresentation(molecular.representation);
   if(resetSelection) selectAnalyzedResidue(report.topResidues[0],{autoView:false});
@@ -2049,7 +2078,7 @@ function render(data) {
   ];
   document.getElementById("flagList").innerHTML = flags.map(flag => `<div class="flag ${flag.warn ? "warn" : ""}"><i></i><div><strong>${esc(flag.title)}</strong><span>${esc(flag.note)}</span></div></div>`).join("");
   document.getElementById("topologyRows").innerHTML = r.topResidues.map((residue, i) => `<div class="topology-row"><strong>${String(i+1).padStart(2,"0")} / ${esc(residue.label)}</strong><span>PRIORITY ${residue.score.toFixed(0)} · DEG ${residue.degree}</span></div>`).join("");
-  document.getElementById("bestResidueRows").innerHTML = r.topResidues.map((residue, i) => `<button class="best-residue-row" type="button" data-residue-index="${i}"><span>${String(i+1).padStart(2,"0")}</span><strong>${esc(residue.label)}<em>${esc(residue.context)}</em></strong><small>${residue.score.toFixed(0)}</small></button>`).join("");
+  renderSidebarRanking(r,{reset:true});
   renderMechanicalTarget(r);
   renderGuidance(r);
   renderDiscovery(r, "biology");
