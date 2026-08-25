@@ -257,6 +257,14 @@ Values should be rechecked after any change to target definition, spring constru
 - Preserved all calculations, controls, atom-level evidence, references, expert ranking, coordinate record, flags, limitations, and export behavior; only their presentation order changed.
 - Reverified desktop and 390 × 844 mobile layouts. Structure now flows directly to question/target, target directly to ranking, ranking directly to construct/readout, result directly to sequence, and sequence directly to checks and the final plan.
 
+### Target and construct controls repaired (2026-08-25)
+
+- Replaced the manual-target placeholder in the built-in demo with an actual input value (`A:87, A:92, B:145`). The apparent sample was previously placeholder text, so clicking the calculation button submitted an empty target.
+- Added visible target-calculation confirmation. The demo resolves the three author-numbered residues, creates a manual target, recalculates the mechanical response and ranking, updates the top residue, and advances to the score/contact view.
+- Changed `Build a new construct list` from a silent rebuild of the same deterministic panel into a deterministic panel cycle. Each click advances to another ranked seed, rebuilds its candidate/comparison set, and reloads the labeled synthetic demo measurements.
+- Added immediate button confirmation, a refreshed-table highlight, and a status message naming the new first candidate and explaining that the alternative panel remains deterministic.
+- Verified the default target changes from `All HEM pockets` to `Manual site`, the leading residue changes from `ARG A/C:141` to `TYR A/C:42`, and repeated panel generation changes the displayed candidates and comparisons.
+
 ## Work still required before strong performance claims
 
 1. Freeze a multi-protein benchmark before any further weight tuning. Use family-separated train/development/test partitions.

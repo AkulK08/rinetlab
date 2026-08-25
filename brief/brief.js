@@ -15,7 +15,7 @@ let activeScoringLens = "general";
 let activeTargetId = null;
 let activeSequenceChain = null;
 let customAssay = "";
-const adaptiveRound = { panelSize: 8, panel: [], results: new Map(), example: false };
+const adaptiveRound = { panelSize: 8, panel: [], results: new Map(), example: false, panelOffset: 0 };
 const preview = { stage: null, component: null };
 const demoTour = { timer: null, frame: null, active: false, paused: false };
 const waterNames = new Set(["HOH", "WAT", "DOD"]);
@@ -1078,7 +1078,8 @@ function buildAdaptivePanel(report, requestedSize = adaptiveRound.panelSize) {
   const candidateTarget = Math.min(pairTarget,Math.floor((panelSize-1)/2));
   const eligible=report.allResidues.filter(row=>!row.disulfidePartner&&!row.inTarget&&row.score>0);
   const pool = eligible.slice(0, Math.min(180, eligible.length));
-  const selected = [pool[0]||report.topResidues[0]].filter(Boolean);
+  const seedSpan=Math.max(1,Math.min(pool.length,Math.max(12,candidateTarget*4))),seedIndex=adaptiveRound.panelOffset%seedSpan;
+  const selected = [pool[seedIndex]||pool[0]||report.topResidues[0]].filter(Boolean);
   while (selected.length < candidateTarget) {
     const selectedVectors = selected.map(structuralVector);
     const remaining = pool.filter(row => !selected.some(item => item.label === row.label));
@@ -2378,6 +2379,7 @@ function recalculateForTarget(targetId){
   if(!current)return;
   const status=document.getElementById("targetStatus");if(status){status.textContent="Recalculating the most important residues for this functional site…";status.classList.remove("success");}
   applyMechanicalTarget(current.report,targetId);rerankReport(current.report,activeScoringLens);refreshRankedOutputs(current.report);
+  adaptiveRound.panelOffset=0;
   renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});fillBuiltInDemoResults(current.report);
   document.getElementById("methodsText").textContent=mechanochemicalMethodsText(current);
   setLocalActionStatus(`Mechanical response recalculated for ${current.report.activeTarget.label}. ${current.report.topResidues[0].label} is the first candidate under the ${scoreLenses[activeScoringLens].label.toLowerCase()} question.`,true);
@@ -2394,6 +2396,9 @@ document.getElementById("applyManualTarget")?.addEventListener("click",()=>{
   const id=`manual:${resolved.join("|")}`,target={id,type:"manual",label:"Manual site",residueKeys:resolved};
   const existing=current.report.targetOptions.findIndex(option=>option.id===id);if(existing>=0)current.report.targetOptions[existing]=target;else current.report.targetOptions.push(target);
   recalculateForTarget(id);
+  const button=document.getElementById("applyManualTarget");
+  button.textContent=`Calculated ${resolved.length} residue${resolved.length===1?"":"s"} ✓`;
+  window.setTimeout(()=>button.textContent="Calculate this target",1800);
 });
 
 document.querySelectorAll("[data-scoring-lens]").forEach(button=>button.addEventListener("click",()=>{
@@ -2402,6 +2407,7 @@ document.querySelectorAll("[data-scoring-lens]").forEach(button=>button.addEvent
   document.querySelectorAll("[data-scoring-lens]").forEach(item=>{const active=item===button;item.classList.toggle("active",active);item.setAttribute("aria-selected",String(active));});
   rerankReport(current.report,activeScoringLens);
   refreshRankedOutputs(current.report);
+  adaptiveRound.panelOffset=0;
   renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});
   fillBuiltInDemoResults(current.report);
   document.getElementById("methodsText").textContent=mechanochemicalMethodsText(current);
@@ -2411,11 +2417,21 @@ document.querySelectorAll("[data-scoring-lens]").forEach(button=>button.addEvent
 
 document.getElementById("rebuildAdaptivePanel")?.addEventListener("click",()=>{
   if(!current)return;
+  const candidateCount=Math.max(1,adaptiveRound.panel.filter(entry=>entry.type==="candidate").length);
+  adaptiveRound.panelOffset+=candidateCount;
   renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});
   fillBuiltInDemoResults(current.report);
+  const firstCandidate=adaptiveRound.panel.find(entry=>entry.type==="candidate")?.residue;
+  const button=document.getElementById("rebuildAdaptivePanel");
+  button.textContent="New construct list built ✓";
+  document.getElementById("candidateControlStep")?.classList.add("panel-rebuilt");
+  window.setTimeout(()=>{button.textContent="Build a new construct list";document.getElementById("candidateControlStep")?.classList.remove("panel-rebuilt");},1800);
+  const status=document.getElementById("adaptiveStatus");
+  if(status&&firstCandidate){status.className="adaptive-status success";status.innerHTML=`<strong>New construct list built.</strong><span>This panel starts with ${esc(firstCandidate.label)} and a newly matched comparison. The selection remains deterministic for the current ranking.</span>`;}
 });
 document.getElementById("adaptivePanelSize")?.addEventListener("change",event=>{
   adaptiveRound.panelSize=Number(event.currentTarget.value);
+  adaptiveRound.panelOffset=0;
   if(current){renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});fillBuiltInDemoResults(current.report);}
 });
 document.getElementById("downloadAdaptiveTemplate")?.addEventListener("click",downloadAdaptiveTemplate);
@@ -2566,6 +2582,8 @@ document.getElementById("downloadReceipt").addEventListener("click", () => {
 
 function organizeGuidedDemo() {
   if (new URLSearchParams(window.location.search).get("demo") !== "1") return;
+  const manualTarget=document.getElementById("manualTargetInput");
+  if(manualTarget&&!manualTarget.value)manualTarget.value="A:87, A:92, B:145";
   const target=document.querySelector(".target-director"),questionPicker=document.querySelector(".lens-picker-wrap");
   if(target&&questionPicker)target.prepend(questionPicker);
   const adaptive=document.getElementById("candidateControlStep"),readout=document.getElementById("questionSetup"),adaptiveHead=adaptive?.querySelector(".adaptive-cycle-head");

@@ -2133,3 +2133,11 @@ body.guide-ready .target-director { margin-top: 0; }
   .adaptive-cycle > .lens-context { margin: 8px; }
   .guided-appendix { padding: 8px 8px 0; }
 }
+
+.adaptive-cycle.panel-rebuilt .adaptive-table-wrap {
+  border-color: rgba(201,251,60,.42);
+  box-shadow: 0 0 0 1px rgba(201,251,60,.08), 0 0 34px rgba(201,251,60,.07);
+  animation: panelRebuilt 1.2s ease both;
+}
+@keyframes panelRebuilt { from { transform: translateY(5px); opacity: .72; } }
+.adaptive-status.success strong { color: var(--acid); }
