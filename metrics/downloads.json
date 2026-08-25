@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-08-25T07:36:33Z",
+  "updated_at": "2026-08-25T08:31:25Z",
   "source_repository": "AkulK08/rinetlab",
   "source_release": "v1.3.0-build013",
   "historical_baseline": 1863,
@@ -13,8 +13,8 @@
   "instant_demo": {
     "asset_id": 527920452,
     "asset_name": "rinet-structure-brief-demo.txt",
-    "raw_download_count": 113,
-    "lifetime_since_tracking": 650
+    "raw_download_count": 121,
+    "lifetime_since_tracking": 658
   },
-  "website_total": 40992
+  "website_total": 41000
 }
