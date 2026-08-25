@@ -237,6 +237,17 @@ Values should be rechecked after any change to target definition, spring constru
 - Enlarged contribution bars and values and placed the score and graph side by side on desktop, stacked score-first on mobile.
 - Verified desktop and 390 × 844 layouts, 32/24-node limits, residue labels, score bars, and node-click selection. Clicking a graph node updates the residue action panel and its corresponding mutation plan.
 
+### Guided demo path and progressive disclosure (2026-08-25)
+
+- Added an eight-stop presentation path: structure, functional target, residue ranking, construct pair, result/next construct, sequence, model checks, and the final bench plan.
+- Added a persistent glass navigation control with current step, progress, previous/next actions, and an explicit automatic-tour toggle. The built-in demo advances automatically until the researcher interacts; any pointer, keyboard, wheel, or touch interaction pauses it, and the control offers a visible resume action.
+- Added direct action-to-result movement in the built-in demo: changing the scientific question moves to target selection, changing the target moves to the recalculated score/contact map, applying a functional readout moves to the construct panel, and interpreting measurements moves to the result/next-construct panel.
+- Shortened the primary explanation at the structure, experiment-design, target, ranking, construct, and validation stages. Kept the equations, experiment logic, scientific basis, coordinate evidence, and validation machinery available.
+- Converted the four-part method scope into a closed-by-default expandable summary so it does not interrupt the main experiment path.
+- Reworked the six scientific questions into one linear row on wide screens and a snap-scrolling row on narrower screens.
+- Replaced the long score rationale in the primary ranking panel with the three largest score drivers, target-effect percentile, cutoff stability, and rank. Full evidence remains available elsewhere in the same demo.
+- Verified automatic movement, pause/resume, previous/next navigation, target-to-ranking recalculation, result-to-next-construct movement, method expansion, and desktop/mobile presentation. The homepage remains unchanged.
+
 ## Work still required before strong performance claims
 
 1. Freeze a multi-protein benchmark before any further weight tuning. Use family-separated train/development/test partitions.

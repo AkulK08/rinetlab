@@ -8,7 +8,7 @@
   <link rel="apple-touch-icon" href="/media/rinet-mark.png?v=20260816">
   <link rel="image_src" href="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <link rel="stylesheet" href="/contact.css?v=1">
-  <link rel="stylesheet" href="/brief/brief.css?v=33">
+  <link rel="stylesheet" href="/brief/brief.css?v=34">
   <title>Structure Brief | RINet</title>
   <meta name="description" content="Choose the protein site you care about. RINet identifies the most useful residue to mutate, a comparison mutation, the measurements to run, and what to test next.">
   <meta property="og:type" content="website">
@@ -105,7 +105,7 @@
         </ol>
       </nav>
 
-      <section class="molecule-workbench" id="structureSection" data-demo-section="Structure" aria-label="Interactive structure surface">
+      <section class="molecule-workbench" id="structureSection" data-demo-section="Structure" data-guide-stop data-guide-title="Explore the structure" data-guide-hint="Rotate the model or choose a ranked residue." aria-label="Interactive structure surface">
         <div class="molecule-stage-wrap">
           <div class="molecule-toolbar">
             <div><span>3D STRUCTURE</span><strong id="viewerLabel">Supplied coordinates</strong></div>
@@ -127,7 +127,7 @@
           <div class="viewer-boundary">SUPPLIED COORDINATES · STATIC STRUCTURE · NOT A TRAJECTORY</div>
         </div>
         <aside class="best-residues">
-          <div class="intel-intro"><p class="eyebrow">Residue selection and experiment plan</p><h3>Choose the site you care about. RINet tells you what to build and measure.</h3><p class="hud-definition">RINet tests how strongly each residue is mechanically connected to the chosen site. It ranks the residues, proposes a small first mutation, and finds a structurally similar comparison mutation expected to affect the site less.</p><p id="hudThesis">Choose a functional site to find the first residue to test.</p></div>
+          <div class="intel-intro"><p class="eyebrow">Residue selection and experiment plan</p><h3>Choose the site you care about. RINet tells you what to build and measure.</h3><p class="hud-definition">RINet ranks residues by their predicted effect on that site, then pairs the top mutation with a similar lower-effect comparison.</p><p id="hudThesis">Choose a functional site to find the first residue to test.</p></div>
           <div class="intel-cards">
             <article><span>BUILD THIS MUTATION FIRST</span><strong id="hudMutation">Pending</strong><small id="hudMutationNote">Waiting for coordinates</small></article>
             <article><span>BUILD THIS COMPARISON</span><strong id="hudControl">Pending</strong><small>Run it in the same batch as the first mutation and wild type.</small></article>
@@ -141,6 +141,12 @@
 
       <a class="result-scroll-cue" id="resultScrollCue" href="#scoringSection" aria-label="Continue to experiment design"><b>SCROLL</b><span id="scrollCueLabel">Next: design a controlled experiment</span><i></i></a>
       <button class="demo-skip-status" id="demoSkipStatus" type="button" aria-label="Stop the automatic tour"><span>Auto tour</span><strong>Scrolling… · click to stop</strong><i></i></button>
+      <nav class="journey-controller" id="journeyController" aria-label="Guided demo path">
+        <button class="journey-back" id="journeyBack" type="button" aria-label="Previous demo step">←</button>
+        <button class="journey-auto" id="journeyAuto" type="button" aria-pressed="true"><i></i><span>Auto</span></button>
+        <div class="journey-readout" aria-live="polite"><span id="journeyCount">01 / 08</span><strong id="journeyTitle">Explore the structure</strong><small id="journeyHint">Next: choose the functional site</small><div class="journey-progress" id="journeyProgress" aria-hidden="true"></div></div>
+        <button class="journey-next" id="journeyNext" type="button"><span id="journeyNextLabel">Choose the site</span><i>→</i></button>
+      </nav>
 
       <div class="analysis-status" id="analysisStatus" role="status">Analysis ready · coordinates remained on this device.</div>
 
@@ -154,7 +160,7 @@
 
       <section class="evidence-lab" id="scoringSection" data-demo-section="Panel" aria-labelledby="evidence-lab-title">
         <div class="evidence-lab-head">
-          <div><p class="eyebrow">From protein structure to a lab-ready test</p><h3 id="evidence-lab-title">Find the most useful residue to mutate.</h3><p>Choose a ligand pocket, chain interface, or known functional residues. RINet calculates how strongly every other residue is mechanically connected to that site, ranks the residues, and gives the top mutation a structurally similar comparison mutation. Run both with wild type to test whether the selected residue has a specific functional effect.</p></div>
+          <div><p class="eyebrow">From protein structure to a lab-ready test</p><h3 id="evidence-lab-title">Find the most useful residue to mutate.</h3><p>Pick the functional site. RINet ranks candidate mutations, finds a structurally matched comparison, and turns the pair into a measurable experiment.</p></div>
           <div class="lens-picker-wrap"><span>QUESTION TO TEST</span><div class="lens-picker" role="tablist" aria-label="Structural question">
             <button class="active" type="button" role="tab" aria-selected="true" data-scoring-lens="general">Best residue to test</button>
             <button type="button" role="tab" aria-selected="false" data-scoring-lens="ligand">Ligand-pocket residue</button>
@@ -172,8 +178,8 @@
           <a href="#interpretationStep"><span>05 · INTERPRETATION</span><strong>Was the functional effect specific, or was the protein damaged?</strong><p class="workflow-answer"><b>Current result</b><em id="workflowInterpretation">Awaiting measurements</em></p></a>
           <a href="#interpretationStep"><span>06 · NEXT STEP</span><strong>What should I build after these results?</strong><p class="workflow-answer"><b>Do this next</b><em id="workflowNext">Enter the measurements to choose the next construct</em></p></a>
         </nav>
-        <section class="target-director" aria-labelledby="targetDirectorTitle">
-          <div class="target-director-copy"><span>01 / FUNCTIONAL SITE</span><h4 id="targetDirectorTitle">Which part of the protein do you want to affect?</h4><p>Choose a ligand pocket or chain interface, or enter residues already known to control activity. RINet recalculates which other residues are most strongly connected to that site.</p></div>
+        <section class="target-director" data-guide-stop data-guide-title="Choose the functional site" data-guide-hint="Changing the target recalculates the residue ranking." aria-labelledby="targetDirectorTitle">
+          <div class="target-director-copy"><span>01 / FUNCTIONAL SITE</span><h4 id="targetDirectorTitle">Which part of the protein do you want to affect?</h4><p>Choose a pocket, interface, or known functional residue set. The ranking updates for that site.</p></div>
           <div class="target-director-controls">
             <label for="targetSelect">Resolved targets in this structure</label>
             <select id="targetSelect" aria-label="Functional target"></select>
@@ -189,8 +195,8 @@
           </div>
         </section>
 
-        <section class="ranking-explanation" aria-labelledby="ranking-explanation-title">
-          <div class="residue-inspector-heading"><p class="eyebrow">Why this residue was selected</p><h4 id="ranking-explanation-title">See the score and its contact neighborhood.</h4><p>The score breakdown shows what raised this residue's rank. The contact graph shows the selected residue and its nearest Cα-contact neighbors. Choose any of the ten ranked residues to update both views.</p></div>
+        <section class="ranking-explanation" data-guide-stop data-guide-title="Inspect the residue ranking" data-guide-hint="Choose any ranked residue to update the score and contact map." aria-labelledby="ranking-explanation-title">
+          <div class="residue-inspector-heading"><p class="eyebrow">Why this residue was selected</p><h4 id="ranking-explanation-title">See the score and its contact neighborhood.</h4><p>The bars show why it ranks here. The map shows its nearest Cα contacts. Choose any ranked residue to update both.</p></div>
           <div class="evidence-residue-picker" id="evidenceResiduePicker" aria-label="Top ten ranked residues"></div>
           <div class="evidence-lab-grid">
             <article class="residue-audit">
@@ -231,9 +237,9 @@
           <div class="model-explanation"><span>SELECTED-SITE MECHANICAL RESPONSE</span><p id="lensDescription">Calculating the selected site response.</p><code id="mechanicalEquation">(H + λI)u = fₜ; Sᵢ(T) = Σe∋i ⟨[nₑ·(uₚ−u_q)]²⟩x,y,z; ΔJₜ ≈ εSᵢ</code><p id="mechanicalModelDetail">H is the anisotropic-network Hessian; balanced unit forces are applied to the selected site along x, y and z.</p><code id="scoreEquation">Loading exact ranking equation…</code></div>
         </details>
 
-        <section class="adaptive-cycle" id="candidateControlStep" aria-labelledby="adaptive-cycle-title">
+        <section class="adaptive-cycle" id="candidateControlStep" data-guide-stop data-guide-title="Build the candidate and comparison" data-guide-hint="Run both mutations with wild type in the same batch." aria-labelledby="adaptive-cycle-title">
           <div class="adaptive-cycle-head">
-            <div><span>02–03 / MUTATION + COMPARISON</span><h4 id="adaptive-cycle-title">Build the top mutation and its comparison in the same batch.</h4><p>Each proposed mutation is paired with a residue that has similar chemistry and local structure but is predicted to affect the chosen functional site less. If both mutations behave alike, the ranking did not identify a site-specific effect. Probable disulfides are excluded because breaking a covalent bond would confuse the result.</p></div>
+            <div><span>02–03 / MUTATION + COMPARISON</span><h4 id="adaptive-cycle-title">Build the top mutation and its comparison in the same batch.</h4><p>Run the proposed mutation, its matched lower-effect comparison, and wild type together. If candidate and comparison behave alike, the result does not support a site-specific effect.</p></div>
             <div class="adaptive-cycle-actions">
               <label>Panel size <select id="adaptivePanelSize"><option value="6">6</option><option value="8" selected>8</option><option value="12">12</option></select></label>
               <button type="button" id="rebuildAdaptivePanel">Build a new construct list</button>
@@ -254,7 +260,7 @@
             <div><button type="button" class="secondary" id="loadAdaptiveExample">Fill example measurements</button><button type="button" id="analyzeAdaptiveResults">Tell me what the results mean and what to do next</button></div>
           </div>
           <div class="adaptive-status" id="adaptiveStatus" role="status"><strong>Construct list ready.</strong><span>Enter function, abundance, and fold/assembly for each construct, or use the CSV template.</span></div>
-          <div class="adaptive-next" id="interpretationStep">
+          <div class="adaptive-next" id="interpretationStep" data-guide-stop data-guide-title="Read the result and choose the next construct" data-guide-hint="Separate a specific functional effect from protein damage.">
             <div><span>05–06 / RESULT + NEXT STEP</span><h5>Did the residue affect function, or did the mutation damage the protein?</h5><p id="adaptivePosteriorSummary">Complete all three measurements for at least two proposed mutations and one comparison mutation.</p></div>
             <div id="adaptivePosterior" class="adaptive-posterior"><span>No measurements entered</span></div>
             <div id="adaptiveNextRows" class="adaptive-next-rows"><p>Enter the measurements above. RINet will then state which construct to build next and why.</p></div>
@@ -319,21 +325,17 @@
         </section>
       </section>
 
-      <section class="scientific-contract" aria-labelledby="scientific-contract-title">
-        <div class="contract-copy">
-          <p class="eyebrow">Method scope</p>
-          <h3 id="scientific-contract-title">What RINet calculates</h3>
-          <p>RINet turns a known functional site into a residue mutation experiment. It builds a directional Cα elastic network, calculates how strongly every residue is connected to the chosen site, repeats the ranking at three contact cutoffs, checks what each substitution can change locally, and chooses a structurally similar comparison mutation predicted to affect the site less.</p>
-        </div>
+      <details class="scientific-contract" aria-labelledby="scientific-contract-title">
+        <summary class="contract-summary"><div><p class="eyebrow">Method scope</p><h3 id="scientific-contract-title">What RINet calculates</h3></div><span>Open the four-part method summary <i>+</i></span></summary>
         <div class="contract-grid">
           <article><span>INPUT</span><strong>Structure</strong><p>Author chain IDs, residue numbering, ligands, missing atoms and quality fields remain visible.</p></article>
           <article><span>CALCULATION</span><strong>Target → mechanical response</strong><p>Directional elastic response, normalized cross-compliance, cutoff robustness, and mutation-specific local constraints.</p></article>
           <article><span>EXPERIMENT OUTPUT</span><strong>Mutation + comparison + next step</strong><p>Construct list, function and protein-quality measurements, result interpretation, and the next construct to build.</p></article>
           <article><span>MODEL REGIME</span><strong>Near-native linear mechanics</strong><p>Use atomistic energy, ensembles or MD as a separate layer when relaxation, solvent, kinetics or large state changes determine the question.</p></article>
         </div>
-      </section>
+      </details>
 
-      <section class="sequence-workbench" id="sequenceSection" data-demo-section="Sequence" aria-labelledby="sequence-title">
+      <section class="sequence-workbench" id="sequenceSection" data-demo-section="Sequence" data-guide-stop data-guide-title="Locate the residue in sequence" data-guide-hint="Confirm author numbering and construct context before ordering." aria-labelledby="sequence-title">
         <div class="sequence-head">
           <div><p class="eyebrow">Sequence and coordinates</p><h3 id="sequence-title">Sequence mapped to author residue numbering</h3></div>
           <div class="sequence-actions"><button type="button" id="copyFasta">View / copy FASTA</button><a id="openBlast" href="https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastp&amp;PAGE_TYPE=BlastSearch" target="_blank" rel="noreferrer">Open BLAST with sequence</a></div>
@@ -344,10 +346,10 @@
         <div class="sequence-legend"><span><i class="rank-one"></i>primary</span><span><i class="ranked"></i>ranked</span><span><i class="selected"></i>selected</span><span><i class="cdr"></i>CDR heuristic</span><span>Conservation is <b>not scored</b> until an external sequence analysis is supplied.</span></div>
       </section>
 
-      <section class="validation-studio" id="validationSection" data-demo-section="Checks" aria-labelledby="validation-title">
+      <section class="validation-studio" id="validationSection" data-demo-section="Checks" data-guide-stop data-guide-title="Challenge the ranking" data-guide-hint="Check known sites, network cutoffs, another state, or your own labels." aria-labelledby="validation-title">
         <div class="validation-head">
           <div><p class="eyebrow">Mechanical-model checks</p><h3 id="validation-title">Does the target response survive basic challenges?</h3></div>
-          <p>Known residues are applied after ranking. The panels report reference-site recovery, elastic-network cutoff sensitivity, and an optional second-structure comparison.</p>
+          <p>Check known sites, cutoff sensitivity, another conformation, or your own mutational labels.</p>
         </div>
         <div class="validation-grid">
           <article><span>A / KNOWN-SITE RECOVERY</span><h4 id="benchmarkStatus">Checking benchmark manifest…</h4><div id="benchmarkRows"></div><p id="benchmarkBoundary"></p></article>
@@ -358,7 +360,7 @@
         </div>
       </section>
 
-      <section class="ai-guidance" id="decisionBrief" data-demo-section="Experiment" aria-labelledby="guidance-title">
+      <section class="ai-guidance" id="decisionBrief" data-demo-section="Experiment" data-guide-stop data-guide-title="Take the experiment to the bench" data-guide-hint="Export the construct and measurement plan." aria-labelledby="guidance-title">
         <div class="guidance-heading">
           <div><p class="eyebrow">Experiment for the selected residue</p><h3 id="guidance-title">Build these constructs, run these measurements, then make this decision</h3></div>
           <div class="deterministic-seal"><strong>CALCULATION DETAILS</strong><span>REPRODUCIBLE RANKING</span><small>The score equation and structural evidence are shown above.</small></div>
@@ -501,6 +503,6 @@
   <footer><a href="/">← RINet home</a><span>Structure Brief 4.0 · residue selection and experiment planning</span></footer>
   <script src="/brief/vendor/ngl-2.4.0.js?v=2"></script>
   <script src="/contact.js?v=5"></script>
-  <script src="/brief/brief.js?v=30"></script>
+  <script src="/brief/brief.js?v=31"></script>
 </body>
 </html>

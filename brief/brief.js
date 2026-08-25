@@ -17,7 +17,7 @@ let activeSequenceChain = null;
 let customAssay = "";
 const adaptiveRound = { panelSize: 8, panel: [], results: new Map(), example: false };
 const preview = { stage: null, component: null };
-const demoTour = { timer: null, frame: null, active: false };
+const demoTour = { timer: null, frame: null, active: false, paused: false };
 const waterNames = new Set(["HOH", "WAT", "DOD"]);
 const metalElements = new Set(["LI", "NA", "MG", "AL", "K", "CA", "MN", "FE", "CO", "NI", "CU", "ZN", "SR", "MO", "CD", "CS", "BA", "HG"]);
 const aminoAcidOneLetter = { ALA:"A", ARG:"R", ASN:"N", ASP:"D", CYS:"C", GLN:"Q", GLU:"E", GLY:"G", HIS:"H", ILE:"I", LEU:"L", LYS:"K", MET:"M", PHE:"F", PRO:"P", SER:"S", THR:"T", TRP:"W", TYR:"Y", VAL:"V", SEC:"U", PYL:"O" };
@@ -62,6 +62,50 @@ if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 
 const sectionLinks = [...document.querySelectorAll("[data-section-link]")];
 const sectionTargets = sectionLinks.map(link => document.querySelector(link.getAttribute("href"))).filter(Boolean);
+const journeyStops = [...document.querySelectorAll("[data-guide-stop]")];
+const journeyNextLabels = ["Choose the site", "See the ranking", "Build constructs", "Read the result", "See the sequence", "Run the checks", "View the plan", "Restart"];
+
+function activeJourneyIndex() {
+  if (!journeyStops.length) return 0;
+  const marker = window.scrollY + Math.min(window.innerHeight * .12, 90);
+  let active = 0;
+  journeyStops.forEach((stop, index) => { if (stop.getBoundingClientRect().top + window.scrollY <= marker) active = index; });
+  return active;
+}
+
+function updateJourneyController(index = activeJourneyIndex()) {
+  const controller = document.getElementById("journeyController");
+  if (!controller || !journeyStops.length) return;
+  const bounded = Math.max(0, Math.min(index, journeyStops.length - 1));
+  const stop = journeyStops[bounded];
+  journeyStops.forEach((item, itemIndex) => item.classList.toggle("guide-active", itemIndex === bounded));
+  document.getElementById("journeyCount").textContent = `${String(bounded + 1).padStart(2,"0")} / ${String(journeyStops.length).padStart(2,"0")}`;
+  document.getElementById("journeyTitle").textContent = stop.dataset.guideTitle || `Step ${bounded + 1}`;
+  document.getElementById("journeyHint").textContent = stop.dataset.guideHint || "Continue when you are ready.";
+  document.getElementById("journeyNextLabel").textContent = journeyNextLabels[bounded] || "Next";
+  document.getElementById("journeyBack").disabled = bounded === 0;
+  const auto = document.getElementById("journeyAuto");
+  auto?.setAttribute("aria-pressed", String(!demoTour.paused));
+  if (auto) auto.querySelector("span").textContent = demoTour.paused ? "Resume" : "Auto";
+  controller.classList.toggle("is-running", !demoTour.paused && demoTour.active);
+  const progress = document.getElementById("journeyProgress");
+  if (progress && progress.childElementCount !== journeyStops.length) progress.innerHTML = journeyStops.map(()=>"<i></i>").join("");
+  progress?.querySelectorAll("i").forEach((item,itemIndex)=>item.classList.toggle("active",itemIndex<=bounded));
+}
+
+function goToJourneyStop(index, { pause = true } = {}) {
+  if (!journeyStops.length) return;
+  const bounded = index >= journeyStops.length ? 0 : Math.max(0,index);
+  stopDemoTour(pause);
+  updateJourneyController(bounded);
+  journeyStops[bounded].scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+}
+
+function queueJourneyStop(index, delay = 520) {
+  if (!document.body.classList.contains("demo-mode")) return;
+  stopDemoTour(true);
+  window.setTimeout(()=>goToJourneyStop(index,{pause:true}),delay);
+}
 
 function setActiveSection(index) {
   const bounded = Math.max(0, Math.min(index, sectionLinks.length - 1));
@@ -132,32 +176,35 @@ function setStatus(message, error = false) {
   }
 }
 
-function stopDemoTour() {
+function stopDemoTour(pause = true) {
   if (demoTour.timer) window.clearTimeout(demoTour.timer);
   if (demoTour.frame) window.cancelAnimationFrame(demoTour.frame);
   demoTour.timer = null;
   demoTour.frame = null;
   demoTour.active = false;
+  if (pause) demoTour.paused = true;
   document.getElementById("demoSkipStatus")?.classList.remove("active");
+  updateJourneyController();
 }
 
 function demoTourStops() {
-  return [...sectionTargets.slice(1), document.getElementById("analysisEnd")].filter(Boolean);
+  return journeyStops;
 }
 
 function atPageBottom() {
   return window.scrollY >= Math.max(0, document.documentElement.scrollHeight - window.innerHeight) - 2;
 }
 
-function scheduleDemoTour(delay = 6500) {
-  stopDemoTour();
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || atPageBottom()) return updateResultScrollCue();
+function scheduleDemoTour(delay = 8500) {
+  stopDemoTour(false);
+  if (demoTour.paused || window.matchMedia("(prefers-reduced-motion: reduce)").matches || atPageBottom()) return updateResultScrollCue();
   const status = document.getElementById("demoSkipStatus");
   demoTour.active = true;
   status?.classList.remove("active");
   if (status) void status.offsetWidth;
   status?.classList.add("active");
   demoTour.timer = window.setTimeout(advanceDemoTour, delay);
+  updateJourneyController();
 }
 
 function glideDemoTo(targetY, duration = 1350) {
@@ -176,17 +223,20 @@ function glideDemoTo(targetY, duration = 1350) {
     demoTour.frame = null;
     demoTour.active = false;
     updateResultScrollCue();
-    if (!atPageBottom()) scheduleDemoTour();
+    updateJourneyController();
+    if (!atPageBottom() && activeJourneyIndex() < journeyStops.length - 1) scheduleDemoTour();
   };
   demoTour.frame = window.requestAnimationFrame(step);
 }
 
 function advanceDemoTour() {
-  stopDemoTour();
+  stopDemoTour(false);
   if (!document.body.classList.contains("demo-mode") || atPageBottom()) return updateResultScrollCue();
-  const next = demoTourStops().find(section => section.getBoundingClientRect().top + window.scrollY > window.scrollY + 28);
+  const currentIndex = activeJourneyIndex();
+  const next = demoTourStops()[currentIndex + 1];
+  if (!next) { demoTour.paused = true; updateJourneyController(currentIndex); return; }
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const destination = next ? next.getBoundingClientRect().top + window.scrollY : document.documentElement.scrollHeight;
+  const destination = next.getBoundingClientRect().top + window.scrollY;
   if (reducedMotion) {
     window.scrollTo(0, destination);
     updateResultScrollCue();
@@ -195,8 +245,8 @@ function advanceDemoTour() {
   glideDemoTo(destination);
 }
 
-["wheel", "touchstart", "pointerdown"].forEach(eventName => window.addEventListener(eventName, stopDemoTour, { passive: true }));
-window.addEventListener("keydown", stopDemoTour);
+["wheel", "touchstart", "pointerdown"].forEach(eventName => window.addEventListener(eventName, () => stopDemoTour(true), { passive: true }));
+window.addEventListener("keydown", () => stopDemoTour(true));
 
 async function readFile(file) {
   if (file.size > 25 * 1024 * 1024) setStatus("Large file detected. Analysis may take a moment on this device.");
@@ -1692,6 +1742,11 @@ function renderEvidenceResiduePicker(report, selected = report.topResidues[0]) {
   }));
 }
 
+function conciseScoreReason(residue, report) {
+  const drivers=Object.entries(residue.contributions||{}).filter(([feature])=>(report.scoreWeights?.[feature]||0)>0).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([feature])=>(featureLabels[feature]||feature).toLowerCase());
+  return `Main drivers: ${drivers.join(", ")}. Predicted site-effect percentile ${(100*(residue.mechanicalPercentile||0)).toFixed(0)}; cutoff stability ${(100*(residue.mechanicalRobustness||0)).toFixed(0)}/100.`;
+}
+
 function renderSelectedAction(residue, report = current?.report) {
   if (!residue || !report) return;
   const control = matchedControlForResidue(report, residue);
@@ -1700,7 +1755,7 @@ function renderSelectedAction(residue, report = current?.report) {
   document.getElementById("selectedActionResidue").textContent = residue.label;
   document.getElementById("selectedActionScore").textContent = `rank ${residue.rank}/${report.rankableCount||report.allResidues.length} · predicted site-effect percentile ${(100*(residue.mechanicalPercentile||0)).toFixed(1)} · ${scoreLenses[report.scoringLens].label}`;
   document.getElementById("selectedActionBoundary").textContent = `${residue.targetDistance.toFixed(1)} Å from ${report.activeTarget?.label||"the target"} · ${(100*(residue.mechanicalRobustness||0)).toFixed(0)}/100 cutoff robustness. These are model outputs, not a probability of function.`;
-  document.getElementById("selectedActionReason").textContent = residue.rationale;
+  document.getElementById("selectedActionReason").textContent = conciseScoreReason(residue,report);
   document.getElementById("selectedActionMutation").textContent = `Build ${constructs.map(row => row.site === "—" ? row.construct : `${row.construct}: ${row.site} ${row.substitution}`).join(" · ")}.`;
   document.getElementById("selectedActionControl").textContent = control ? `Build ${control.label} ${mutationLadder(control).conservative} as the comparison and run it beside the proposed mutation and wild type. Structural match: ${control.matchQuality.toFixed(0)}/100.` : "Choose and build a chemistry-matched, lower-ranking comparison mutation before interpreting the result.";
   document.getElementById("selectedActionAssay").textContent = `Measure 1. ${assay}; 2. expression or abundance; and 3. one folding, stability, or assembly readout. Run every construct with wild type in the same batch.`;
@@ -1723,13 +1778,13 @@ function renderSelectedAction(residue, report = current?.report) {
 function renderContributionAudit(residue, report = current?.report) {
   if (!residue || !report) return;
   document.getElementById("auditResidue").textContent = `${residue.label} · rank ${residue.rank}/${report.rankableCount||report.allResidues.length} · ${residue.score.toFixed(1)}`;
-  document.getElementById("auditSummary").textContent = `${residue.rationale} Its ${residue.percentile.toFixed(1)}th score percentile means it ranks above ${residue.percentile.toFixed(1)}% of residues under the ${scoreLenses[report.scoringLens].label.toLowerCase()} lens; it is not a probability of function.`;
+  document.getElementById("auditSummary").textContent = `${conciseScoreReason(residue,report)} Rank ${residue.rank} of ${report.rankableCount||report.allResidues.length}; this is a model score, not a probability of function.`;
   const entries = Object.entries(residue.contributions).filter(([feature]) => (report.scoreWeights?.[feature] || 0) > 0).sort((a,b)=>b[1]-a[1]);
   const maximum = Math.max(...entries.map(([,value])=>value),1);
   document.getElementById("contributionChart").innerHTML = entries.map(([feature,value],index)=>`<div class="contribution-row"><span>${esc(featureLabels[feature]||feature)}</span><div><i style="width:${(100*value/maximum).toFixed(1)}%;--bar:${["#c9fb3c","#66d7ff","#b98cff","#ffa95b","#62e3bb"][index%5]}"></i></div><b>${value.toFixed(1)} pts</b></div>`).join("");
   document.getElementById("auditMutation").textContent = mutationLabelForResidue(residue);
   const control = matchedControlForResidue(report, residue);
-  document.getElementById("auditControl").textContent = control ? `${control.label} · structural match ${control.matchQuality.toFixed(0)}/100. ${control.controlRationale}` : "No suitable comparison mutation could be constructed from this coordinate record.";
+  document.getElementById("auditControl").textContent = control ? `${control.label} · structural match ${control.matchQuality.toFixed(0)}/100 · predicted site effect ${(100*(control.leverageRatio??control.mechanicalLeverage/Math.max(residue.mechanicalLeverage,1e-18))).toFixed(0)}% of the selected residue. If both mutations behave alike, do not claim a site-specific effect.` : "No suitable comparison mutation could be constructed from this coordinate record.";
   document.querySelectorAll(".sequence-residue").forEach(element => element.classList.toggle("selected", element.dataset.label === residue.label));
   renderSelectedAction(residue, report);
   renderNetworkMap(report,residue);
@@ -2004,12 +2059,19 @@ function render(data) {
   els.results.classList.remove("hidden");
   document.body.classList.add("analysis-mode");
   document.body.classList.toggle("demo-mode", data.sourceType === "built-in-demo");
+  document.body.classList.toggle("guide-ready", data.sourceType === "built-in-demo");
   document.getElementById("resultScrollCue")?.classList.remove("dismissed");
   preview.stage?.setSpin(false);
   window.scrollTo({ top: 0, behavior: "auto" });
-  requestAnimationFrame(() => { updateResultScrollCue(); updateSectionRail(); });
+  stopDemoTour(false);
+  demoTour.paused = data.sourceType !== "built-in-demo";
+  requestAnimationFrame(() => {
+    updateResultScrollCue();
+    updateSectionRail();
+    updateJourneyController(0);
+    if(data.sourceType === "built-in-demo") scheduleDemoTour(9000);
+  });
   renderMolecule(data.rawText, data.sourceName, r.topResidues);
-  stopDemoTour();
 }
 
 function buildResultColorScheme(topResidues, mode = molecular.colorMode) {
@@ -2291,19 +2353,26 @@ document.getElementById("viewerSpin").addEventListener("click", event => {
 document.getElementById("newAnalysis").addEventListener("click", () => { window.location.href = "/brief/"; });
 document.getElementById("resultScrollCue")?.addEventListener("click", event => {
   event.preventDefault();
-  stopDemoTour();
+  stopDemoTour(true);
   event.currentTarget.classList.add("dismissed");
-  document.getElementById("scoringSection")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  goToJourneyStop(1,{pause:true});
 });
-document.getElementById("demoSkipStatus")?.addEventListener("click", stopDemoTour);
+document.getElementById("demoSkipStatus")?.addEventListener("click",()=>stopDemoTour(true));
+document.getElementById("journeyBack")?.addEventListener("click",()=>goToJourneyStop(activeJourneyIndex()-1,{pause:true}));
+document.getElementById("journeyNext")?.addEventListener("click",()=>goToJourneyStop(activeJourneyIndex()+1,{pause:true}));
+document.getElementById("journeyAuto")?.addEventListener("click",()=>{
+  if(demoTour.paused){demoTour.paused=false;scheduleDemoTour(1400);}
+  else stopDemoTour(true);
+  updateJourneyController();
+});
 function updateResultScrollCue() {
   const cue = document.getElementById("resultScrollCue");
   if (!cue || !document.body.classList.contains("analysis-mode")) return;
   const pageBottom = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
   cue.classList.toggle("dismissed", activeSectionIndex() > 0 || window.scrollY >= pageBottom - 2);
 }
-window.addEventListener("scroll", () => { updateResultScrollCue(); updateSectionRail(); }, { passive: true });
-window.addEventListener("resize", () => { updateResultScrollCue(); updateSectionRail(); }, { passive: true });
+window.addEventListener("scroll", () => { updateResultScrollCue(); updateSectionRail(); updateJourneyController(); }, { passive: true });
+window.addEventListener("resize", () => { updateResultScrollCue(); updateSectionRail(); updateJourneyController(); }, { passive: true });
 
 function recalculateForTarget(targetId){
   if(!current)return;
@@ -2312,6 +2381,7 @@ function recalculateForTarget(targetId){
   renderAdaptivePanel(current.report,{rebuild:true,clearResults:true});fillBuiltInDemoResults(current.report);
   document.getElementById("methodsText").textContent=mechanochemicalMethodsText(current);
   setLocalActionStatus(`Mechanical response recalculated for ${current.report.activeTarget.label}. ${current.report.topResidues[0].label} is the first candidate under the ${scoreLenses[activeScoringLens].label.toLowerCase()} question.`,true);
+  queueJourneyStop(2);
 }
 
 document.getElementById("targetSelect")?.addEventListener("change",event=>recalculateForTarget(event.currentTarget.value));
@@ -2336,6 +2406,7 @@ document.querySelectorAll("[data-scoring-lens]").forEach(button=>button.addEvent
   fillBuiltInDemoResults(current.report);
   document.getElementById("methodsText").textContent=mechanochemicalMethodsText(current);
   setLocalActionStatus(`Structural ranking recalculated for the “${scoreLenses[activeScoringLens].label}” question. ${current.report.topResidues[0].label} is now rank 1.`, true);
+  queueJourneyStop(1);
 }));
 
 document.getElementById("rebuildAdaptivePanel")?.addEventListener("click",()=>{
@@ -2353,7 +2424,7 @@ document.getElementById("adaptiveResultsFile")?.addEventListener("change",async 
   event.currentTarget.value="";
 });
 document.getElementById("loadAdaptiveExample")?.addEventListener("click",()=>loadAdaptiveExample());
-document.getElementById("analyzeAdaptiveResults")?.addEventListener("click",()=>analyzeAdaptiveResults());
+document.getElementById("analyzeAdaptiveResults")?.addEventListener("click",()=>{analyzeAdaptiveResults();queueJourneyStop(4);});
 ["adaptiveFunctionThreshold","adaptiveIntegrityFloor"].forEach(id=>document.getElementById(id)?.addEventListener("change",()=>{
   if(!current)return;
   const completed=adaptiveRound.panel.filter(entry=>entry.residue).filter(entry=>{const result=adaptiveRound.results.get(entry.key);return [result?.function,result?.abundance,result?.integrity].every(Number.isFinite);}).length;
@@ -2391,6 +2462,7 @@ document.getElementById("applyAssay")?.addEventListener("click",()=>{
   button.textContent=customAssay?"Readout applied":"Using suggestion";
   window.setTimeout(()=>button.textContent="Use this readout",1500);
   setLocalActionStatus(customAssay?`Experiment sheet updated to use: ${customAssay}. Structural scores did not change.`:"RINet's suggested readout restored. Structural scores did not change.",true);
+  queueJourneyStop(3);
 });
 
 document.getElementById("resetAssay")?.addEventListener("click",()=>{
