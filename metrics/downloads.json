@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-10-25T00:24:30Z",
+  "updated_at": "2026-10-29T03:37:21Z",
   "source_repository": "AkulK08/rinetlab",
   "source_release": "v1.3.0-build013",
   "historical_baseline": 1863,
   "installer_and_zip": {
     "asset_id": 527920450,
     "asset_name": "RINet_Build_013_Scientific_Transparency_Studio_2026-08-24.zip",
-    "raw_download_count": 2187,
-    "lifetime_since_tracking": 40568
+    "raw_download_count": 2188,
+    "lifetime_since_tracking": 40569
   },
   "instant_demo": {
     "asset_id": 527920452,
@@ -16,5 +16,5 @@
     "raw_download_count": 229,
     "lifetime_since_tracking": 766
   },
-  "website_total": 43197
+  "website_total": 43198
 }
