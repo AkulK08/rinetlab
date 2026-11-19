@@ -75,3 +75,48 @@ async function loadDownloadCount() {
 }
 
 loadDownloadCount();
+
+(() => {
+  const box = document.querySelector(".hero-quotes");
+  if (!box) return;
+  const quotes = [...box.querySelectorAll(".hero-quote")];
+  const copy = document.querySelector(".hero-copy");
+  const nav = document.querySelector(".nav-shell");
+  let active = 0;
+  let paused = false;
+  const enabled = () => quotes.filter(quote => !quote.classList.contains("is-dropped"));
+  const tooTall = () => copy.offsetTop < nav.offsetHeight + 12;
+
+  function show(index) {
+    const list = enabled();
+    quotes.forEach(quote => quote.classList.remove("is-active"));
+    if (!list.length) return;
+    active = (index + list.length) % list.length;
+    list[active].classList.add("is-active");
+  }
+
+  // Keep the headline clear of the menu: drop the tallest quotes until the block fits, or hide it.
+  function fit() {
+    box.classList.remove("is-hidden");
+    quotes.forEach(quote => quote.classList.remove("is-dropped"));
+    if (getComputedStyle(box).display === "none") return;
+    while (tooTall()) {
+      const list = enabled();
+      const heights = list.map(quote => quote.offsetHeight);
+      const tallest = Math.max(...heights);
+      if (tallest <= Math.min(...heights)) { box.classList.add("is-hidden"); break; }
+      list.forEach((quote, i) => { if (heights[i] === tallest) quote.classList.add("is-dropped"); });
+    }
+    show(0);
+  }
+
+  fit();
+  let resizeTimer;
+  window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(fit, 150); });
+  if (quotes.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  box.addEventListener("mouseenter", () => { paused = true; });
+  box.addEventListener("mouseleave", () => { paused = false; });
+  box.addEventListener("focusin", () => { paused = true; });
+  box.addEventListener("focusout", () => { paused = false; });
+  setInterval(() => { if (!paused && !box.classList.contains("is-hidden")) show(active + 1); }, 6000);
+})();
