@@ -31,20 +31,20 @@
   <meta name="twitter:image" content="https://rinetlab.com/media/rinet-mark.png?v=20260816">
   <meta name="twitter:image:alt" content="RINet protein network mark">
   <style>
-    .testimonials { padding: 168px 6vw 120px; background: radial-gradient(circle at 88% 12%, rgba(127,244,220,.06), transparent 30%), #050606; }
-    .testimonials h1 { margin: 28px 0 0; max-width: 1200px; font-size: clamp(48px, 5.2vw, 82px); line-height: .95; letter-spacing: -.065em; font-weight: 540; }
+    .testimonials { padding: 112px 6vw 120px; background: radial-gradient(circle at 88% 12%, rgba(127,244,220,.06), transparent 30%), #050606; }
+    .testimonials h1 { margin: 12px 0 0; max-width: 1200px; font-size: clamp(30px, 3vw, 46px); line-height: 1; letter-spacing: -.05em; font-weight: 560; }
     .t-intro { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 40px; }
     .t-stats { display: flex; border-top: 1px solid rgba(255,255,255,.35); }
-    .t-stats div { width: 138px; padding: 13px 0 0 18px; border-left: 1px solid rgba(255,255,255,.18); }
+    .t-stats div { width: 120px; padding: 10px 0 0 16px; border-left: 1px solid rgba(255,255,255,.18); }
     .t-stats strong, .t-stats span { display: block; }
-    .t-stats strong { font-size: 30px; font-weight: 550; letter-spacing: -.04em; }
+    .t-stats strong { font-size: 24px; font-weight: 550; letter-spacing: -.04em; }
     .t-stats span { margin-top: 5px; color: #8d9894; font: 9px var(--mono); text-transform: uppercase; }
     .t-institutions { margin-top: 64px; }
     .t-institutions p { margin: 0 0 14px; color: #718981; font: 9px var(--mono); letter-spacing: .13em; text-transform: uppercase; }
     .t-institutions ul { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
     .t-institutions li { border: 1px solid #313835; padding: 9px 11px; color: #a8b2ae; font: 9px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
     .t-featured, .t-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .t-featured { margin-top: 56px; }
+    .t-featured { margin-top: 36px; }
     .t-grid { margin-top: 12px; }
     .testimonial { --module: #ccff32; display: flex; flex-direction: column; margin: 0; padding: 30px 26px 26px; border: 1px solid #2d3b34; background: linear-gradient(150deg, color-mix(in srgb, var(--module) 5%, transparent), rgba(7,12,9,.9) 52%), #080c0a; box-shadow: inset 0 2px 0 color-mix(in srgb, var(--module) 60%, transparent); }
     .testimonial blockquote { margin: 0 0 28px; }
@@ -53,8 +53,9 @@
     .testimonial figcaption { margin-top: auto; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.09); }
     .testimonial figcaption b, .testimonial figcaption span { display: block; }
     .testimonial figcaption b { color: #fff; font-size: 17px; line-height: 1.25; font-weight: 650; letter-spacing: -.015em; }
+    .testimonial figcaption .role { margin-top: 5px; color: #c3ccc8; font: 13px/1.4 var(--sans); letter-spacing: 0; text-transform: none; }
     .testimonial figcaption span { margin-top: 7px; color: color-mix(in srgb, var(--module) 55%, #7d8a84); font: 10px/1.5 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
-    .t-featured .testimonial { min-height: 380px; padding: 38px 32px 32px; }
+    .t-featured .testimonial { padding: 36px 32px 30px; }
     .t-featured .testimonial:nth-child(2) { --module: #66d7ff; }
     .t-featured .testimonial:nth-child(3) { --module: #b98cff; }
     .t-featured blockquote p { font-size: clamp(24px, 2.2vw, 32px); line-height: 1.16; letter-spacing: -.04em; }
@@ -68,14 +69,13 @@
     .nav-shell nav a[aria-current="page"] { color: #fff; }
     @media (max-width: 900px) {
       .t-featured { grid-template-columns: 1fr; }
-      .t-featured .testimonial { min-height: 0; }
       .t-grid { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 600px) {
-      .testimonials { padding: 120px 22px 80px; }
+      .testimonials { padding: 92px 22px 80px; }
       .t-grid { grid-template-columns: 1fr; }
       .t-stats div { width: 102px; padding-left: 10px; }
-      .t-stats strong { font-size: 24px; }
+      .t-stats strong { font-size: 20px; }
       .t-institutions { margin-top: 48px; }
       .testimonial blockquote p { font-size: 19px; }
       .t-featured blockquote p { font-size: 24px; }
@@ -103,7 +103,7 @@
       <div class="t-intro">
         <div>
           <p class="section-tag">Testimonials</p>
-          <h1 id="testimonials-title">What researchers<br>say about RINet.</h1>
+          <h1 id="testimonials-title">What researchers say about RINet.</h1>
         </div>
         <div class="t-stats" aria-label="Who has reviewed RINet">
           <div><strong>15</strong><span>researchers</span></div>
@@ -112,6 +112,79 @@
         </div>
       </div>
 
+
+      <div class="t-featured">
+        <figure class="testimonial">
+          <blockquote><p>“Active site information summarized on a webpage as a starting point for their hypothesis generation or experimental design.”</p></blockquote>
+          <figcaption><b>Prof. Stephen K. Burley</b><span class="role">Director, RCSB Protein Data Bank; University Professor and Henry Rutgers Chair</span><span>Rutgers University</span></figcaption>
+        </figure>
+        <figure class="testimonial">
+          <blockquote><p>“Work[s] very well and is rather beautiful.”</p></blockquote>
+          <figcaption><b>Dr. Anthony P. West Jr.</b><span class="role">Senior Research Specialist, Division of Biology and Biological Engineering</span><span>California Institute of Technology</span></figcaption>
+        </figure>
+        <figure class="testimonial">
+          <blockquote><p>“Very easy to go from a structure to residue-level visualisation and analysis.”</p></blockquote>
+          <figcaption><b>Prof. Ram Samudrala</b><span class="role">Professor and Chief, Division of Bioinformatics, Department of Biomedical Informatics</span><span>University at Buffalo</span></figcaption>
+        </figure>
+      </div>
+
+      <div class="t-grid">
+        <figure class="testimonial">
+          <blockquote><p>“Amazing work… works well for Cas proteins.”</p></blockquote>
+          <figcaption><b>Dr. Max Jara Fornerod</b><span class="role">Postdoctoral Fellow, Department of Chemical Engineering</span><span>Massachusetts Institute of Technology</span></figcaption>
+        </figure>
+        <figure class="testimonial">
+          <blockquote><p>“The interface is clear… [with] a candidate residue, a matched control, and explicit interpretation criteria.”</p></blockquote>
+          <figcaption><b>Dr. Jinhu Kim</b><span class="role">Postdoctoral Associate in Cell Biology</span><span>Duke University</span></figcaption>
+        </figure>
+        <figure class="testimonial">
+          <blockquote><p>“The concept and approach [are] very promising… very interesting.”</p></blockquote>
+          <figcaption><b>Dr. Ujjwal Kumar</b><span class="role">Postdoctoral Associate, Duke Human Vaccine Institute</span><span>Duke University</span></figcaption>
+        </figure>
+        <figure class="testimonial">
+          <blockquote><p>“A nice e-tool.”</p></blockquote>
+          <figcaption><b>Prof. David Ron</b><span class="role">Professor of Cellular Pathophysiology and Clinical Biochemistry</span><span>University of Cambridge</span></figcaption>
+        </figure>
+        <figure class="testimonial">
+          <blockquote><p>“Amazing work.”</p></blockquote>
+          <figcaption><b>Prof. Sanjeeva Srivastava</b><span class="role">Professor, Department of Biosciences and Bioengineering</span><span>Indian Institute of Technology Bombay</span></figcaption>
+        </figure>
+        <figure class="testimonial">
+          <blockquote><p>“A really nice tool.”</p></blockquote>
+          <figcaption><b>Prof. Lee Cooper</b><span class="role">Joseph C. Calandra Research Professor of Pathology and Toxicology</span><span>Northwestern University</span></figcaption>
+        </figure>
+        <figure class="testimonial">
+          <blockquote><p>“It’s awesome. Could use it in my class!”</p></blockquote>
+          <figcaption><b>Prof. Aseem Bhattarai</b><span class="role">Assistant Professor, Department of Biochemistry, Maharajgunj Medical Campus</span><span>Institute of Medicine, Tribhuvan University</span></figcaption>
+        </figure>
+        <figure class="testimonial">
+          <blockquote><p>“Polished and professional.”</p></blockquote>
+          <figcaption><b>Prof. Rocco Moretti</b><span class="role">Research Associate Professor</span><span>Vanderbilt University</span></figcaption>
+        </figure>
+        <figure class="testimonial">
+          <blockquote><p>“A champion… I thought it was a new web interface from Apple!”</p></blockquote>
+          <figcaption><b>Professor</b><span>Rhodes College</span></figcaption>
+        </figure>
+        <figure class="testimonial">
+          <blockquote>
+            <p>“A useful way to quickly explore a protein structure and identify residues or regions that might otherwise be overlooked.”</p>
+            <p>“Straightforward and… [accessible] approach… without requiring extensive computational setup.”</p>
+            <p>“Concept is interesting.”</p>
+          </blockquote>
+          <figcaption><b>Dr. Rohit Joshi</b><span class="role">Postdoctoral Fellow, Medical Microbiology and Immunology</span><span>University of Alberta</span></figcaption>
+        </figure>
+        <figure class="testimonial">
+          <blockquote><p>“The mutation proposals are clear and actionable for researchers, and the high-level protein descriptions are accurate.”</p></blockquote>
+          <figcaption><b>Sonny Young</b><span class="role">PhD Student</span><span>Massachusetts Institute of Technology</span></figcaption>
+        </figure>
+        <figure class="testimonial">
+          <blockquote>
+            <p>“Tool is very impressive.”</p>
+            <p>“Useful for many fields of research. The interface looks good visually and is pretty simple to use.”</p>
+          </blockquote>
+          <figcaption><b>Pasa Suksmith</b><span>Cornell University</span></figcaption>
+        </figure>
+      </div>
       <div class="t-institutions">
         <p>Feedback from researchers at</p>
         <ul>
@@ -129,79 +202,6 @@
           <li>Rhodes College</li>
           <li>Institute of Medicine, Tribhuvan University</li>
         </ul>
-      </div>
-
-      <div class="t-featured">
-        <figure class="testimonial">
-          <blockquote><p>“Active site information summarized on a webpage as a starting point for their hypothesis generation or experimental design.”</p></blockquote>
-          <figcaption><b>Prof. Stephen K. Burley</b><span>Rutgers University</span></figcaption>
-        </figure>
-        <figure class="testimonial">
-          <blockquote><p>“Work[s] very well and is rather beautiful.”</p></blockquote>
-          <figcaption><b>Dr. Anthony P. West Jr.</b><span>California Institute of Technology</span></figcaption>
-        </figure>
-        <figure class="testimonial">
-          <blockquote><p>“Very easy to go from a structure to residue-level visualisation and analysis.”</p></blockquote>
-          <figcaption><b>Prof. Ram Samudrala</b><span>University at Buffalo</span></figcaption>
-        </figure>
-      </div>
-
-      <div class="t-grid">
-        <figure class="testimonial">
-          <blockquote><p>“A nice e-tool.”</p></blockquote>
-          <figcaption><b>Prof. David Ron</b><span>University of Cambridge</span></figcaption>
-        </figure>
-        <figure class="testimonial">
-          <blockquote><p>“Amazing work.”</p></blockquote>
-          <figcaption><b>Prof. Sanjeeva Srivastava</b><span>Indian Institute of Technology Bombay</span></figcaption>
-        </figure>
-        <figure class="testimonial">
-          <blockquote><p>“A really nice tool.”</p></blockquote>
-          <figcaption><b>Prof. Lee Cooper</b><span>Northwestern University</span></figcaption>
-        </figure>
-        <figure class="testimonial">
-          <blockquote><p>“It’s awesome. Could use it in my class!”</p></blockquote>
-          <figcaption><b>Prof. Aseem Bhattarai</b><span>Institute of Medicine, Tribhuvan University</span></figcaption>
-        </figure>
-        <figure class="testimonial">
-          <blockquote><p>“Polished and professional.”</p></blockquote>
-          <figcaption><b>Prof. Rocco Moretti</b><span>Vanderbilt University</span></figcaption>
-        </figure>
-        <figure class="testimonial">
-          <blockquote><p>“A champion… I thought it was a new web interface from Apple!”</p></blockquote>
-          <figcaption><b>Professor</b><span>Rhodes College</span></figcaption>
-        </figure>
-        <figure class="testimonial">
-          <blockquote><p>“Amazing work… works well for Cas proteins.”</p></blockquote>
-          <figcaption><b>Dr. Max Jara Fornerod</b><span>Massachusetts Institute of Technology</span></figcaption>
-        </figure>
-        <figure class="testimonial">
-          <blockquote><p>“The interface is clear… [with] a candidate residue, a matched control, and explicit interpretation criteria.”</p></blockquote>
-          <figcaption><b>Dr. Jinhu Kim</b><span>Duke University</span></figcaption>
-        </figure>
-        <figure class="testimonial">
-          <blockquote><p>“The concept and approach [are] very promising… very interesting.”</p></blockquote>
-          <figcaption><b>Dr. Ujjwal Kumar</b><span>Duke University</span></figcaption>
-        </figure>
-        <figure class="testimonial">
-          <blockquote>
-            <p>“A useful way to quickly explore a protein structure and identify residues or regions that might otherwise be overlooked.”</p>
-            <p>“Straightforward and… [accessible] approach… without requiring extensive computational setup.”</p>
-            <p>“Concept is interesting.”</p>
-          </blockquote>
-          <figcaption><b>Dr. Rohit Joshi</b><span>University of Alberta</span></figcaption>
-        </figure>
-        <figure class="testimonial">
-          <blockquote><p>“The mutation proposals are clear and actionable for researchers, and the high-level protein descriptions are accurate.”</p></blockquote>
-          <figcaption><b>Sonny Young</b><span>PhD Student, Massachusetts Institute of Technology</span></figcaption>
-        </figure>
-        <figure class="testimonial">
-          <blockquote>
-            <p>“Tool is very impressive.”</p>
-            <p>“Useful for many fields of research. The interface looks good visually and is pretty simple to use.”</p>
-          </blockquote>
-          <figcaption><b>Pasa Suksmith</b><span>Cornell University</span></figcaption>
-        </figure>
       </div>
     </section>
 
