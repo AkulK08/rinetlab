@@ -1003,7 +1003,7 @@ function biologicalGuidance(report, candidateOverride = report.topResidues[0], c
   const category = categories.find(item => item.match.test(context)) || {
     identity: metadata.classification ? metadata.classification.toLowerCase().replace(/\b\w/g, char => char.toUpperCase()) : "Structured protein target",
     useCase: ligandNames.length ? "Ligand response and structure-function tests" : "Structure-function experiments",
-    useNote: ligandNames.length ? `Useful for comparing ligand-linked sites with lower-contact structural controls.` : "Useful for choosing an interpretable first perturbation and a fair structural comparison.",
+    useNote: ligandNames.length ? `Useful for comparing ligand-linked sites with lower-contact structural controls.` : "Helps you decide which residue to mutate first and which one to use as a control.",
     assay: "the protein's closest established biological readout",
     purpose: "The coordinate model supports a controlled structure-function test. Protein-specific use should be confirmed from the supplied annotation and laboratory context.",
   };
@@ -2321,7 +2321,7 @@ function selectBoundGroup(atom) {
   document.getElementById("hudMutation").textContent = "Inspect lining residues";
   document.getElementById("hudMutationNote").textContent = "Choose a direct contact and a similarly buried non-contact comparison.";
   document.getElementById("hudGate").textContent = "SEPARATE BINDING FROM FOLD";
-  document.getElementById("hudGateNote").textContent = "A change in bound-group signal is interpretable only if abundance and fold remain intact.";
+  document.getElementById("hudGateNote").textContent = "A binding change only means something if the protein is still expressed and folded.";
   updateSurfaceStatus(`BOUND GROUP · ${label.toUpperCase()}`, true);
   document.querySelectorAll(".best-residue-row").forEach(row => row.classList.remove("active"));
 }
@@ -2580,7 +2580,7 @@ document.getElementById("stateFileInput")?.addEventListener("change",async event
     const secondByLabel=new Map(second.allResidues.map(row=>[row.label,row]));
     const comparisons=current.report.topResidues.map(first=>({first,second:secondByLabel.get(first.label)})).filter(row=>row.second);
     if(!comparisons.length)throw new Error("no matching author chain/residue identifiers; reconcile numbering before state comparison");
-    target.innerHTML=`<p><b>${comparisons.length}/10 primary-state top sites matched by exact author identifier.</b> The same target definition was used when it could be resolved in both structures.</p>${comparisons.map(({first,second:other})=>`<div class="sensitivity-row"><span>${esc(first.label)} · target sensitivity ${first.mechanicalLeverage.toExponential(2)} → ${other.mechanicalLeverage.toExponential(2)} · Δdegree ${(other.degree-first.degree)>=0?"+":""}${other.degree-first.degree}</span><b>sensitivity percentile ${(100*first.mechanicalPercentile).toFixed(0)} → ${(100*other.mechanicalPercentile).toFixed(0)}</b></div>`).join("")}<p>State-dependent sensitivity is interpretable only after reconciling construct, ligand, assembly, numbering and missing-coordinate differences.</p>`;
+    target.innerHTML=`<p><b>${comparisons.length}/10 primary-state top sites matched by exact author identifier.</b> The same target definition was used when it could be resolved in both structures.</p>${comparisons.map(({first,second:other})=>`<div class="sensitivity-row"><span>${esc(first.label)} · target sensitivity ${first.mechanicalLeverage.toExponential(2)} → ${other.mechanicalLeverage.toExponential(2)} · Δdegree ${(other.degree-first.degree)>=0?"+":""}${other.degree-first.degree}</span><b>sensitivity percentile ${(100*first.mechanicalPercentile).toFixed(0)} → ${(100*other.mechanicalPercentile).toFixed(0)}</b></div>`).join("")}<p>Only compare the two states after checking for differences in construct, ligands, assembly, numbering and missing atoms.</p>`;
   }catch(error){target.textContent=`State comparison stopped: ${error.message}.`;}
 });
 

@@ -221,3 +221,4 @@ footer { min-height: 150px; display: grid; grid-template-columns: 1fr auto auto;
 }
 
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .brief-terminal::before { animation: none; } }
+@media (max-width: 999px) { .nav-shell nav a.nav-testimonials { display: none; } }
