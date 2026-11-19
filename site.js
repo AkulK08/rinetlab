@@ -118,5 +118,5 @@ loadDownloadCount();
   box.addEventListener("mouseleave", () => { paused = false; });
   box.addEventListener("focusin", () => { paused = true; });
   box.addEventListener("focusout", () => { paused = false; });
-  setInterval(() => { if (!paused && !box.classList.contains("is-hidden")) show(active + 1); }, 6000);
+  setInterval(() => { if (!paused && !box.classList.contains("is-hidden")) show(active + 1); }, 4000);
 })();
