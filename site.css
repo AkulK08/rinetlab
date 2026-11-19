@@ -49,7 +49,7 @@ h1 { margin: 20px 0 22px; font-size: clamp(56px, 6.6vw, 110px); line-height: .88
 .button-dark { border-color: var(--paper-ink); background: var(--paper-ink); color: #fff; }
 .text-link { font-size: 12px; text-decoration: none; border-bottom: 1px solid #717a77; padding-bottom: 4px; }
 .text-link span { margin-left: 8px; color: var(--acid); }
-.hero-proof { position: absolute; z-index: 2; right: 3.6vw; bottom: 38px; display: flex; border-top: 1px solid rgba(255,255,255,.35); }
+.hero-proof { position: absolute; z-index: 2; right: 3.6vw; bottom: max(84px, 10vh); display: flex; border-top: 1px solid rgba(255,255,255,.35); }
 .hero-proof div { width: 138px; padding: 13px 0 0 18px; border-left: 1px solid rgba(255,255,255,.18); }
 .hero-proof div:last-child { width: 168px; }
 .hero-proof strong, .hero-proof span { display: block; }
