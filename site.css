@@ -230,3 +230,4 @@ footer { min-height: 150px; display: grid; grid-template-columns: 1fr auto auto;
 .hero-quote small { display: block; margin-top: 4px; color: #8d9894; font: 9px/1.6 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
 html:not(.js) .hero-quotes, .hero-quotes.is-hidden, .hero-quote.is-dropped { display: none; }
 @media (max-width: 600px) { .hero-quotes { display: none; } }
+.hero-copy h1 + .hero-quotes { margin-top: 0; }
